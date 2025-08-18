@@ -66,7 +66,7 @@ pipeline {
                         sh "git clone ${INFRA_REPO_URL}"
                         dir('Crema_Infra') {
                             sh """
-                            sed -i'' 's|image: .*|image: ${fullImageName}|g' apps/backend/base/deployment.yaml
+                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' apps/backend/base/deployment.yaml
                             """
 
                             sh 'git config --global user.email "jenkins@backend.ci"'
