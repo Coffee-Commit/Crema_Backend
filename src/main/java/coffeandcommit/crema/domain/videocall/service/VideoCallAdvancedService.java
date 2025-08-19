@@ -112,7 +112,7 @@ public class VideoCallAdvancedService {
                 .features(SessionConfigResponse.Features.builder()
                         .chatEnabled(true)
                         .screenShareEnabled(true)
-                        .recordingEnabled(false)
+                        .recordingEnabled(true) // 브라우저 기반 직접 녹화 활성화
                         .virtualBackgroundEnabled(false)
                         .build())
                 .build();
@@ -209,6 +209,97 @@ public class VideoCallAdvancedService {
                     sessionId, username, e.getMessage(), e);
             throw new RuntimeException("자동 재연결 중 오류가 발생했습니다. 네트워크 상태를 확인 후 다시 시도해주세요: " + e.getMessage());
         }
+    }
+
+    // 브라우저 기반 직접 녹화로 변경되어 서버 측 녹화 기능들은 간소화됨
+    
+    /**
+     * [간소화됨] 브라우저 직접 녹화 사용 권장
+     * 서버 측 녹화 대신 브라우저에서 직접 MediaStream 녹화를 사용하세요
+     */
+    @Deprecated
+    public Recording startAudioRecording(String sessionId) {
+        log.warn("서버 측 녹화는 비활성화됨. 브라우저 기반 직접 녹화를 사용하세요: sessionId={}", sessionId);
+        throw new UnsupportedOperationException("서버 측 녹화는 브라우저 기반 직접 녹화로 대체되었습니다");
+    }
+
+    /**
+     * [간소화됨] 브라우저 직접 녹화 사용 권장
+     */
+    @Deprecated
+    public Recording stopAudioRecording(String sessionId) {
+        log.warn("서버 측 녹화는 비활성화됨. 브라우저 기반 직접 녹화를 사용하세요: sessionId={}", sessionId);
+        throw new UnsupportedOperationException("서버 측 녹화는 브라우저 기반 직접 녹화로 대체되었습니다");
+    }
+
+    /**
+     * [간소화됨] 브라우저에서 직접 녹화한 파일들은 로컬에 저장됨
+     */
+    @Deprecated
+    @Transactional(readOnly = true)
+    public List<Recording> getSessionRecordings(String sessionId) {
+        log.info("브라우저 기반 직접 녹화 사용 중 - 서버 측 녹화 목록 없음: sessionId={}", sessionId);
+        return List.of(); // 빈 목록 반환
+    }
+
+    /**
+     * [간소화됨] 브라우저 직접 녹화 파일 정보는 클라이언트에서 관리
+     */
+    @Deprecated  
+    @Transactional(readOnly = true)
+    public Recording getRecordingInfo(String recordingId) {
+        log.warn("브라우저 기반 직접 녹화 사용 중 - 서버에서 녹화 정보 제공 불가: recordingId={}", recordingId);
+        throw new UnsupportedOperationException("브라우저 기반 직접 녹화 파일은 클라이언트에서 관리됩니다");
+    }
+
+    /**
+     * [간소화됨] 브라우저 기반 녹화 상태는 클라이언트에서 관리
+     */
+    @Deprecated
+    @Transactional(readOnly = true)
+    public boolean isSessionRecording(String sessionId) {
+        log.info("브라우저 기반 직접 녹화 사용 중 - 녹화 상태 확인 불가: sessionId={}", sessionId);
+        return false; // 서버에서는 녹화 상태를 알 수 없음
+    }
+
+    /**
+     * [간소화됨] 브라우저 기반 활성 녹화 정보는 클라이언트에서 관리
+     */
+    @Deprecated
+    @Transactional(readOnly = true)  
+    public Recording getActiveRecording(String sessionId) {
+        log.info("브라우저 기반 직접 녹화 사용 중 - 서버에서 활성 녹화 정보 제공 불가: sessionId={}", sessionId);
+        return null; // 서버에서는 활성 녹화 정보 없음
+    }
+
+    /**
+     * [간소화됨] 브라우저 기반 직접 녹화에서는 파일 다운로드가 브라우저에서 직접 처리됨
+     */
+    @Deprecated
+    @Transactional(readOnly = true)
+    public org.springframework.core.io.Resource getRecordingFile(String recordingId) {
+        log.warn("브라우저 기반 직접 녹화에서는 파일이 로컬에 저장됩니다: recordingId={}", recordingId);
+        throw new UnsupportedOperationException("브라우저 기반 직접 녹화 파일은 사용자 로컬에서 직접 관리됩니다");
+    }
+
+    /**
+     * OpenVidu 서버 상태 확인
+     */
+    @Transactional(readOnly = true)
+    public List<Session> getOpenViduStatus() {
+        try {
+            return videoCallService.getOpenViduActiveSessions();
+        } catch (Exception e) {
+            log.error("OpenVidu 상태 확인 실패: {}", e.getMessage());
+            throw new RuntimeException("OpenVidu 서버에 연결할 수 없습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * OpenVidu 시크릿 반환 (다운로드 인증용)
+     */
+    public String getOpenviduSecret() {
+        return openviduSecret;
     }
 
     /**

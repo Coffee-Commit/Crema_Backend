@@ -23,6 +23,7 @@
             <div class="controls">
                 <button id="toggleVideo" class="control-btn">📹</button>
                 <button id="toggleAudio" class="control-btn">🎤</button>
+                <button id="toggleRecording" class="control-btn recording-btn">🎵 녹화</button>
                 <button id="leaveSession" class="control-btn leave-btn">나가기</button>
             </div>
         </header>
@@ -38,13 +39,50 @@
             </div>
         </main>
 
-        <div class="chat-container">
-            <div class="chat-messages" id="chatMessages">
-                <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+        <div class="side-panel">
+            <!-- 음성 녹화 패널 -->
+            <div class="recording-panel">
+                <h3>🎵 음성 녹화 (OpenVidu 직접)</h3>
+                
+                <!-- 녹화 상태 표시 -->
+                <div id="recordingStatus" class="recording-status">
+                    <div class="status-indicator" id="recordingIndicator">⚫</div>
+                    <span id="recordingStatusText">녹화 대기 중</span>
+                    <span id="recordingDuration" class="recording-duration" style="display: none;">00:00</span>
+                </div>
+                
+                <!-- 실시간 오디오 레벨 표시 -->
+                <div class="audio-level-container" style="display: none;" id="audioLevelContainer">
+                    <div class="audio-level-label">🎤 오디오 레벨</div>
+                    <div class="audio-level-bar">
+                        <div class="audio-level-fill" id="audioLevelFill"></div>
+                    </div>
+                    <div class="audio-level-text" id="audioLevelText">-</div>
+                </div>
+                
+                <!-- 경고 메시지 영역 -->
+                <div id="recordingWarnings" class="recording-warnings">
+                    <!-- 무음 감지 등의 경고가 여기에 표시됩니다 -->
+                </div>
+                
+                <!-- 녹화 파일 목록 -->
+                <div class="recording-files" id="recordingFiles">
+                    <h4>📁 녹화된 파일</h4>
+                    <div id="recordingList" class="recording-list">
+                        <!-- 녹화 파일 목록이 여기에 표시됩니다 -->
+                    </div>
+                </div>
             </div>
-            <div class="chat-input">
-                <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." maxlength="500">
-                <button id="sendMessage">전송</button>
+
+            <!-- 채팅 패널 -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chatMessages">
+                    <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+                </div>
+                <div class="chat-input">
+                    <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." maxlength="500">
+                    <button id="sendMessage">전송</button>
+                </div>
             </div>
         </div>
     </div>

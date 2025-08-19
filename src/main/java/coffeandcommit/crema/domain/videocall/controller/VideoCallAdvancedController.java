@@ -1,10 +1,9 @@
 package coffeandcommit.crema.domain.videocall.controller;
 
 import coffeandcommit.crema.domain.videocall.dto.request.QuickJoinRequest;
-import coffeandcommit.crema.domain.videocall.dto.response.QuickJoinResponse;
-import coffeandcommit.crema.domain.videocall.dto.response.SessionConfigResponse;
-import coffeandcommit.crema.domain.videocall.dto.response.SessionStatusResponse;
+import coffeandcommit.crema.domain.videocall.dto.response.*;
 import coffeandcommit.crema.domain.videocall.service.VideoCallAdvancedService;
+import io.openvidu.java.client.Recording;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -12,6 +11,10 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 /**
  * 프론트엔드 개발자의 작업을 간소화하기 위한 고급 화상통화 API
@@ -116,5 +119,63 @@ public class VideoCallAdvancedController {
         log.info("자동 재연결 완료: sessionId={}", sessionId);
         
         return ResponseEntity.ok(response);
+    }
+
+    // 브라우저 기반 직접 녹화로 변경되어 서버 측 녹화 기능은 비활성화됨
+    // 필요시 주석 해제하여 사용 가능
+    
+    /*
+    @PostMapping("/sessions/{sessionId}/start-audio-recording")
+    @Deprecated
+    @Operation(
+        summary = "[비활성화] 서버 측 음성 녹화 시작", 
+        description = "브라우저 기반 직접 녹화로 대체되어 비활성화됨"
+    )
+    public ResponseEntity<RecordingResponse> startAudioRecording(
+            @PathVariable String sessionId) {
+        
+        log.warn("서버 측 녹화는 브라우저 기반 직접 녹화로 대체되어 비활성화됨: sessionId={}", sessionId);
+        
+        return ResponseEntity.badRequest()
+            .body(RecordingResponse.builder()
+                .error("서버 측 녹화는 브라우저 기반 직접 녹화로 대체됨")
+                .build());
+    }
+    */
+
+    @GetMapping("/openvidu-status")
+    @Operation(
+        summary = "OpenVidu 서버 상태 확인", 
+        description = "OpenVidu 서버 연결 상태 및 활성 세션 정보를 조회합니다."
+    )
+    public ResponseEntity<Map<String, Object>> getOpenViduStatus() {
+        
+        log.info("OpenVidu 상태 확인 요청");
+        
+        Map<String, Object> status = new HashMap<>();
+        
+        try {
+            // OpenVidu 서버 연결 테스트
+            var activeSessions = videoCallAdvancedService.getOpenViduStatus();
+            
+            status.put("connected", true);
+            status.put("activeSessionCount", activeSessions.size());
+            status.put("activeSessions", activeSessions.stream()
+                    .map(session -> Map.of(
+                            "sessionId", session.getSessionId(),
+                            "connectionCount", session.getActiveConnections().size(),
+                            "createdAt", session.createdAt()
+                    ))
+                    .collect(java.util.stream.Collectors.toList()));
+            status.put("message", "OpenVidu 서버 연결 정상");
+            
+        } catch (Exception e) {
+            status.put("connected", false);
+            status.put("error", e.getMessage());
+            status.put("message", "OpenVidu 서버 연결 실패");
+            log.error("OpenVidu 상태 확인 실패: {}", e.getMessage());
+        }
+        
+        return ResponseEntity.ok(status);
     }
 }

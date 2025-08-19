@@ -6,15 +6,18 @@ services:
     image: openvidu/openvidu-dev:2.30.0
     container_name: openvidu-server-dev
     restart: unless-stopped
-    network_mode: host
     environment:
       # 기본 설정
       - OPENVIDU_SECRET=MY_SECRET
       - OPENVIDU_DOMAIN_OR_PUBLIC_IP=localhost
-      - OPENVIDU_PORT=25565
+      - OPENVIDU_PORT=4443
       
       # 개발 환경 설정
-      - OPENVIDU_RECORDING=false
+      - OPENVIDU_RECORDING=true
+      - OPENVIDU_RECORDING_PATH=/opt/openvidu/recordings
+      - OPENVIDU_RECORDING_PUBLIC_ACCESS=true
+      - OPENVIDU_RECORDING_NOTIFICATION=publisher_moderator
+      - OPENVIDU_RECORDING_AUTOSTOP_TIMEOUT=120
       - OPENVIDU_STREAMS_VIDEO_MAX_RECV_BANDWIDTH=1000
       - OPENVIDU_STREAMS_VIDEO_MIN_RECV_BANDWIDTH=300
       - OPENVIDU_STREAMS_VIDEO_MAX_SEND_BANDWIDTH=1000
@@ -22,26 +25,25 @@ services:
       
       # 보안 설정 (개발용)
       - CERTIFICATE_TYPE=selfsigned
-      - HTTPS_PORT=25566
       
       # 로깅 설정
       - OV_CE_DEBUG_LEVEL=INFO
       
-      # WebRTC 설정
-      - KMS_MIN_PORT=40000
-      - KMS_MAX_PORT=57000
+      # WebRTC 설정 (포트 범위 더욱 축소)
+      - KMS_MIN_PORT=50000
+      - KMS_MAX_PORT=50020
       
       # 개발 편의를 위한 설정
       - OPENVIDU_WEBHOOK=false
       - OPENVIDU_CDR=false
     
     ports:
-      - "25565:25565"  # HTTP 포트
-      - "25566:25566"  # HTTPS 포트 (개발용 자체 서명 인증서)
-      - "40000-57000:40000-57000/udp"  # WebRTC 미디어 포트 범위
+      - "25565:4443"  # OpenVidu HTTP/HTTPS 포트
+      - "50000-50020:50000-50020/udp"  # WebRTC 미디어 포트 범위
     
     volumes:
       - openvidu_data:/opt/openvidu
+      - openvidu_recordings:/opt/openvidu/recordings
       - /var/run/docker.sock:/var/run/docker.sock
     
     healthcheck:
@@ -53,6 +55,8 @@ services:
 
 volumes:
   openvidu_data:
+    driver: local
+  openvidu_recordings:
     driver: local
 
 networks:

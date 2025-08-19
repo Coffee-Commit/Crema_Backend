@@ -121,6 +121,10 @@ OpenVidu는 **WebRTC 기반의 실시간 화상통화 플랫폼**입니다:
 
 이제 복잡한 OpenVidu 설정이나 토큰 관리는 백엔드에서 처리하므로, 프론트엔드 개발자는 **UI/UX에만 집중**할 수 있습니다!
 
+#### 🎵 **새로운 기능: 음성만 녹화**
+
+화상통화 중 **음성만 녹화**하는 기능이 추가되었습니다. 비디오는 제외하고 오디오만 효율적으로 녹화할 수 있습니다.
+
 #### 🏠 **1. 홈 페이지 (간소화된 세션 관리)**
 ```javascript
 // ⚡ 원클릭 참가 - 모든 복잡한 로직이 백엔드에서 처리됨
@@ -225,6 +229,246 @@ const getSessionStatus = async () => {
 };
 ```
 
+#### 🎵 **5. 음성만 녹화 기능 (NEW!)**
+
+화상통화 중 **음성만 녹화**할 수 있는 강력한 기능입니다. 비디오는 제외하고 오디오만 효율적으로 녹화합니다.
+
+```javascript
+// ⚡ 음성 녹화 시작 - 원클릭으로 음성만 녹화 시작
+const startAudioRecording = async (sessionId) => {
+  try {
+    const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/start-audio-recording`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const recordingInfo = await response.json();
+    
+    console.log('음성 녹화 시작됨:', recordingInfo.recordingId);
+    console.log('녹화 파일명:', recordingInfo.name);
+    
+    // UI에 녹화 상태 표시
+    setRecordingStatus(true);
+    setCurrentRecording(recordingInfo);
+    
+  } catch (error) {
+    console.error('녹화 시작 실패:', error);
+    alert('음성 녹화를 시작할 수 없습니다.');
+  }
+};
+
+// ⚡ 음성 녹화 중단 - 녹화 완료 및 파일 저장
+const stopAudioRecording = async (sessionId) => {
+  try {
+    const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/stop-recording`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' }
+    });
+    
+    const recordingInfo = await response.json();
+    
+    console.log('음성 녹화 완료:', recordingInfo.recordingId);
+    console.log('녹화 시간:', recordingInfo.duration + '초');
+    console.log('파일 크기:', (recordingInfo.size / 1024 / 1024).toFixed(2) + 'MB');
+    
+    // UI 업데이트
+    setRecordingStatus(false);
+    setCompletedRecording(recordingInfo);
+    
+    // 녹화 완료 알림
+    alert(`음성 녹화가 완료되었습니다! (${recordingInfo.duration}초)`);
+    
+  } catch (error) {
+    console.error('녹화 중단 실패:', error);
+    alert('녹화를 중단할 수 없습니다.');
+  }
+};
+
+// ⚡ 녹화 상태 실시간 확인
+const checkRecordingStatus = async (sessionId) => {
+  try {
+    const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/recording-status`);
+    const status = await response.json();
+    
+    console.log('현재 녹화 상태:', status.isRecording);
+    
+    if (status.isRecording && status.currentRecording) {
+      console.log('진행 중인 녹화:', status.currentRecording.recordingId);
+    }
+    
+    return status;
+    
+  } catch (error) {
+    console.error('녹화 상태 확인 실패:', error);
+    return { isRecording: false };
+  }
+};
+
+// ⚡ 세션의 모든 녹화 파일 목록 조회
+const getRecordingList = async (sessionId) => {
+  try {
+    const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/recordings`);
+    const recordingList = await response.json();
+    
+    console.log(`총 ${recordingList.totalCount}개의 녹화 파일`);
+    
+    recordingList.recordings.forEach(recording => {
+      console.log(`- ${recording.name} (${recording.duration}초, ${recording.status})`);
+    });
+    
+    return recordingList;
+    
+  } catch (error) {
+    console.error('녹화 목록 조회 실패:', error);
+    return { recordings: [], totalCount: 0 };
+  }
+};
+
+// ⚡ 녹화 파일 다운로드
+const downloadRecording = async (recordingId) => {
+  try {
+    const response = await fetch(`/api/video-call/advanced/recordings/${recordingId}/download`);
+    const recordingInfo = await response.json();
+    
+    if (recordingInfo.status === 'ready' && recordingInfo.url) {
+      // 브라우저에서 파일 다운로드
+      const link = document.createElement('a');
+      link.href = recordingInfo.url;
+      link.download = recordingInfo.name;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      console.log('다운로드 시작:', recordingInfo.name);
+    } else {
+      alert('녹화 파일이 아직 준비되지 않았습니다. 잠시 후 다시 시도해주세요.');
+    }
+    
+  } catch (error) {
+    console.error('다운로드 실패:', error);
+    alert('파일 다운로드에 실패했습니다.');
+  }
+};
+```
+
+#### 🎛️ **음성 녹화 UI 컴포넌트 예시**
+
+```javascript
+// React 컴포넌트로 음성 녹화 컨트롤 구현
+const AudioRecordingControls = ({ sessionId, onRecordingUpdate }) => {
+  const [isRecording, setIsRecording] = useState(false);
+  const [currentRecording, setCurrentRecording] = useState(null);
+  const [recordingDuration, setRecordingDuration] = useState(0);
+  const [recordings, setRecordings] = useState([]);
+  
+  // 녹화 시작
+  const handleStartRecording = async () => {
+    try {
+      const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/start-audio-recording`, {
+        method: 'POST'
+      });
+      const recording = await response.json();
+      
+      setIsRecording(true);
+      setCurrentRecording(recording);
+      onRecordingUpdate?.(recording);
+      
+      // 녹화 시간 카운터 시작
+      startDurationCounter();
+      
+    } catch (error) {
+      alert('녹화 시작에 실패했습니다: ' + error.message);
+    }
+  };
+  
+  // 녹화 중단
+  const handleStopRecording = async () => {
+    try {
+      const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/stop-recording`, {
+        method: 'POST'
+      });
+      const recording = await response.json();
+      
+      setIsRecording(false);
+      setCurrentRecording(null);
+      setRecordingDuration(0);
+      
+      // 완료된 녹화 목록에 추가
+      setRecordings(prev => [...prev, recording]);
+      onRecordingUpdate?.(null);
+      
+      alert(`녹화가 완료되었습니다! (${recording.duration}초)`);
+      
+    } catch (error) {
+      alert('녹화 중단에 실패했습니다: ' + error.message);
+    }
+  };
+  
+  // 녹화 시간 카운터
+  const startDurationCounter = () => {
+    const interval = setInterval(() => {
+      setRecordingDuration(prev => prev + 1);
+    }, 1000);
+    
+    return () => clearInterval(interval);
+  };
+  
+  // 녹화 목록 불러오기
+  const loadRecordings = async () => {
+    try {
+      const response = await fetch(`/api/video-call/advanced/sessions/${sessionId}/recordings`);
+      const data = await response.json();
+      setRecordings(data.recordings);
+    } catch (error) {
+      console.error('녹화 목록 불러오기 실패:', error);
+    }
+  };
+  
+  // 컴포넌트 마운트 시 기존 녹화 목록 불러오기
+  useEffect(() => {
+    loadRecordings();
+  }, [sessionId]);
+  
+  return (
+    <div className="audio-recording-controls">
+      <div className="recording-status">
+        {isRecording ? (
+          <div className="recording-active">
+            <span className="recording-indicator">🔴</span>
+            <span>음성 녹화 중... ({Math.floor(recordingDuration / 60)}:{(recordingDuration % 60).toString().padStart(2, '0')})</span>
+            <button onClick={handleStopRecording} className="stop-recording-btn">
+              녹화 중단
+            </button>
+          </div>
+        ) : (
+          <button onClick={handleStartRecording} className="start-recording-btn">
+            🎵 음성 녹화 시작
+          </button>
+        )}
+      </div>
+      
+      {recordings.length > 0 && (
+        <div className="recordings-list">
+          <h4>녹화된 파일 ({recordings.length}개)</h4>
+          {recordings.map(recording => (
+            <div key={recording.recordingId} className="recording-item">
+              <span className="recording-name">{recording.name}</span>
+              <span className="recording-duration">{recording.duration}초</span>
+              <button 
+                onClick={() => downloadRecording(recording.recordingId)}
+                className="download-btn"
+              >
+                다운로드
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+```
+
 ### 🛠️ 개발 환경 및 도구
 
 #### 📦 **최소한의 필수 의존성**
@@ -256,6 +500,14 @@ const getSessionStatus = async () => {
 
 ### ⚠️ 주요 고려사항 및 제약사항
 
+#### 🎵 **음성 녹화 기능 주의사항**
+- **마이크 권한**: 음성 녹화를 위해서는 브라우저에서 마이크 접근 권한이 필요합니다
+- **저장 공간**: 녹화 파일은 OpenVidu 서버에 저장되므로 서버 디스크 공간을 고려해야 합니다
+- **파일 형식**: 기본적으로 WebM 형식으로 저장되며, 필요시 변환 도구를 사용해야 합니다
+- **녹화 품질**: 음성 품질은 참가자들의 마이크 품질과 네트워크 상태에 영향받습니다
+- **동시 녹화**: 한 세션당 하나의 녹화만 진행 가능합니다 (여러 녹화 동시 불가)
+- **세션 종료 시**: 세션이 종료되면 진행 중인 녹화도 자동으로 중단됩니다
+
 #### 🔒 **보안 및 권한 (간소화됨)**
 - **HTTPS 필수**: WebRTC는 보안 컨텍스트에서만 동작
 - **미디어 권한**: 카메라/마이크 권한 요청 처리 (브라우저 기본 기능 활용)
@@ -280,7 +532,7 @@ const getSessionStatus = async () => {
 
 ### 🎯 성공적인 구현을 위한 단계별 접근법
 
-#### ⚡ **대폭 단축된 개발 일정 (기존 7-10일 → 2-3일)**
+#### ⚡ **대폭 단축된 개발 일정 (기존 7-10일 → 2-4일)**
 
 #### 📅 **1단계: 기본 설정 (0.5일)**
 - React 프로젝트 생성 및 의존성 설치
@@ -303,10 +555,16 @@ const getSessionStatus = async () => {
 - 채팅 기능 추가
 - 실시간 세션 상태 표시
 
-#### 📅 **5단계: 고급 기능 (0.5일)**
+#### 📅 **5단계: 음성 녹화 기능 (0.5일) - NEW!**
+- 음성 녹화 컨트롤 UI 구현
+- 녹화 상태 표시 및 관리
+- 녹화 파일 목록 및 다운로드
+- 녹화 중 시간 표시
+
+#### 📅 **6단계: 고급 기능 (0.5일)**
 - 자동 재연결 기능 적용
 - 토큰 자동 갱신 적용
-- 최종 테스트
+- 최종 테스트 (녹화 기능 포함)
 
 ### 💡 개발 팁 및 베스트 프랙티스
 
@@ -2357,12 +2615,21 @@ export default App;
 - [ ] 에러 처리 및 로딩 상태 관리
 - [ ] 반응형 스타일링
 
+### 🎵 음성 녹화 기능 구현 사항 (NEW!)
+- [ ] 음성 녹화 시작/중단 버튼 구현
+- [ ] 녹화 상태 실시간 표시 (녹화 중 인디케이터)
+- [ ] 녹화 시간 카운터 구현
+- [ ] 완료된 녹화 파일 목록 표시
+- [ ] 녹화 파일 다운로드 기능
+- [ ] 녹화 관련 에러 처리
+- [ ] 세션 종료 시 녹화 자동 정리
+
 ### ✅ 추가 구현 사항
 - [ ] TypeScript 적용 (선택)
 - [ ] 테스트 코드 작성 (선택)
 - [ ] PWA 기능 추가 (선택)
 - [ ] 화면 공유 기능 (선택)
-- [ ] 녹화 기능 (선택)
+- [ ] 비디오 녹화 기능 (선택) - 음성 녹화와 별도
 
 ---
 
