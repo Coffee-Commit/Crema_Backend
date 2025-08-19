@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVidu 화상통화 프로토타입</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎥 OpenVidu 화상통화 프로토타입</h1>
+            <p>간단한 화상통화 테스트를 위한 프로토타입입니다.</p>
+        </header>
+
+        <main>
+            <div class="session-creation">
+                <h2>새 세션 생성</h2>
+                <div class="form-group">
+                    <input type="text" id="sessionName" placeholder="세션 이름을 입력하세요">
+                    <button id="createSessionBtn">세션 생성</button>
+                </div>
+            </div>
+
+            <div class="session-join">
+                <h2>기존 세션 참가</h2>
+                <div class="form-group">
+                    <input type="text" id="joinSessionId" placeholder="세션 ID를 입력하세요">
+                    <input type="text" id="username" placeholder="사용자명을 입력하세요">
+                    <button id="joinSessionBtn">세션 참가</button>
+                </div>
+            </div>
+
+            <div class="session-info" id="sessionInfo" style="display: none;">
+                <h3>세션 정보</h3>
+                <div id="sessionDetails"></div>
+                <button id="startVideoCallBtn">화상통화 시작</button>
+            </div>
+
+            <div class="message" id="message"></div>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

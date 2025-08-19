@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  # OpenVidu 서버 - 개발용 설정
+  openvidu-server:
+    image: openvidu/openvidu-dev:2.30.0
+    container_name: openvidu-server-dev
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      # 기본 설정
+      - OPENVIDU_SECRET=MY_SECRET
+      - OPENVIDU_DOMAIN_OR_PUBLIC_IP=localhost
+      - OPENVIDU_PORT=25565
+      
+      # 개발 환경 설정
+      - OPENVIDU_RECORDING=false
+      - OPENVIDU_STREAMS_VIDEO_MAX_RECV_BANDWIDTH=1000
+      - OPENVIDU_STREAMS_VIDEO_MIN_RECV_BANDWIDTH=300
+      - OPENVIDU_STREAMS_VIDEO_MAX_SEND_BANDWIDTH=1000
+      - OPENVIDU_STREAMS_VIDEO_MIN_SEND_BANDWIDTH=300
+      
+      # 보안 설정 (개발용)
+      - CERTIFICATE_TYPE=selfsigned
+      - HTTPS_PORT=25566
+      
+      # 로깅 설정
+      - OV_CE_DEBUG_LEVEL=INFO
+      
+      # WebRTC 설정
+      - KMS_MIN_PORT=40000
+      - KMS_MAX_PORT=57000
+      
+      # 개발 편의를 위한 설정
+      - OPENVIDU_WEBHOOK=false
+      - OPENVIDU_CDR=false
+    
+    ports:
+      - "25565:25565"  # HTTP 포트
+      - "25566:25566"  # HTTPS 포트 (개발용 자체 서명 인증서)
+      - "40000-57000:40000-57000/udp"  # WebRTC 미디어 포트 범위
+    
+    volumes:
+      - openvidu_data:/opt/openvidu
+      - /var/run/docker.sock:/var/run/docker.sock
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:25565/openvidu/api/config"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  openvidu_data:
+    driver: local
+
+networks:
+  default:
+    driver: bridge

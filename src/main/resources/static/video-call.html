@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화상통화 - OpenVidu</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://github.com/OpenVidu/openvidu/releases/download/v2.30.0/openvidu-browser-2.30.0.min.js"></script>
+    <script>
+        // OpenVidu 서버 URL 전역 설정
+        window.OPENVIDU_SERVER_URL = 'http://localhost:25565';
+        window.OPENVIDU_SERVER_SECRET = 'MY_SECRET';
+    </script>
+</head>
+<body>
+    <div class="video-container">
+        <header class="video-header">
+            <h1>화상통화 세션</h1>
+            <div class="session-info">
+                <span id="sessionIdDisplay"></span>
+                <span id="usernameDisplay"></span>
+            </div>
+            <div class="controls">
+                <button id="toggleVideo" class="control-btn">📹</button>
+                <button id="toggleAudio" class="control-btn">🎤</button>
+                <button id="leaveSession" class="control-btn leave-btn">나가기</button>
+            </div>
+        </header>
+
+        <main class="video-main">
+            <div id="video-grid" class="video-grid">
+                <!-- 비디오 스트림들이 여기에 동적으로 추가됩니다 -->
+            </div>
+            
+            <div class="local-video-container">
+                <video id="localVideo" autoplay playsinline muted></video>
+                <div class="video-label">나</div>
+            </div>
+        </main>
+
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+            </div>
+            <div class="chat-input">
+                <input type="text" id="messageInput" placeholder="메시지를 입력하세요..." maxlength="500">
+                <button id="sendMessage">전송</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>연결 중...</p>
+    </div>
+
+    <script src="video-call.js"></script>
+</body>
+</html>

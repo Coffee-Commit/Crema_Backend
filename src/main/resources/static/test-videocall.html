@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenVidu 고급 API 테스트</title>
+    <script src="https://cdn.jsdelivr.net/npm/openvidu-browser@2.30.0/lib/openvidu-browser-2.30.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        .api-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
+        .api-section h3 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button.disconnect {
+            background-color: #e74c3c;
+        }
+        button.disconnect:hover {
+            background-color: #c0392b;
+        }
+        .response {
+            margin-top: 15px;
+            padding: 15px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .video-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .video-wrapper {
+            flex: 1;
+            min-width: 250px;
+            max-width: 400px;
+        }
+        video {
+            width: 100%;
+            height: 200px;
+            background-color: #2c3e50;
+            border-radius: 8px;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status.connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .logs {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎥 OpenVidu 고급 API 테스트</h1>
+            <p>프론트엔드 개발 간소화를 위한 백엔드 고급 API 테스트 페이지</p>
+        </div>
+
+        <!-- 설정 정보 조회 -->
+        <div class="api-section">
+            <h3>⚙️ 1. 설정 정보 조회</h3>
+            <button onclick="getConfig()">설정 정보 가져오기</button>
+            <div id="config-response" class="response"></div>
+        </div>
+
+        <!-- 원클릭 세션 참가 -->
+        <div class="api-section">
+            <h3>🚀 2. 원클릭 세션 참가</h3>
+            <div class="form-group">
+                <label for="sessionName">세션 이름:</label>
+                <input type="text" id="sessionName" value="테스트세션" placeholder="세션 이름 입력">
+            </div>
+            <div class="form-group">
+                <label for="username">사용자명:</label>
+                <input type="text" id="username" value="테스터" placeholder="사용자명 입력">
+            </div>
+            <div class="form-group">
+                <label for="autoCreate">자동 세션 생성:</label>
+                <select id="autoCreate">
+                    <option value="true">활성화</option>
+                    <option value="false">비활성화</option>
+                </select>
+            </div>
+            <button onclick="quickJoin()">원클릭 참가</button>
+            <button onclick="disconnect()" class="disconnect">연결 끊기</button>
+            <div id="quickjoin-response" class="response"></div>
+        </div>
+
+        <!-- 세션 상태 조회 -->
+        <div class="api-section">
+            <h3>📊 3. 세션 상태 조회</h3>
+            <div class="form-group">
+                <label for="statusSessionId">세션 ID:</label>
+                <input type="text" id="statusSessionId" placeholder="세션 ID 입력">
+            </div>
+            <button onclick="getSessionStatus()">상태 조회</button>
+            <div id="status-response" class="response"></div>
+        </div>
+
+        <!-- 토큰 갱신 -->
+        <div class="api-section">
+            <h3>🔄 4. 토큰 갱신</h3>
+            <div class="form-group">
+                <label for="refreshSessionId">세션 ID:</label>
+                <input type="text" id="refreshSessionId" placeholder="세션 ID 입력">
+            </div>
+            <div class="form-group">
+                <label for="refreshUsername">사용자명:</label>
+                <input type="text" id="refreshUsername" placeholder="사용자명 입력">
+            </div>
+            <button onclick="refreshToken()">토큰 갱신</button>
+            <div id="refresh-response" class="response"></div>
+        </div>
+
+        <!-- 자동 재연결 -->
+        <div class="api-section">
+            <h3>🔗 5. 자동 재연결</h3>
+            <div class="form-group">
+                <label for="reconnectSessionId">세션 ID:</label>
+                <input type="text" id="reconnectSessionId" placeholder="세션 ID 입력">
+            </div>
+            <div class="form-group">
+                <label for="reconnectUsername">사용자명:</label>
+                <input type="text" id="reconnectUsername" placeholder="사용자명 입력">
+            </div>
+            <div class="form-group">
+                <label for="lastConnectionId">마지막 연결 ID:</label>
+                <input type="text" id="lastConnectionId" placeholder="연결 ID 입력">
+            </div>
+            <button onclick="autoReconnect()">자동 재연결</button>
+            <div id="reconnect-response" class="response"></div>
+        </div>
+
+        <!-- 연결 상태 -->
+        <div id="connection-status" class="status disconnected">
+            연결 상태: 연결 안됨
+        </div>
+
+        <!-- 비디오 컨테이너 -->
+        <div class="video-container">
+            <div class="video-wrapper">
+                <h4>내 비디오</h4>
+                <video id="local-video" autoplay muted playsinline></video>
+            </div>
+            <div class="video-wrapper">
+                <h4>상대방 비디오</h4>
+                <video id="remote-video" autoplay playsinline></video>
+            </div>
+        </div>
+
+        <!-- 로그 -->
+        <div class="logs" id="logs">
+            로그가 여기에 표시됩니다...
+        </div>
+    </div>
+
+    <script>
+        // 전역 변수
+        let session = null;
+        let publisher = null;
+        let subscriber = null;
+        let currentSessionData = null;
+        
+        const API_BASE_URL = 'http://localhost:8081/api/video-call/advanced';
+
+        // 로그 함수
+        function log(message) {
+            const logs = document.getElementById('logs');
+            const timestamp = new Date().toLocaleTimeString();
+            logs.innerHTML += `[${timestamp}] ${message}\n`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+
+        // 응답 표시 함수
+        function showResponse(elementId, data) {
+            document.getElementById(elementId).textContent = JSON.stringify(data, null, 2);
+        }
+
+        // 연결 상태 업데이트
+        function updateConnectionStatus(connected, message = '') {
+            const statusElement = document.getElementById('connection-status');
+            if (connected) {
+                statusElement.className = 'status connected';
+                statusElement.textContent = '연결 상태: 연결됨 ' + message;
+            } else {
+                statusElement.className = 'status disconnected';
+                statusElement.textContent = '연결 상태: 연결 안됨 ' + message;
+            }
+        }
+
+        // 1. 설정 정보 조회
+        async function getConfig() {
+            try {
+                log('설정 정보 조회 중...');
+                const response = await fetch(`${API_BASE_URL}/config`);
+                const data = await response.json();
+                showResponse('config-response', data);
+                log('설정 정보 조회 성공');
+            } catch (error) {
+                log('설정 정보 조회 실패: ' + error.message);
+                showResponse('config-response', { error: error.message });
+            }
+        }
+
+        // 2. 원클릭 세션 참가
+        async function quickJoin() {
+            try {
+                const sessionName = document.getElementById('sessionName').value;
+                const username = document.getElementById('username').value;
+                const autoCreateSession = document.getElementById('autoCreate').value === 'true';
+
+                if (!sessionName || !username) {
+                    alert('세션 이름과 사용자명을 입력해주세요.');
+                    return;
+                }
+
+                log(`원클릭 참가 시도: ${sessionName}, ${username}`);
+
+                const response = await fetch(`${API_BASE_URL}/quick-join`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        sessionName: sessionName,
+                        username: username,
+                        autoCreateSession: autoCreateSession
+                    })
+                });
+
+                const data = await response.json();
+                showResponse('quickjoin-response', data);
+                currentSessionData = data;
+
+                // 자동으로 관련 필드들 채우기
+                document.getElementById('statusSessionId').value = data.sessionId;
+                document.getElementById('refreshSessionId').value = data.sessionId;
+                document.getElementById('reconnectSessionId').value = data.sessionId;
+                document.getElementById('refreshUsername').value = data.username;
+                document.getElementById('reconnectUsername').value = data.username;
+
+                // OpenVidu 세션 연결
+                await connectToOpenVidu(data);
+                
+                log('원클릭 참가 성공');
+            } catch (error) {
+                log('원클릭 참가 실패: ' + error.message);
+                showResponse('quickjoin-response', { error: error.message });
+            }
+        }
+
+        // OpenVidu 세션 연결
+        async function connectToOpenVidu(sessionData) {
+            try {
+                // OpenVidu 객체 생성
+                const OV = new OpenVidu();
+                session = OV.initSession();
+
+                // 이벤트 리스너 설정
+                session.on('streamCreated', (event) => {
+                    log('새로운 스트림 생성됨');
+                    subscriber = session.subscribe(event.stream, 'remote-video');
+                    subscriber.on('streamPlaying', () => {
+                        log('원격 비디오 재생 시작');
+                    });
+                });
+
+                session.on('streamDestroyed', (event) => {
+                    log('스트림 삭제됨');
+                });
+
+                session.on('sessionDisconnected', (event) => {
+                    log('세션 연결 해제됨');
+                    updateConnectionStatus(false);
+                });
+
+                // 세션 연결
+                await session.connect(sessionData.token, { clientData: sessionData.username });
+                log('세션 연결 성공');
+                updateConnectionStatus(true, `(${sessionData.sessionName})`);
+
+                // 퍼블리셔 생성 및 발행
+                publisher = await OV.initPublisherAsync('local-video', {
+                    audioSource: undefined,
+                    videoSource: undefined,
+                    publishAudio: true,
+                    publishVideo: true,
+                    resolution: '640x480',
+                    frameRate: 30,
+                    insertMode: 'APPEND',
+                    mirror: false
+                });
+
+                await session.publish(publisher);
+                log('로컬 비디오 발행 성공');
+
+            } catch (error) {
+                log('OpenVidu 연결 실패: ' + error.message);
+                updateConnectionStatus(false, '(연결 실패)');
+                throw error;
+            }
+        }
+
+        // 연결 끊기
+        async function disconnect() {
+            try {
+                if (session) {
+                    await session.disconnect();
+                    session = null;
+                    publisher = null;
+                    subscriber = null;
+                    currentSessionData = null;
+                    
+                    // 비디오 엘리먼트 정리
+                    document.getElementById('local-video').srcObject = null;
+                    document.getElementById('remote-video').srcObject = null;
+                    
+                    log('연결 끊기 성공');
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                log('연결 끊기 실패: ' + error.message);
+            }
+        }
+
+        // 3. 세션 상태 조회
+        async function getSessionStatus() {
+            try {
+                const sessionId = document.getElementById('statusSessionId').value;
+                if (!sessionId) {
+                    alert('세션 ID를 입력해주세요.');
+                    return;
+                }
+
+                log(`세션 상태 조회: ${sessionId}`);
+                const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/status`);
+                const data = await response.json();
+                showResponse('status-response', data);
+                log('세션 상태 조회 성공');
+            } catch (error) {
+                log('세션 상태 조회 실패: ' + error.message);
+                showResponse('status-response', { error: error.message });
+            }
+        }
+
+        // 4. 토큰 갱신
+        async function refreshToken() {
+            try {
+                const sessionId = document.getElementById('refreshSessionId').value;
+                const username = document.getElementById('refreshUsername').value;
+                
+                if (!sessionId || !username) {
+                    alert('세션 ID와 사용자명을 입력해주세요.');
+                    return;
+                }
+
+                log(`토큰 갱신: ${sessionId}, ${username}`);
+                const response = await fetch(`${API_BASE_URL}/sessions/${sessionId}/refresh-token?username=${username}`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                showResponse('refresh-response', data);
+                log('토큰 갱신 성공');
+            } catch (error) {
+                log('토큰 갱신 실패: ' + error.message);
+                showResponse('refresh-response', { error: error.message });
+            }
+        }
+
+        // 5. 자동 재연결
+        async function autoReconnect() {
+            try {
+                const sessionId = document.getElementById('reconnectSessionId').value;
+                const username = document.getElementById('reconnectUsername').value;
+                const lastConnectionId = document.getElementById('lastConnectionId').value;
+                
+                if (!sessionId || !username) {
+                    alert('세션 ID와 사용자명을 입력해주세요.');
+                    return;
+                }
+
+                log(`자동 재연결: ${sessionId}, ${username}`);
+                
+                let url = `${API_BASE_URL}/sessions/${sessionId}/auto-reconnect?username=${username}`;
+                if (lastConnectionId) {
+                    url += `&lastConnectionId=${lastConnectionId}`;
+                }
+
+                const response = await fetch(url, { method: 'POST' });
+                const data = await response.json();
+                showResponse('reconnect-response', data);
+                
+                // 기존 연결 해제 후 새로 연결
+                await disconnect();
+                await connectToOpenVidu(data);
+                
+                log('자동 재연결 성공');
+            } catch (error) {
+                log('자동 재연결 실패: ' + error.message);
+                showResponse('reconnect-response', { error: error.message });
+            }
+        }
+
+        // 페이지 로드 시 초기화
+        window.onload = function() {
+            log('페이지 로드 완료. OpenVidu 고급 API 테스트 준비됨.');
+            updateConnectionStatus(false);
+        };
+
+        // 페이지 언로드 시 정리
+        window.onbeforeunload = function() {
+            if (session) {
+                session.disconnect();
+            }
+        };
+    </script>
+</body>
+</html>
