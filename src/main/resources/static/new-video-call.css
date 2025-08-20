@@ -1,0 +1,736 @@
+/* 기본 스타일 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background-color: #ffffff;
+    color: #333333;
+    overflow: hidden;
+    height: 100vh;
+}
+
+/* 상단 헤더 */
+.top-header {
+    height: 60px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    position: relative;
+    z-index: 100;
+}
+
+.header-left .brand-logo {
+    font-size: 24px;
+    font-weight: bold;
+    color: #2b2b2b;
+    letter-spacing: -0.5px;
+}
+
+.header-center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.call-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-text {
+    color: #666666;
+    font-size: 14px;
+}
+
+.call-duration {
+    color: #333333;
+    font-weight: 600;
+    font-size: 16px;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.user-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.user-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.user-name {
+    font-size: 14px;
+    color: #333333;
+    font-weight: 500;
+}
+
+.leave-btn {
+    background-color: #ff5555;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.leave-btn:hover {
+    background-color: #ff4444;
+}
+
+/* 메인 컨테이너 */
+.main-container {
+    display: flex;
+    height: calc(100vh - 60px);
+    background-color: #ffffff;
+}
+
+/* 좌측 메인 비디오 영역 */
+.main-video-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    background-color: #fafafa;
+}
+
+.main-video-container {
+    flex: 1;
+    position: relative;
+    background-color: #000000;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+}
+
+#mainVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.main-video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    color: white;
+}
+
+.no-video-avatar {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.6;
+}
+
+.no-video-message p {
+    font-size: 16px;
+    opacity: 0.8;
+}
+
+.main-video-label {
+    position: absolute;
+    bottom: 16px;
+    left: 16px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+/* 하단 컨트롤 버튼들 */
+.bottom-controls {
+    display: flex;
+    justify-content: center;
+    gap: 16px;
+}
+
+.control-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    border: none;
+    background-color: #ffffff;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.control-btn.active {
+    background-color: #4caf50;
+}
+
+.control-btn.disabled {
+    background-color: #ff5555;
+}
+
+.control-btn.screen-sharing {
+    background-color: #2196f3;
+}
+
+.control-icon {
+    font-size: 24px;
+}
+
+.control-btn.active .control-icon,
+.control-btn.disabled .control-icon,
+.control-btn.screen-sharing .control-icon {
+    filter: brightness(0) invert(1);
+}
+
+/* 우측 사이드바 */
+.sidebar {
+    width: 320px;
+    background-color: #ffffff;
+    border-left: 1px solid #e5e5e5;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #333333;
+    margin-bottom: 16px;
+}
+
+/* 참가자 목록 섹션 */
+.participants-section {
+    padding: 20px;
+    border-bottom: 1px solid #e5e5e5;
+    flex-shrink: 0;
+}
+
+.participants-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    border-radius: 8px;
+    background-color: #f8f9fa;
+}
+
+.participant-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.participant-info {
+    flex: 1;
+}
+
+.participant-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333333;
+}
+
+.participant-status {
+    font-size: 12px;
+    color: #666666;
+}
+
+.participant-status.speaking {
+    color: #4caf50;
+}
+
+.participant-status.screen-sharing {
+    color: #2196f3;
+}
+
+/* 채팅 섹션 */
+.chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    min-height: 0;
+}
+
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding-right: 8px;
+}
+
+.chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.chat-messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 2px;
+}
+
+.chat-messages::-webkit-scrollbar-thumb:hover {
+    background: #a1a1a1;
+}
+
+/* 채팅 메시지 스타일 */
+.chat-message {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    max-width: 100%;
+}
+
+.chat-message.own {
+    flex-direction: row-reverse;
+}
+
+.message-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.message-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.chat-message.own .message-header {
+    justify-content: flex-end;
+}
+
+.message-username {
+    font-size: 12px;
+    font-weight: 600;
+    color: #666666;
+}
+
+.message-time {
+    font-size: 11px;
+    color: #999999;
+}
+
+.message-text {
+    background-color: #f0f0f0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    word-wrap: break-word;
+}
+
+.chat-message.own .message-text {
+    background-color: #2196f3;
+    color: white;
+}
+
+.message-text.system {
+    background-color: #fff3cd;
+    color: #856404;
+    font-style: italic;
+    text-align: center;
+}
+
+/* 채팅 입력창 */
+.chat-input-container {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#chatInput {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#chatInput:focus {
+    border-color: #2196f3;
+}
+
+.send-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: none;
+    background-color: #2196f3;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    transition: background-color 0.2s;
+}
+
+.send-btn:hover {
+    background-color: #1976d2;
+}
+
+.send-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* 로딩 화면 */
+.loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #f0f0f0;
+    border-top: 4px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-screen p {
+    font-size: 16px;
+    color: #666666;
+}
+
+/* 토스트 알림 */
+.toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #333333;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 1000;
+    animation: toast-slide-up 0.3s ease;
+}
+
+@keyframes toast-slide-up {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+        height: 300px;
+        border-left: none;
+        border-top: 1px solid #e5e5e5;
+    }
+    
+    .main-video-area {
+        padding: 16px;
+    }
+    
+    .bottom-controls {
+        gap: 12px;
+    }
+    
+    .control-btn {
+        width: 50px;
+        height: 50px;
+    }
+    
+    .control-icon {
+        font-size: 20px;
+    }
+    
+    /* 모바일에서 PIP 크기 조정 */
+    .pip-container {
+        width: 120px;
+        height: 90px;
+        bottom: 10px;
+        right: 10px;
+    }
+    
+    .pip-container.small {
+        width: 80px;
+        height: 60px;
+    }
+    
+    .pip-container.medium {
+        width: 120px;
+        height: 90px;
+    }
+    
+    .pip-container.large {
+        width: 160px;
+        height: 120px;
+    }
+    
+    .pip-control-btn {
+        width: 20px;
+        height: 20px;
+        font-size: 10px;
+    }
+    
+    .pip-label {
+        font-size: 10px;
+        padding: 1px 4px;
+    }
+}
+
+/* 터치 디바이스를 위한 추가 스타일 */
+@media (pointer: coarse) {
+    .pip-container {
+        cursor: grab;
+    }
+    
+    .pip-container.dragging {
+        cursor: grabbing;
+    }
+    
+    .pip-controls {
+        opacity: 1; /* 터치 디바이스에서는 항상 컨트롤 표시 */
+    }
+    
+    .pip-control-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+}
+
+/* Picture-in-Picture 캠 화면 스타일 */
+.pip-container {
+    position: absolute;
+    bottom: 20px;
+    right: 20px;
+    width: 180px;
+    height: 135px;
+    background-color: #000000;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 3px solid #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    cursor: move;
+    z-index: 50;
+    transition: all 0.2s ease;
+    display: none; /* 기본적으로 숨김 */
+}
+
+.pip-container.show {
+    display: block;
+}
+
+.pip-container:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.pip-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 9px;
+}
+
+.pip-controls {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+
+.pip-container:hover .pip-controls {
+    opacity: 1;
+}
+
+.pip-control-btn {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: none;
+    background-color: rgba(255, 255, 255, 0.9);
+    color: #333333;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.pip-control-btn:hover {
+    background-color: #ffffff;
+    transform: scale(1.1);
+}
+
+.pip-swap-btn {
+    background-color: rgba(33, 150, 243, 0.9);
+    color: white;
+}
+
+.pip-swap-btn:hover {
+    background-color: #2196f3;
+}
+
+.pip-close-btn {
+    background-color: rgba(255, 85, 85, 0.9);
+    color: white;
+}
+
+.pip-close-btn:hover {
+    background-color: #ff5555;
+}
+
+.pip-label {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    background-color: rgba(0, 0, 0, 0.7);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* PIP 사이즈 변형 */
+.pip-container.small {
+    width: 120px;
+    height: 90px;
+}
+
+.pip-container.medium {
+    width: 180px;
+    height: 135px;
+}
+
+.pip-container.large {
+    width: 240px;
+    height: 180px;
+}
+
+/* PIP 드래깅 상태 */
+.pip-container.dragging {
+    cursor: grabbing;
+    transform: scale(1.1);
+    z-index: 100;
+    opacity: 0.8;
+}
+
+/* PIP 스냅 영역 표시 */
+.pip-snap-zone {
+    position: absolute;
+    border: 2px dashed #2196f3;
+    border-radius: 8px;
+    background-color: rgba(33, 150, 243, 0.1);
+    display: none;
+    z-index: 40;
+}
+
+.pip-snap-zone.active {
+    display: block;
+}
+
+/* 다크모드 지원 (향후 확장) */
+@media (prefers-color-scheme: dark) {
+    /* 다크모드 스타일은 필요시 추가 */
+}

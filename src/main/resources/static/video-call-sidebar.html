@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>채팅 & 자료공유</title>
+    <link rel="stylesheet" href="video-call-sidebar.css">
+</head>
+<body>
+    <div class="sidebar-container">
+        <!-- 상단 헤더 -->
+        <header class="sidebar-header">
+            <h2 class="sidebar-title">채팅 & 자료공유</h2>
+            <button class="close-btn" id="closeBtn" title="창 닫기">×</button>
+        </header>
+
+        <!-- 탭 네비게이션 -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" data-tab="chat" id="chatTab">
+                <span class="tab-icon">💬</span>
+                <span class="tab-text">채팅</span>
+            </button>
+            <button class="tab-btn" data-tab="files" id="filesTab">
+                <span class="tab-icon">📁</span>
+                <span class="tab-text">자료공유</span>
+            </button>
+        </nav>
+
+        <!-- 탭 컨텐츠 -->
+        <main class="tab-content">
+            <!-- 채팅 탭 -->
+            <div class="tab-panel active" id="chatPanel">
+                <!-- 참가자 목록 -->
+                <div class="participants-section">
+                    <h3 class="section-title">참가자</h3>
+                    <div class="participants-list" id="participantsList">
+                        <!-- 참가자들이 동적으로 추가됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 채팅 영역 -->
+                <div class="chat-section">
+                    <h3 class="section-title">채팅</h3>
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+                    </div>
+                    <div class="chat-input-container">
+                        <input 
+                            type="text" 
+                            id="chatInput" 
+                            placeholder="메시지를 입력하세요..." 
+                            maxlength="1000"
+                        >
+                        <button id="sendChatBtn" class="send-btn">전송</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 자료공유 탭 -->
+            <div class="tab-panel" id="filesPanel">
+                <!-- 파일 업로드 영역 -->
+                <div class="upload-section">
+                    <h3 class="section-title">파일 업로드</h3>
+                    <div class="upload-area" id="uploadArea">
+                        <div class="upload-content">
+                            <div class="upload-icon">📤</div>
+                            <p class="upload-text">파일을 드래그하거나 클릭하여 업로드</p>
+                            <p class="upload-hint">이미지 (JPG, PNG, GIF) 또는 PDF 파일</p>
+                            <input type="file" id="fileInput" accept="image/*,.pdf" multiple style="display: none;">
+                            <button class="upload-btn" id="uploadBtn">파일 선택</button>
+                        </div>
+                        <div class="upload-progress" id="uploadProgress" style="display: none;">
+                            <div class="progress-bar">
+                                <div class="progress-fill" id="progressFill"></div>
+                            </div>
+                            <span class="progress-text" id="progressText">0%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 파일 목록 영역 -->
+                <div class="files-section">
+                    <h3 class="section-title">공유된 자료</h3>
+                    <div class="files-list" id="filesList">
+                        <!-- 파일 목록이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+
+                <!-- 파일 뷰어 영역 -->
+                <div class="file-viewer" id="fileViewer" style="display: none;">
+                    <div class="viewer-header">
+                        <h4 class="viewer-title" id="viewerTitle">파일 뷰어</h4>
+                        <button class="viewer-close-btn" id="viewerCloseBtn">×</button>
+                    </div>
+                    <div class="viewer-content" id="viewerContent">
+                        <!-- 파일 내용이 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- 로딩 오버레이 -->
+    <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>로딩 중...</p>
+    </div>
+
+    <!-- 토스트 알림 -->
+    <div class="toast" id="toast" style="display: none;">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script src="video-call-sidebar.js"></script>
+</body>
+</html>

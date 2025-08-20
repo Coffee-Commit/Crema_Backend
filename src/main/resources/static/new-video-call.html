@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CREMA - 화상통화</title>
+    <link rel="stylesheet" href="new-video-call.css">
+    <script src="https://github.com/OpenVidu/openvidu/releases/download/v2.30.0/openvidu-browser-2.30.0.min.js"></script>
+    <script>
+        // OpenVidu 서버 URL 전역 설정
+        window.OPENVIDU_SERVER_URL = 'http://localhost:25565';
+        window.OPENVIDU_SERVER_SECRET = 'MY_SECRET';
+    </script>
+</head>
+<body>
+    <!-- 상단 헤더 -->
+    <header class="top-header">
+        <div class="header-left">
+            <h1 class="brand-logo">CREMA</h1>
+        </div>
+        
+        <div class="header-center">
+            <div class="call-status">
+                <span class="status-text">커피챗 진행 중...</span>
+                <span class="call-duration" id="callDuration">00:00</span>
+            </div>
+        </div>
+        
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-avatar" id="currentUserAvatar">👤</div>
+                <span class="user-name" id="currentUserName">사용자</span>
+            </div>
+            <button class="leave-btn" id="leaveSessionBtn">나가기</button>
+        </div>
+    </header>
+
+    <!-- 메인 컨테이너 -->
+    <main class="main-container">
+        <!-- 좌측 메인 비디오 영역 -->
+        <div class="main-video-area">
+            <div class="main-video-container">
+                <video id="mainVideo" autoplay playsinline></video>
+                <div class="main-video-overlay" id="mainVideoOverlay">
+                    <div class="no-video-message">
+                        <div class="no-video-avatar">📹</div>
+                        <p>비디오가 꺼져있습니다</p>
+                    </div>
+                </div>
+                <div class="main-video-label" id="mainVideoLabel">나</div>
+                
+                <!-- Picture-in-Picture 캠 화면 -->
+                <div class="pip-container medium" id="pipContainer">
+                    <video id="pipVideo" autoplay playsinline muted></video>
+                    <div class="pip-controls">
+                        <button class="pip-control-btn pip-swap-btn" id="pipSwapBtn" title="메인 화면과 교체">⇄</button>
+                        <button class="pip-control-btn pip-close-btn" id="pipCloseBtn" title="닫기">×</button>
+                    </div>
+                    <div class="pip-label" id="pipLabel">내 캠</div>
+                </div>
+                
+                <!-- PIP 스냅 영역들 -->
+                <div class="pip-snap-zone" id="snapZoneTopLeft"></div>
+                <div class="pip-snap-zone" id="snapZoneTopRight"></div>
+                <div class="pip-snap-zone" id="snapZoneBottomLeft"></div>
+                <div class="pip-snap-zone" id="snapZoneBottomRight"></div>
+            </div>
+            
+            <!-- 하단 컨트롤 버튼들 -->
+            <div class="bottom-controls">
+                <button class="control-btn" id="toggleAudioBtn" title="마이크 on/off">
+                    <span class="control-icon">🎤</span>
+                </button>
+                <button class="control-btn" id="toggleVideoBtn" title="비디오 on/off">
+                    <span class="control-icon">📹</span>
+                </button>
+                <button class="control-btn" id="toggleScreenShareBtn" title="화면공유">
+                    <span class="control-icon">📤</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 우측 사이드바 -->
+        <aside class="sidebar">
+            <!-- 참가자 목록 -->
+            <div class="participants-section">
+                <h3 class="section-title">참가자</h3>
+                <div class="participants-list" id="participantsList">
+                    <!-- 참가자들이 동적으로 추가됩니다 -->
+                </div>
+            </div>
+
+            <!-- 채팅 영역 -->
+            <div class="chat-section">
+                <h3 class="section-title">채팅</h3>
+                <div class="chat-messages" id="chatMessages">
+                    <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+                </div>
+                <div class="chat-input-container">
+                    <input 
+                        type="text" 
+                        id="chatInput" 
+                        placeholder="메시지를 입력하세요..." 
+                        maxlength="1000"
+                    >
+                    <button id="sendChatBtn" class="send-btn">전송</button>
+                </div>
+            </div>
+        </aside>
+    </main>
+
+    <!-- 로딩 화면 -->
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>연결 중...</p>
+    </div>
+
+    <!-- 알림 토스트 -->
+    <div id="toast" class="toast" style="display: none;">
+        <span id="toastMessage"></span>
+    </div>
+
+    <script src="new-video-call.js"></script>
+</body>
+</html>

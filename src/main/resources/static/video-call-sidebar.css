@@ -1,0 +1,834 @@
+/* 기본 스타일 초기화 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    background-color: #f8f9fa;
+    color: #333333;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 사이드바 컨테이너 */
+.sidebar-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #ffffff;
+    border-radius: 0;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+}
+
+/* 상단 헤더 */
+.sidebar-header {
+    height: 60px;
+    background-color: #ffffff;
+    border-bottom: 1px solid #e5e5e5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    position: relative;
+    z-index: 10;
+}
+
+.sidebar-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #2b2b2b;
+}
+
+.close-btn {
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 50%;
+    background-color: #f0f0f0;
+    color: #666666;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+    background-color: #ff5555;
+    color: white;
+}
+
+/* 탭 네비게이션 */
+.tab-navigation {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.tab-btn {
+    flex: 1;
+    height: 50px;
+    border: none;
+    background-color: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.tab-btn:hover {
+    background-color: rgba(33, 150, 243, 0.1);
+}
+
+.tab-btn.active {
+    background-color: #ffffff;
+    border-bottom-color: #2196f3;
+}
+
+.tab-icon {
+    font-size: 16px;
+}
+
+.tab-text {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666666;
+}
+
+.tab-btn.active .tab-text {
+    color: #2196f3;
+    font-weight: 600;
+}
+
+/* 탭 컨텐츠 */
+.tab-content {
+    flex: 1;
+    overflow: hidden;
+}
+
+.tab-panel {
+    height: 100%;
+    display: none;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.tab-panel.active {
+    display: flex;
+}
+
+/* 섹션 공통 스타일 */
+.section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #666666;
+    margin-bottom: 12px;
+    padding: 0 20px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 8px;
+}
+
+/* 참가자 목록 */
+.participants-section {
+    padding: 20px 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.participants-list {
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 0 20px;
+}
+
+.participant-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid #f8f9fa;
+}
+
+.participant-item:last-child {
+    border-bottom: none;
+}
+
+.participant-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    color: #1976d2;
+}
+
+.participant-info {
+    flex: 1;
+}
+
+.participant-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333333;
+    margin-bottom: 2px;
+}
+
+.participant-status {
+    font-size: 12px;
+    color: #666666;
+}
+
+.participant-status.online {
+    color: #4caf50;
+}
+
+/* 채팅 영역 */
+.chat-section {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    min-height: 0;
+}
+
+.chat-message {
+    margin-bottom: 16px;
+    word-wrap: break-word;
+}
+
+.chat-message.own {
+    text-align: right;
+}
+
+.message-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background-color: #e3f2fd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1976d2;
+    margin-right: 8px;
+    vertical-align: top;
+}
+
+.chat-message.own .message-avatar {
+    margin-right: 0;
+    margin-left: 8px;
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.message-content {
+    display: inline-block;
+    max-width: 70%;
+    vertical-align: top;
+}
+
+.message-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.chat-message.own .message-header {
+    flex-direction: row-reverse;
+}
+
+.message-username {
+    font-weight: 600;
+    color: #2196f3;
+}
+
+.chat-message.own .message-username {
+    color: #2e7d32;
+}
+
+.message-time {
+    color: #999999;
+}
+
+.message-text {
+    background-color: #f0f0f0;
+    padding: 8px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    line-height: 1.4;
+    text-align: left;
+}
+
+.chat-message.own .message-text {
+    background-color: #e3f2fd;
+}
+
+/* 채팅 입력 */
+.chat-input-container {
+    padding: 20px;
+    border-top: 1px solid #f0f0f0;
+    background-color: #ffffff;
+    display: flex;
+    gap: 8px;
+}
+
+#chatInput {
+    flex: 1;
+    padding: 10px 16px;
+    border: 1px solid #e0e0e0;
+    border-radius: 20px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+#chatInput:focus {
+    border-color: #2196f3;
+}
+
+.send-btn {
+    padding: 10px 16px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.send-btn:hover {
+    background-color: #1976d2;
+}
+
+.send-btn:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
+}
+
+/* 파일 업로드 영역 */
+.upload-section {
+    padding: 20px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.upload-area {
+    border: 2px dashed #cccccc;
+    border-radius: 12px;
+    padding: 30px 20px;
+    text-align: center;
+    background-color: #fafafa;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.upload-area:hover {
+    border-color: #2196f3;
+    background-color: #f0f8ff;
+}
+
+.upload-area.dragover {
+    border-color: #2196f3;
+    background-color: #e3f2fd;
+}
+
+.upload-content {
+    pointer-events: none;
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.upload-text {
+    font-size: 16px;
+    font-weight: 500;
+    color: #333333;
+    margin-bottom: 8px;
+}
+
+.upload-hint {
+    font-size: 14px;
+    color: #666666;
+    margin-bottom: 16px;
+}
+
+.upload-btn {
+    padding: 10px 20px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    pointer-events: auto;
+}
+
+.upload-btn:hover {
+    background-color: #1976d2;
+}
+
+/* 업로드 진행률 */
+.upload-progress {
+    margin-top: 16px;
+}
+
+.progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: #f0f0f0;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.progress-fill {
+    height: 100%;
+    background-color: #2196f3;
+    width: 0%;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: #666666;
+    font-weight: 500;
+}
+
+/* 파일 목록 */
+.files-section {
+    flex: 1;
+    padding: 20px;
+    overflow: hidden;
+}
+
+.files-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    background-color: #ffffff;
+    border: 1px solid #f0f0f0;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.file-item:hover {
+    border-color: #2196f3;
+    box-shadow: 0 2px 8px rgba(33, 150, 243, 0.1);
+}
+
+.file-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+}
+
+.file-icon.image {
+    background-color: #e8f5e8;
+}
+
+.file-icon.pdf {
+    background-color: #fff3e0;
+}
+
+.file-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-name {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333333;
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-details {
+    font-size: 12px;
+    color: #666666;
+    display: flex;
+    gap: 12px;
+}
+
+.file-size {
+    color: #999999;
+}
+
+.file-uploader {
+    color: #2196f3;
+}
+
+.file-type-badge {
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.file-type-badge.image {
+    background-color: #e8f5e8;
+    color: #2e7d32;
+}
+
+.file-type-badge.pdf {
+    background-color: #fff3e0;
+    color: #f57c00;
+}
+
+.file-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.file-action-btn {
+    min-width: 60px;
+    height: 28px;
+    border: none;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease;
+    padding: 0 8px;
+}
+
+.file-action-btn.primary {
+    background-color: #2196f3;
+    color: white;
+}
+
+.file-action-btn.primary:hover {
+    background-color: #1976d2;
+}
+
+.file-action-btn.secondary {
+    background-color: #f0f0f0;
+    color: #666666;
+    min-width: 28px;
+    padding: 0;
+}
+
+.file-action-btn.secondary:hover {
+    background-color: #e0e0e0;
+    color: #333333;
+}
+
+.btn-icon {
+    font-size: 12px;
+}
+
+.btn-text {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+/* 파일 뷰어 */
+.file-viewer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+}
+
+.viewer-header {
+    height: 60px;
+    background-color: rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    color: white;
+}
+
+.viewer-title {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.viewer-close-btn {
+    width: 40px;
+    height: 40px;
+    border: none;
+    border-radius: 50%;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.viewer-close-btn:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.viewer-content {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.viewer-content img {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    border-radius: 8px;
+}
+
+.viewer-content iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    border-radius: 8px;
+    background-color: white;
+}
+
+/* 이미지 로딩 상태 */
+.image-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.image-loading .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid rgba(255, 255, 255, 0.3);
+    border-top: 3px solid white;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+.image-loading p {
+    font-size: 16px;
+    margin: 0;
+}
+
+/* 이미지 에러 상태 */
+.image-error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    text-align: center;
+}
+
+.error-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.image-error p {
+    font-size: 16px;
+    margin-bottom: 20px;
+}
+
+.retry-btn {
+    padding: 10px 20px;
+    background-color: #2196f3;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.retry-btn:hover {
+    background-color: #1976d2;
+}
+
+/* 빈 상태 */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #666666;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+.empty-text {
+    font-size: 16px;
+    margin-bottom: 8px;
+}
+
+.empty-hint {
+    font-size: 14px;
+    opacity: 0.7;
+}
+
+/* 로딩 오버레이 */
+.loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.9);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 3px solid #f0f0f0;
+    border-top: 3px solid #2196f3;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.loading-overlay p {
+    font-size: 16px;
+    color: #666666;
+}
+
+/* 토스트 알림 */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 14px;
+    z-index: 1000;
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+/* 스크롤바 스타일 */
+::-webkit-scrollbar {
+    width: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 400px) {
+    .sidebar-header {
+        padding: 0 15px;
+    }
+    
+    .sidebar-title {
+        font-size: 16px;
+    }
+    
+    .chat-input-container {
+        padding: 15px;
+    }
+    
+    .upload-section,
+    .files-section {
+        padding: 15px;
+    }
+    
+    .upload-area {
+        padding: 20px 15px;
+    }
+    
+    .file-item {
+        padding: 10px;
+    }
+    
+    .message-content {
+        max-width: 85%;
+    }
+}
