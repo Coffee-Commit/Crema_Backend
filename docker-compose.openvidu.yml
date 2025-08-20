@@ -3,62 +3,66 @@ version: '3.8'
 services:
   # OpenVidu 서버 - 개발용 설정
   openvidu-server:
-    image: openvidu/openvidu-dev:2.30.0
-    container_name: openvidu-server-dev
-    restart: unless-stopped
+    image: openvidu/openvidu-dev:2.30.0  # OpenVidu 개발용 Docker 이미지 (버전 2.30.0)
+    container_name: openvidu-server-dev  # 컨테이너 이름 지정
+    restart: unless-stopped              # 컨테이너 자동 재시작 정책 (수동 중지 제외)
     environment:
       # 기본 설정
-      - OPENVIDU_SECRET=MY_SECRET
-      - OPENVIDU_DOMAIN_OR_PUBLIC_IP=localhost
-      - OPENVIDU_PORT=4443
+      - OPENVIDU_SECRET=MY_SECRET                   # OpenVidu 서버 접근을 위한 시크릿 키
+      - OPENVIDU_DOMAIN_OR_PUBLIC_IP=localhost      # 서버의 도메인 또는 공개 IP 주소
+      - OPENVIDU_PORT=4443                          # OpenVidu 서버가 사용할 포트 번호
       
-      # 개발 환경 설정
-      - OPENVIDU_RECORDING=true
-      - OPENVIDU_RECORDING_PATH=/opt/openvidu/recordings
-      - OPENVIDU_RECORDING_PUBLIC_ACCESS=true
-      - OPENVIDU_RECORDING_NOTIFICATION=publisher_moderator
-      - OPENVIDU_RECORDING_AUTOSTOP_TIMEOUT=120
-      - OPENVIDU_STREAMS_VIDEO_MAX_RECV_BANDWIDTH=1000
-      - OPENVIDU_STREAMS_VIDEO_MIN_RECV_BANDWIDTH=300
-      - OPENVIDU_STREAMS_VIDEO_MAX_SEND_BANDWIDTH=1000
-      - OPENVIDU_STREAMS_VIDEO_MIN_SEND_BANDWIDTH=300
+      # 녹화 관련 설정
+      - OPENVIDU_RECORDING=true                          # 세션 녹화 기능 활성화 여부
+      - OPENVIDU_RECORDING_PATH=/opt/openvidu/recordings # 녹화 파일 저장 경로
+      - OPENVIDU_RECORDING_PUBLIC_ACCESS=true            # 녹화 파일 공개 접근 허용 여부
+      - OPENVIDU_RECORDING_NOTIFICATION=publisher_moderator # 녹화 시작/종료 알림을 받을 참가자 유형
+      - OPENVIDU_RECORDING_AUTOSTOP_TIMEOUT=120          # 녹화 자동 중지 타임아웃 (초)
+      
+      # 비디오 스트림 대역폭 설정
+      - OPENVIDU_STREAMS_VIDEO_MAX_RECV_BANDWIDTH=1000  # 비디오 수신 최대 대역폭 (kbps)
+      - OPENVIDU_STREAMS_VIDEO_MIN_RECV_BANDWIDTH=300   # 비디오 수신 최소 대역폭 (kbps)
+      - OPENVIDU_STREAMS_VIDEO_MAX_SEND_BANDWIDTH=1000  # 비디오 송신 최대 대역폭 (kbps)
+      - OPENVIDU_STREAMS_VIDEO_MIN_SEND_BANDWIDTH=300   # 비디오 송신 최소 대역폭 (kbps)
       
       # 보안 설정 (개발용)
-      - CERTIFICATE_TYPE=selfsigned
+      - CERTIFICATE_TYPE=selfsigned                 # SSL 인증서 타입 (개발용 자체 서명 인증서)
       
       # 로깅 설정
-      - OV_CE_DEBUG_LEVEL=INFO
+      - OV_CE_DEBUG_LEVEL=INFO                      # 로그 레벨 설정 (INFO, DEBUG, WARN, ERROR)
       
-      # WebRTC 설정 (포트 범위 더욱 축소)
-      - KMS_MIN_PORT=50000
-      - KMS_MAX_PORT=50020
+      # WebRTC 미디어 서버 포트 설정
+      - KMS_MIN_PORT=50000                          # Kurento Media Server 최소 포트 번호
+      - KMS_MAX_PORT=50020                          # Kurento Media Server 최대 포트 번호
       
       # 개발 편의를 위한 설정
-      - OPENVIDU_WEBHOOK=false
-      - OPENVIDU_CDR=false
+      - OPENVIDU_WEBHOOK=false                      # 웹훅 기능 비활성화 (이벤트 알림)
+      - OPENVIDU_CDR=false                          # CDR(Call Detail Record) 기능 비활성화
     
     ports:
-      - "25565:4443"  # OpenVidu HTTP/HTTPS 포트
-      - "50000-50020:50000-50020/udp"  # WebRTC 미디어 포트 범위
+      - "25565:4443"                    # OpenVidu HTTPS 포트 (호스트:컨테이너)
+      - "50000-50020:50000-50020/udp"   # WebRTC 미디어 스트림용 UDP 포트 범위
     
     volumes:
-      - openvidu_data:/opt/openvidu
-      - openvidu_recordings:/opt/openvidu/recordings
-      - /var/run/docker.sock:/var/run/docker.sock
+      - openvidu_data:/opt/openvidu              # OpenVidu 데이터 저장용 볼륨
+      - openvidu_recordings:/opt/openvidu/recordings  # 녹화 파일 저장용 볼륨
+      - /var/run/docker.sock:/var/run/docker.sock     # Docker 소켓 연결 (컨테이너 관리용)
     
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:25565/openvidu/api/config"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
+      test: ["CMD", "curl", "-f", "http://localhost:25565/openvidu/api/config"]  # 서버 상태 확인 명령
+      interval: 30s      # 상태 확인 간격 (30초)
+      timeout: 10s       # 상태 확인 타임아웃 (10초)
+      retries: 3         # 재시도 횟수 (3회)
+      start_period: 60s  # 최초 상태 확인 대기 시간 (60초)
 
+# Docker 볼륨 정의
 volumes:
-  openvidu_data:
+  openvidu_data:        # OpenVidu 서버 데이터 저장용 볼륨
     driver: local
-  openvidu_recordings:
+  openvidu_recordings:  # 세션 녹화 파일 저장용 볼륨
     driver: local
 
+# Docker 네트워크 설정
 networks:
-  default:
-    driver: bridge
+  default:              # 기본 네트워크 설정
+    driver: bridge      # 브리지 네트워크 드라이버 사용

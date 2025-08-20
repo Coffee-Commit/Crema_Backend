@@ -34,6 +34,24 @@
             <div class="session-info" id="sessionInfo" style="display: none;">
                 <h3>세션 정보</h3>
                 <div id="sessionDetails"></div>
+                
+                <!-- UI 버전 선택 -->
+                <div class="ui-version-selection">
+                    <h4>화상통화 UI 버전 선택</h4>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="uiVersion" value="new" checked>
+                            <span class="radio-text">New UI</span>
+                            <span class="radio-description">사이드바 포함, 기존 UI</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="uiVersion" value="v2">
+                            <span class="radio-text">v2 UI</span>
+                            <span class="radio-description">전체화면 + 새창 사이드바</span>
+                        </label>
+                    </div>
+                </div>
+                
                 <button id="startVideoCallBtn">화상통화 시작</button>
             </div>
 

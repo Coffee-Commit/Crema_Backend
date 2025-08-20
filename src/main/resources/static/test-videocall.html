@@ -331,6 +331,24 @@
         // OpenVidu 세션 연결
         async function connectToOpenVidu(sessionData) {
             try {
+                // WebSocket URL 변경 로직 (4443 -> 25565)
+                if (window.WebSocket) {
+                    const originalWebSocket = window.WebSocket;
+                    window.WebSocket = function(url, protocols) {
+                        if (url.includes('localhost:4443')) {
+                            url = url.replace('localhost:4443', 'localhost:25565');
+                            console.log('WebSocket URL redirected to:', url);
+                        }
+                        return new originalWebSocket(url, protocols);
+                    };
+                    // WebSocket 프로토타입 복사
+                    window.WebSocket.prototype = originalWebSocket.prototype;
+                    window.WebSocket.CONNECTING = originalWebSocket.CONNECTING;
+                    window.WebSocket.OPEN = originalWebSocket.OPEN;
+                    window.WebSocket.CLOSING = originalWebSocket.CLOSING;
+                    window.WebSocket.CLOSED = originalWebSocket.CLOSED;
+                }
+
                 // OpenVidu 객체 생성
                 const OV = new OpenVidu();
                 session = OV.initSession();

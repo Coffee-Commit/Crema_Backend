@@ -38,10 +38,14 @@ public class VideoCallService {
     
     // 녹화 세션 관리를 위한 맵
     private final Map<String, Recording> activeRecordings = new ConcurrentHashMap<>();
+    
+    // 화면공유 상태 관리를 위한 맵 (sessionId -> connectionId)
+    private final Map<String, String> activeScreenShares = new ConcurrentHashMap<>();
 
     @PostConstruct
     private void init() {
         this.openVidu = new OpenVidu(openviduUrl, openviduSecret);
+        log.info("OpenVidu 서버 연결 설정 완료: {}", openviduUrl);
     }
 
     public VideoSession createSession(String sessionName) {
@@ -370,5 +374,79 @@ public class VideoCallService {
             log.error("활성 세션 목록 조회 실패: {}", e.getMessage());
             throw new RuntimeException("OpenVidu 서버 연결 실패: " + e.getMessage());
         }
+    }
+
+    public void startScreenShare(String sessionId, String connectionId) {
+        try {
+            // 세션이 존재하는지 확인
+            VideoSession videoSession = videoSessionRepository
+                    .findBySessionIdAndIsActiveTrue(sessionId)
+                    .orElseThrow(() -> new SessionNotFoundException("활성화된 세션을 찾을 수 없습니다."));
+
+            // 이미 화면공유 중인지 확인
+            if (activeScreenShares.containsKey(sessionId)) {
+                String currentSharingConnectionId = activeScreenShares.get(sessionId);
+                if (!currentSharingConnectionId.equals(connectionId)) {
+                    throw new IllegalStateException("다른 참가자가 이미 화면공유 중입니다.");
+                }
+                log.info("이미 화면공유 중: sessionId={}, connectionId={}", sessionId, connectionId);
+                return;
+            }
+
+            // 참가자가 세션에 연결되어 있는지 확인
+            Participant participant = participantRepository
+                    .findByConnectionId(connectionId)
+                    .orElseThrow(() -> new ParticipantNotFoundException("참가자를 찾을 수 없습니다."));
+
+            if (!participant.getIsConnected()) {
+                throw new IllegalStateException("연결되지 않은 참가자는 화면공유를 시작할 수 없습니다.");
+            }
+
+            // 화면공유 상태 저장
+            activeScreenShares.put(sessionId, connectionId);
+            
+            log.info("화면공유 시작 성공: sessionId={}, connectionId={}", sessionId, connectionId);
+
+        } catch (Exception e) {
+            log.error("화면공유 시작 실패: sessionId={}, connectionId={}, error={}", 
+                     sessionId, connectionId, e.getMessage());
+            throw new RuntimeException("화면공유 시작에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    public void stopScreenShare(String sessionId, String connectionId) {
+        try {
+            // 현재 화면공유 중인지 확인
+            String currentSharingConnectionId = activeScreenShares.get(sessionId);
+            
+            if (currentSharingConnectionId == null) {
+                log.warn("진행 중인 화면공유가 없습니다: sessionId={}", sessionId);
+                return;
+            }
+
+            if (!currentSharingConnectionId.equals(connectionId)) {
+                throw new IllegalStateException("다른 참가자의 화면공유를 중지할 수 없습니다.");
+            }
+
+            // 화면공유 상태 제거
+            activeScreenShares.remove(sessionId);
+            
+            log.info("화면공유 중지 성공: sessionId={}, connectionId={}", sessionId, connectionId);
+
+        } catch (Exception e) {
+            log.error("화면공유 중지 실패: sessionId={}, connectionId={}, error={}", 
+                     sessionId, connectionId, e.getMessage());
+            throw new RuntimeException("화면공유 중지에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isScreenSharing(String sessionId) {
+        return activeScreenShares.containsKey(sessionId);
+    }
+
+    @Transactional(readOnly = true)
+    public String getCurrentScreenSharingConnectionId(String sessionId) {
+        return activeScreenShares.get(sessionId);
     }
 }

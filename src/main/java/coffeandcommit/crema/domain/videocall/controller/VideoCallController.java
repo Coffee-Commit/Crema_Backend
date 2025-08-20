@@ -98,4 +98,47 @@ public class VideoCallController {
         
         return ResponseEntity.ok(response);
     }
+
+    @PostMapping("/sessions/{sessionId}/screen-share/start")
+    @Operation(summary = "화면공유 시작", description = "세션에서 화면공유를 시작합니다.")
+    public ResponseEntity<Void> startScreenShare(
+            @PathVariable String sessionId,
+            @RequestParam String connectionId) {
+        
+        log.info("화면공유 시작 요청: sessionId={}, connectionId={}", sessionId, connectionId);
+        
+        videoCallService.startScreenShare(sessionId, connectionId);
+        
+        log.info("화면공유 시작 완료: sessionId={}, connectionId={}", sessionId, connectionId);
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/sessions/{sessionId}/screen-share/stop")
+    @Operation(summary = "화면공유 중지", description = "세션에서 화면공유를 중지합니다.")
+    public ResponseEntity<Void> stopScreenShare(
+            @PathVariable String sessionId,
+            @RequestParam String connectionId) {
+        
+        log.info("화면공유 중지 요청: sessionId={}, connectionId={}", sessionId, connectionId);
+        
+        videoCallService.stopScreenShare(sessionId, connectionId);
+        
+        log.info("화면공유 중지 완료: sessionId={}, connectionId={}", sessionId, connectionId);
+        
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/sessions/{sessionId}/screen-share/status")
+    @Operation(summary = "화면공유 상태 조회", description = "세션의 화면공유 상태를 조회합니다.")
+    public ResponseEntity<Boolean> getScreenShareStatus(@PathVariable String sessionId) {
+        
+        log.info("화면공유 상태 조회 요청: sessionId={}", sessionId);
+        
+        boolean isScreenSharing = videoCallService.isScreenSharing(sessionId);
+        
+        log.info("화면공유 상태 조회 완료: sessionId={}, isScreenSharing={}", sessionId, isScreenSharing);
+        
+        return ResponseEntity.ok(isScreenSharing);
+    }
 }

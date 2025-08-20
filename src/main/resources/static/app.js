@@ -160,11 +160,19 @@ class VideoCallApp {
             return;
         }
 
-        // 세션 데이터를 로컬 스토리지에 저장
-        localStorage.setItem('videoCallSession', JSON.stringify(this.sessionData));
+        // 선택된 UI 버전 확인
+        const selectedVersion = document.querySelector('input[name="uiVersion"]:checked').value;
         
-        // 화상통화 페이지로 이동
-        window.location.href = '/video-call.html';
+        // 새로운 화상통화 페이지로 이동 (URL 파라미터로 세션 데이터 전달)
+        const params = new URLSearchParams({
+            sessionId: this.sessionData.sessionId,
+            username: this.sessionData.username,
+            token: this.sessionData.token
+        });
+        
+        // 선택된 UI 버전에 따라 다른 페이지로 이동
+        const pageUrl = selectedVersion === 'v2' ? 'new-video-call-v2.html' : 'new-video-call.html';
+        window.location.href = `/${pageUrl}?${params.toString()}`;
     }
 
     showMessage(message, type = 'info') {
