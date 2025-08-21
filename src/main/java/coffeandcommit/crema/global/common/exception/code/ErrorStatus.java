@@ -16,10 +16,15 @@ public enum ErrorStatus implements BaseCode {
     METHOD_NOT_ALLOWED(HttpStatus.METHOD_NOT_ALLOWED, "지원하지 않은 HTTP Method 입니다."),
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
-    // User Domain
+    // Member Domain
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
     USERNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 사용자명입니다."),
     PHONE_NUMBER_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
+
+    // JWT & Auth
+    INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
+    EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
+    MISSING_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 필요합니다."),
     
     // Domain Specific
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
