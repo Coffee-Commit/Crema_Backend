@@ -17,21 +17,25 @@ public enum ErrorStatus implements BaseCode {
     FORBIDDEN(HttpStatus.FORBIDDEN, "권한이 없습니다."),
 
     // Member Domain
-    USER_NOT_FOUND(HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다."),
-    USERNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 사용자명입니다."),
+    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
+    USERNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 사용자 아이디입니다."),
+    NICKNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다."),
+    INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "닉네임 형식이 올바르지 않습니다. (2-32자, 한글/영문/숫자/언더스코어만 허용)"),
     PHONE_NUMBER_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
+    INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
+    INVALID_POINT_AMOUNT(HttpStatus.BAD_REQUEST, "포인트 금액이 올바르지 않습니다."),
 
     // JWT & Auth
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),
     MISSING_TOKEN(HttpStatus.UNAUTHORIZED, "토큰이 필요합니다."),
-    
-    // Domain Specific
-    MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
-    // TODO: 필요한 도메인별 에러 코드를 여기에 추가
-    RECRUITMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 모집 공고를 찾을 수 없습니다."),
-    DUPLICATE_BOOKMARK(HttpStatus.BAD_REQUEST, "이미 즐겨찾기에 등록된 공고입니다."),
-    RECRUITMENTBOOKMARK_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 즐겨찾기 정보를 찾을 수 없습니다.");
+    OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OAuth2 인증에 실패했습니다."),
+    UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다."),
+
+    // File Upload
+    FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
+    INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "지원하지 않는 파일 형식입니다."),
+    FILE_SIZE_EXCEEDED(HttpStatus.BAD_REQUEST, "파일 크기가 제한을 초과했습니다.");
 
     public static final String PREFIX = "[ERROR]";
 

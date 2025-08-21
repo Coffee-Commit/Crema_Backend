@@ -28,10 +28,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
 
         String accessToken = jwtTokenProvider.createAccessToken(
-                oAuth2User.getMember().getUsername(),
+                oAuth2User.getMember().getUserId(),
                 oAuth2User.getMember().getRole().name()
         );
-        String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getMember().getUsername());
+        String refreshToken = jwtTokenProvider.createRefreshToken(oAuth2User.getMember().getUserId());
 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
                 .queryParam("token", accessToken)

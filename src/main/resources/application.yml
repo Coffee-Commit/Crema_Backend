@@ -2,7 +2,8 @@ spring:
   application:
     name: Crema
   config:
-    import: optional:file:.env[.properties]
+    import:
+      - optional:file:.env[.properties]
   jpa:
     hibernate:
       ddl-auto: update
@@ -67,10 +68,8 @@ spring:
       - io.awspring.cloud.autoconfigure.core.CredentialsAutoConfiguration
       - io.awspring.cloud.autoconfigure.core.RegionAutoConfiguration
 
-
 server:
   port: 8080
-
 
 logging:
   level:
@@ -79,18 +78,8 @@ logging:
 
 jwt:
   secret: ${JWT_KEY} # 랜덤 비밀키(Base64 인코딩됨)
-  access-token-expiration: 1800000  # 30분
-  refresh-token-expiration: 1209600000  # 14일
-
-#cloud:
-#  aws:
-#    s3:
-#      bucket: ${AWS_S3_NAME}
-#    stack.auto: false
-#    region.static: ap-northeast-2
-#    credentials:
-#      accessKey: ${AWS_ACCESS_KEY}
-#      secretKey: ${AWS_SECRET_KEY}
+  access-token-expiration: 1800000  # 30분 (밀리초)
+  refresh-token-expiration: 1209600000  # 14일 (밀리초)
 
 app:
   oauth2:

@@ -12,14 +12,13 @@ import lombok.NoArgsConstructor;
 @Builder(toBuilder = true)
 public class MemberResponse {
     private String id;
-    private String username;
-    private String realName;
+    private String userId;
     private String nickname;
     private MemberRole role;
     private String phoneNumber;
-    private Integer points;
+    private Integer point;
     private String profileImageUrl;
-    private String introduction;
+    private String description;
     private String provider;
 }
 
