@@ -52,8 +52,9 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     //aws
-    implementation 'org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE'
-    implementation 'org.springframework.cloud:spring-cloud-aws-autoconfigure:2.2.6.RELEASE'
+    implementation 'io.awspring.cloud:spring-cloud-aws-starter-s3:3.0.4'
+    implementation 'software.amazon.awssdk:s3:2.21.29'
+    implementation 'software.amazon.awssdk:s3-presigner:2.21.29'
 
     //retryable annotation
     implementation 'org.springframework.retry:spring-retry'
