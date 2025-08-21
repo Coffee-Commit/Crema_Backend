@@ -45,10 +45,10 @@ public class Member {
     private String description;
 
     @Column(nullable = true)
-    private String provider;
+    private String provider; // OAuth 로그인 제공자 (ex: google, kakao)
 
     @Column(nullable = true)
-    private String providerId;
+    private String providerId; // Oauth 로그인한 유저의 ID
 
     public void updateProfile(String nickname, String description, String profileImageUrl) {
         this.nickname = nickname;
