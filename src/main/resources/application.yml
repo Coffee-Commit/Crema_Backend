@@ -50,6 +50,7 @@ jwt:
 cloud:
   aws:
     s3:
+      enable: false
       bucket: ${AWS_S3_NAME}
     stack.auto: false
     region.static: ap-northeast-2
