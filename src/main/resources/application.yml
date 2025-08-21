@@ -1,6 +1,9 @@
 spring:
   application:
     name: Crema
+  config:
+    import:
+      - optional:file:.env[.properties]
   jpa:
     hibernate:
       ddl-auto: update
@@ -31,28 +34,32 @@ spring:
           max-active: 10
           max-idle: 10
           min-idle: 2
+  # S3 자동 설정 비활성화
+  autoconfigure:
+    exclude:
+      - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
+      - io.awspring.cloud.autoconfigure.core.CredentialsAutoConfiguration
+      - io.awspring.cloud.autoconfigure.core.RegionAutoConfiguration
 
 server:
   port: 8080
-
 
 logging:
   level:
     org.springframework.security: debug
     root: info
 
-
 jwt:
   secret: ${JWT_KEY} # 랜덤 비밀키(Base64 인코딩됨)
   access-token-expiration: 1800000  # 30분
   refresh-token-expiration: 1209600000  # 14일
 
-cloud:
-  aws:
-    s3:
-      bucket: ${AWS_S3_NAME}
-    stack.auto: false
-    region.static: ap-northeast-2
-    credentials:
-      accessKey: ${AWS_ACCESS_KEY}
-      secretKey: ${AWS_SECRET_KEY}
+#cloud:
+#  aws:
+#    s3:
+#      bucket: ${AWS_S3_NAME}
+#    stack.auto: false
+#    region.static: ap-northeast-2
+#    credentials:
+#      accessKey: ${AWS_ACCESS_KEY}
+#      secretKey: ${AWS_SECRET_KEY}
