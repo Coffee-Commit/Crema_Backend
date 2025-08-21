@@ -39,6 +39,3 @@ out/
 *.yml
 /doc/
 .env
-.env
-.env.*
-
