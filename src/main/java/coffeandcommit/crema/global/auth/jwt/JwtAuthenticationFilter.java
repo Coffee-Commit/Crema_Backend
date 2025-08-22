@@ -1,6 +1,7 @@
 package coffeandcommit.crema.global.auth.jwt;
 
 import coffeandcommit.crema.global.auth.service.AuthService;
+import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.auth.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -104,24 +105,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void setAuthentication(String token, HttpServletRequest request) {
         try {
             String memberId = jwtTokenProvider.getMemberId(token);
-            log.debug("Setting authentication for member ID: {}", memberId);
 
             if (StringUtils.hasText(memberId)) {
+                CustomUserDetails userDetails = new CustomUserDetails(memberId);
+
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        memberId, // member ID를 username으로 설정
+                        userDetails,
                         null,
-                        Collections.emptyList() // role 없이 빈 권한 리스트
+                        userDetails.getAuthorities()
                 );
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
-
-                log.info("Authentication set successfully for member: {}", memberId);
-            } else {
-                log.error("Member ID is empty from token");
             }
         } catch (Exception e) {
-            log.error("Failed to set authentication: {}", e.getMessage(), e);
+            log.error("Failed to set authentication: {}", e.getMessage());
             SecurityContextHolder.clearContext();
         }
     }
