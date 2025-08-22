@@ -13,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder(toBuilder = true)
+@Builder
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
@@ -24,7 +24,7 @@ public class Member {
     @Id
     private String id; // OAuth2 연동을 위해 String 타입 사용 (UUID)
 
-    @Column(nullable = true, length = 32, unique = true)
+    @Column(nullable = true, length = 64, unique = true)
     private String nickname;
 
     @Column(nullable = false)

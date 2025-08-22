@@ -96,9 +96,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 프로필 이미지 업데이트 (기존에 없거나 OAuth 제공자의 이미지가 더 최신인 경우)
         if (StringUtils.hasText(userInfo.getImageUrl()) &&
                 !StringUtils.hasText(member.getProfileImageUrl())) {
-            member = member.toBuilder()
-                    .profileImageUrl(userInfo.getImageUrl())
-                    .build();
+
+            member.updateProfile(null, null, userInfo.getImageUrl());
             updated = true;
         }
 
@@ -113,22 +112,24 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             baseName = "사용자";
         }
 
-        // 기본 이름 정리
         String cleanedBaseName = cleanName(baseName);
-        if (cleanedBaseName.length() > 10) {
-            cleanedBaseName = cleanedBaseName.substring(0, 10);
+
+        // 중복 체크 후 UUID 추가를 고려한 길이 제한
+        if (cleanedBaseName.length() > 20) {  // UUID 부분을 위한 여유 공간
+            cleanedBaseName = cleanedBaseName.substring(0, 20);
         }
 
         String nickname = cleanedBaseName;
 
-        // 중복 체크 후 UUID 추가
         if (memberRepository.existsByNickname(nickname)) {
-            String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
+            String randomSuffix = UUID.randomUUID().toString().substring(0, 8);
             nickname = cleanedBaseName + "_" + randomSuffix;
 
-            // 극히 드문 경우의 최종 안전장치 (UUID 충돌 시)
-            if (memberRepository.existsByNickname(nickname)) {
-                nickname = cleanedBaseName + "_" + System.currentTimeMillis() % 100000;
+            // 최종 길이 체크 (32자 초과 시 다시 조정)
+            if (nickname.length() > 32) {
+                int maxBaseLength = 32 - 9; // "_" + 8자리 UUID
+                cleanedBaseName = cleanedBaseName.substring(0, maxBaseLength);
+                nickname = cleanedBaseName + "_" + randomSuffix;
             }
         }
 
