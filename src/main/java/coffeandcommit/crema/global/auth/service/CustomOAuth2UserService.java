@@ -113,24 +113,18 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         String cleanedBaseName = cleanName(baseName);
-
-        // 중복 체크 후 UUID 추가를 고려한 길이 제한
-        if (cleanedBaseName.length() > 20) {  // UUID 부분을 위한 여유 공간
+        if (cleanedBaseName.length() > 20) {
             cleanedBaseName = cleanedBaseName.substring(0, 20);
         }
 
-        String nickname = cleanedBaseName;
+        // 항상 UUID 추가
+        String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
+        String nickname = cleanedBaseName + "_" + randomSuffix;
 
-        if (memberRepository.existsByNickname(nickname)) {
-            String randomSuffix = UUID.randomUUID().toString().substring(0, 8);
+        // uuid가 1/1500만의 확률로 중복되면 타임 스탬프로 닉네임 생성
+        while (memberRepository.existsByNickname(nickname)) {
+            randomSuffix = UUID.randomUUID().toString().substring(0, 6);
             nickname = cleanedBaseName + "_" + randomSuffix;
-
-            // 최종 길이 체크 (32자 초과 시 다시 조정)
-            if (nickname.length() > 32) {
-                int maxBaseLength = 32 - 9; // "_" + 8자리 UUID
-                cleanedBaseName = cleanedBaseName.substring(0, maxBaseLength);
-                nickname = cleanedBaseName + "_" + randomSuffix;
-            }
         }
 
         return nickname;
