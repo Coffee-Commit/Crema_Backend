@@ -40,7 +40,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/swagger-resources",
             "/webjars",
             "/actuator/health",
-            "/actuator/info"
+            "/actuator/info",
+            "/after-login"
     );
 
     @Override
@@ -48,9 +49,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     FilterChain filterChain) throws ServletException, IOException {
 
         String requestURI = request.getRequestURI();
+        log.debug("Processing request: {} {}", request.getMethod(), requestURI);
 
         // 스킵할 경로인지 확인
         if (shouldSkip(requestURI)) {
+            log.debug("Skipping JWT authentication for URI: {}", requestURI);
             filterChain.doFilter(request, response);
             return;
         }
@@ -58,27 +61,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             // 쿠키 우선, 헤더 백업으로 토큰 추출
             String token = authService.extractAccessToken(request);
+            log.debug("Extracted token: {}", token != null ? "Present" : "Not found");
 
             if (StringUtils.hasText(token)) {
+                log.debug("Token found, validating...");
+
                 // JWT 토큰 검증
                 if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)) {
+                    log.debug("Token is valid and is access token");
+
                     // 블랙리스트 확인
                     if (!tokenBlacklistService.isTokenBlacklisted(token)) {
+                        log.debug("Token is not blacklisted, setting authentication");
                         setAuthentication(token, request);
-                        log.debug("JWT authentication successful for URI: {}", requestURI);
+                        log.info("JWT authentication successful for URI: {} with member: {}",
+                                requestURI, jwtTokenProvider.getMemberId(token));
                     } else {
-                        log.debug("Blacklisted token used for URI: {}", requestURI);
+                        log.warn("Blacklisted token used for URI: {}", requestURI);
                         SecurityContextHolder.clearContext();
                     }
                 } else {
-                    log.debug("Invalid JWT token for URI: {}", requestURI);
+                    log.warn("Invalid JWT token for URI: {}", requestURI);
                     SecurityContextHolder.clearContext();
                 }
             } else {
                 log.debug("No JWT token found in request for URI: {}", requestURI);
             }
         } catch (Exception e) {
-            log.error("JWT authentication failed for URI: {} - {}", requestURI, e.getMessage());
+            log.error("JWT authentication failed for URI: {} - {}", requestURI, e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
 
@@ -86,12 +96,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean shouldSkip(String requestURI) {
-        return SKIP_PATHS.stream().anyMatch(requestURI::startsWith);
+        boolean skip = SKIP_PATHS.stream().anyMatch(requestURI::startsWith);
+        log.debug("Should skip URI {}: {}", requestURI, skip);
+        return skip;
     }
 
     private void setAuthentication(String token, HttpServletRequest request) {
         try {
             String memberId = jwtTokenProvider.getMemberId(token);
+            log.debug("Setting authentication for member ID: {}", memberId);
 
             if (StringUtils.hasText(memberId)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
@@ -103,10 +116,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Set authentication for member: {}", memberId);
+                log.info("Authentication set successfully for member: {}", memberId);
+            } else {
+                log.error("Member ID is empty from token");
             }
         } catch (Exception e) {
-            log.error("Failed to set authentication: {}", e.getMessage());
+            log.error("Failed to set authentication: {}", e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
     }

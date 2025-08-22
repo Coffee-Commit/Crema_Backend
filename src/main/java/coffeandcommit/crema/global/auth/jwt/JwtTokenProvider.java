@@ -34,10 +34,19 @@ public class JwtTokenProvider {
 
         try {
             byte[] keyBytes = Decoders.BASE64.decode(secret);
+
+            // HS512 알고리즘을 위한 최소 키 길이 검증 (512비트 = 64바이트)
+            if (keyBytes.length < 64) {
+                throw new IllegalArgumentException(
+                        String.format("JWT secret key size is %d bits, but HS512 requires at least 512 bits (64 bytes). " +
+                                        "Current key size: %d bytes. Please use a longer secret key.",
+                                keyBytes.length * 8, keyBytes.length));
+            }
+
             this.key = Keys.hmacShaKeyFor(keyBytes);
         } catch (Exception e) {
             log.error("Failed to decode JWT secret key: {}", e.getMessage());
-            throw new IllegalArgumentException("Invalid JWT secret key", e);
+            throw new IllegalArgumentException("Invalid JWT secret key: " + e.getMessage(), e);
         }
 
         this.accessTokenValidityInMilliseconds = accessTokenExpiration;

@@ -49,7 +49,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .orElseGet(() -> createNewMember(registrationId, userInfo));
 
         // 탈퇴한 사용자의 경우 예외 처리
-        if (member.getIsDeleted()) {
+        if (Boolean.TRUE.equals(member.getIsDeleted())) {
             throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
         }
 

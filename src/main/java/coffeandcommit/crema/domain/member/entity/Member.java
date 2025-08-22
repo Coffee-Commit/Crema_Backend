@@ -50,6 +50,7 @@ public class Member {
     private String providerId; // OAuth 로그인한 유저의 ID
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean isDeleted = false;
 
     @CreatedDate

@@ -79,7 +79,7 @@ jwt:
 
 app:
   oauth2:
-    authorized-redirect-uri: http://localhost:8080/after-login # ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
+    authorized-redirect-uri: http://localhost:8080/swagger-ui/index.html # ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
   cookie:
     domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정, 개발환경에선 빈 문자열
 

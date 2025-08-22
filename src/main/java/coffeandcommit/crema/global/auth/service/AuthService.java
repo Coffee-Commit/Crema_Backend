@@ -115,18 +115,28 @@ public class AuthService {
      * 요청에서 Access Token 추출 (쿠키 우선, 헤더 백업)
      */
     public String extractAccessToken(HttpServletRequest request) {
+        log.debug("Extracting access token from request: {}", request.getRequestURI());
+
         // 1. 쿠키에서 토큰 추출 시도
         String tokenFromCookie = CookieUtil.getCookie(request, CookieUtil.ACCESS_TOKEN_COOKIE_NAME);
+        log.debug("Token from cookie: {}", tokenFromCookie != null ? "Present (length: " + tokenFromCookie.length() + ")" : "Not found");
+
         if (StringUtils.hasText(tokenFromCookie)) {
+            log.debug("Using token from cookie");
             return tokenFromCookie;
         }
 
         // 2. Authorization 헤더에서 Bearer 토큰 추출 시도
         String bearerToken = request.getHeader("Authorization");
+        log.debug("Authorization header: {}", bearerToken != null ? "Present" : "Not found");
+
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7);
+            String token = bearerToken.substring(7);
+            log.debug("Using token from Authorization header (length: {})", token.length());
+            return token;
         }
 
+        log.debug("No access token found in request");
         return null;
     }
 }
