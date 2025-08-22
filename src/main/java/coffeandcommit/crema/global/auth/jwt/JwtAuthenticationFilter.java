@@ -1,5 +1,6 @@
 package coffeandcommit.crema.global.auth.jwt;
 
+import coffeandcommit.crema.global.auth.service.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -24,13 +25,12 @@ import java.util.List;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
-
-    private static final String BEARER_PREFIX = "Bearer ";
-    private static final String AUTHORIZATION_HEADER = "Authorization";
+    private final AuthService authService;
 
     // JWT 검증을 스킵할 경로들
     private static final List<String> SKIP_PATHS = List.of(
-            "/api/auth",
+            "/api/auth/status",
+            "/api/auth/refresh",
             "/api/member/check",
             "/oauth2",
             "/login/oauth2",
@@ -55,15 +55,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            String token = resolveToken(request);
+            // 쿠키 우선, 헤더 백업으로 토큰 추출
+            String token = authService.extractAccessToken(request);
 
             if (StringUtils.hasText(token)) {
-                if (jwtTokenProvider.validateToken(token)) {
+                if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)) {
                     setAuthentication(token, request);
                     log.debug("JWT authentication successful for URI: {}", requestURI);
                 } else {
                     log.debug("Invalid JWT token for URI: {}", requestURI);
-                    // 토큰이 유효하지 않은 경우, SecurityContext를 클리어
                     SecurityContextHolder.clearContext();
                 }
             } else {
@@ -81,14 +81,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         return SKIP_PATHS.stream().anyMatch(requestURI::startsWith);
     }
 
-    private String resolveToken(HttpServletRequest request) {
-        String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
-            return bearerToken.substring(BEARER_PREFIX.length());
-        }
-        return null;
-    }
-
     private void setAuthentication(String token, HttpServletRequest request) {
         try {
             String username = jwtTokenProvider.getUsername(token);
@@ -101,7 +93,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
                 );
 
-                // WebAuthenticationDetailsSource를 사용하여 요청 정보 추가
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 

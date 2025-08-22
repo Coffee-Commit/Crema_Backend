@@ -24,7 +24,8 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
         log.error("OAuth2 인증 실패: {}", exception.getMessage());
 
         String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
-                .queryParam("error", exception.getLocalizedMessage())
+                .queryParam("status", "error")
+                .queryParam("message", exception.getLocalizedMessage())
                 .build().toUriString();
 
         response.sendRedirect(targetUrl);

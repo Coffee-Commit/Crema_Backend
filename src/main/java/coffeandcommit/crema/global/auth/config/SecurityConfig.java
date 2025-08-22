@@ -41,7 +41,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints (인증 불필요)
                         .requestMatchers(
-                                "/api/auth/**",
+                                "/api/auth/status",
+                                "/api/auth/refresh",
                                 "/api/member/check/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
@@ -54,6 +55,9 @@ public class SecurityConfig {
                                 "/actuator/health",
                                 "/actuator/info"
                         ).permitAll()
+
+                        // Auth endpoints (인증 필요)
+                        .requestMatchers("/api/auth/**").authenticated()
 
                         // Member endpoints (인증 필요)
                         .requestMatchers("/api/member/**").authenticated()
@@ -95,7 +99,7 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(true); // 쿠키 허용을 위해 필수
 
         // Preflight 요청 캐시 시간 설정 (1시간)
         configuration.setMaxAge(3600L);

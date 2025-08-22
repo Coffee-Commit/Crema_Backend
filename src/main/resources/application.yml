@@ -36,6 +36,7 @@ spring:
           min-idle: 2
   profiles:
     include: oauth
+    active: ${SPRING_PROFILES_ACTIVE:dev}
   security:
     oauth2:
       client:
@@ -84,6 +85,8 @@ jwt:
 app:
   oauth2:
     authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
+  cookie:
+    domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정
 
 management:
   endpoints:
@@ -93,3 +96,13 @@ management:
   endpoint:
     health:
       show-details: always
+
+cloud:
+  aws:
+    credentials:
+      accessKey: ${AWS_ACCESS_KEY:dummy-access-key}
+      secretKey: ${AWS_SECRET_KEY:dummy-secret-key}
+    s3:
+      bucket: ${AWS_S3_BUCKET:dummy-bucket}
+    region:
+      static: ${AWS_REGION:ap-northeast-2}
