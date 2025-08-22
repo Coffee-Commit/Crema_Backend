@@ -43,7 +43,6 @@ public class AuthController {
                                     @AuthenticationPrincipal UserDetails userDetails) {
         String userId = userDetails.getUsername();
         authService.logout(request, response, userId);
-        log.info("User logged out: {}", userId);
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
     }
 

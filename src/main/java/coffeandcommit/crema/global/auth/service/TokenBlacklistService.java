@@ -35,11 +35,9 @@ public class TokenBlacklistService {
 
                 // Redis에 토큰 저장 (TTL은 토큰의 남은 유효시간)
                 redisTemplate.opsForValue().set(key, "blacklisted", remainingTime, TimeUnit.MILLISECONDS);
-
-                log.info("Token blacklisted successfully, expires in {} ms", remainingTime);
             }
         } catch (Exception e) {
-            log.error("Failed to blacklist token: {}", e.getMessage());
+            log.error("토큰을 블랙리스트에 추가하는데 실패했습니다: {}", e.getMessage());
             // 블랙리스트 실패해도 서비스 중단되지 않도록 예외를 던지지 않음
         }
     }
@@ -57,7 +55,7 @@ public class TokenBlacklistService {
             Boolean exists = redisTemplate.hasKey(key);
             return Boolean.TRUE.equals(exists);
         } catch (Exception e) {
-            log.error("Failed to check token blacklist: {}", e.getMessage());
+            log.error("토큰 블랙리스트 확인에 실패했습니다: {}", e.getMessage());
             // Redis 오류 시 보안상 false 반환 (토큰 검증은 JWT 자체 검증으로)
             return false;
         }
@@ -70,25 +68,10 @@ public class TokenBlacklistService {
     public void blacklistUserTokens(String accessToken, String refreshToken) {
         if (accessToken != null) {
             blacklistToken(accessToken);
-            log.info("Access token blacklisted for user logout");
         }
 
         if (refreshToken != null) {
             blacklistToken(refreshToken);
-            log.info("Refresh token blacklisted for user logout");
-        }
-    }
-
-    /**
-     * 특정 패턴의 키들을 정리 (관리용, 필요시 사용)
-     */
-    public void cleanupExpiredTokens() {
-        try {
-            // Redis TTL에 의해 자동으로 만료되므로 별도 정리 불필요
-            // 필요하다면 SCAN 명령어로 만료된 키들을 찾아서 삭제 가능
-            log.debug("Token cleanup completed (TTL auto-expiry)");
-        } catch (Exception e) {
-            log.error("Failed to cleanup expired tokens: {}", e.getMessage());
         }
     }
 }

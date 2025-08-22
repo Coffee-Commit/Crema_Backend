@@ -36,8 +36,6 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         // 성공 페이지로 리다이렉트 (토큰 정보 없이)
         String targetUrl = redirectUri + "?status=success";
 
-        log.info("OAuth2 login successful for user: {}, redirecting to: {}", userId, targetUrl);
-
         response.sendRedirect(targetUrl);
     }
 }

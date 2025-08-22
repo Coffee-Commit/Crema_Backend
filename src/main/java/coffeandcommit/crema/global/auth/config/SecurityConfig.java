@@ -63,13 +63,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/member/**").authenticated()
                         .requestMatchers("/api/v1/images/**").authenticated()
 
-                        // Admin endpoints (ADMIN 권한 필요)
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
-
                         // 나머지 모든 요청은 인증 필요
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/login") // 커스텀 로그인 페이지 설정
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
@@ -94,7 +92,7 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"
+                "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
@@ -102,17 +100,6 @@ public class SecurityConfig {
 
         // Preflight 요청 캐시 시간 설정 (1시간)
         configuration.setMaxAge(3600L);
-
-        // 응답 헤더 노출 설정
-        configuration.setExposedHeaders(Arrays.asList(
-                "Authorization",
-                "Content-Type",
-                "X-Requested-With",
-                "accept",
-                "Origin",
-                "Access-Control-Request-Method",
-                "Access-Control-Request-Headers"
-        ));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

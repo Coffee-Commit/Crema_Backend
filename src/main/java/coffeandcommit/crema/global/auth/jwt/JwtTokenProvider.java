@@ -1,5 +1,7 @@
 package coffeandcommit.crema.global.auth.jwt;
 
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -45,12 +47,9 @@ public class JwtTokenProvider {
                 accessTokenExpiration, refreshTokenExpiration);
     }
 
-    /**
-     * Access Token 생성
-     */
     public String createAccessToken(String userId) {
         if (!StringUtils.hasText(userId)) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
+            throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
 
         Date now = new Date();
@@ -69,16 +68,13 @@ public class JwtTokenProvider {
             return token;
         } catch (Exception e) {
             log.error("Failed to create access token for user: {} - {}", userId, e.getMessage());
-            throw new RuntimeException("토큰 생성에 실패했습니다.", e);
+            throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    /**
-     * Refresh Token 생성
-     */
     public String createRefreshToken(String userId) {
         if (!StringUtils.hasText(userId)) {
-            throw new IllegalArgumentException("Username cannot be null or empty");
+            throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
 
         Date now = new Date();
@@ -97,13 +93,10 @@ public class JwtTokenProvider {
             return token;
         } catch (Exception e) {
             log.error("Failed to create refresh token for user: {} - {}", userId, e.getMessage());
-            throw new RuntimeException("리프레시 토큰 생성에 실패했습니다.", e);
+            throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    /**
-     * 토큰에서 사용자명 추출
-     */
     public String getUsername(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -114,31 +107,10 @@ public class JwtTokenProvider {
             return claims.getSubject();
         } catch (JwtException e) {
             log.debug("Failed to extract userId from token: {}", e.getMessage());
-            throw new IllegalArgumentException("토큰에서 사용자명 추출에 실패했습니다.", e);
+            throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
     }
 
-    /**
-     * 토큰에서 역할 추출 (더 이상 사용하지 않음 - 삭제 예정)
-     */
-    @Deprecated
-    public String getRole(String token) {
-        try {
-            Claims claims = Jwts.parserBuilder()
-                    .setSigningKey(key)
-                    .build()
-                    .parseClaimsJws(token)
-                    .getBody();
-            return claims.get("role", String.class);
-        } catch (JwtException e) {
-            log.debug("Failed to extract role from token: {}", e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * 토큰 타입 확인 (access, refresh)
-     */
     public String getTokenType(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -153,9 +125,6 @@ public class JwtTokenProvider {
         }
     }
 
-    /**
-     * 토큰 만료 시간 확인
-     */
     public Date getExpiration(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -166,13 +135,10 @@ public class JwtTokenProvider {
             return claims.getExpiration();
         } catch (JwtException e) {
             log.debug("Failed to extract expiration from token: {}", e.getMessage());
-            throw new IllegalArgumentException("토큰에서 만료 시간 추출에 실패했습니다.", e);
+            throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
     }
 
-    /**
-     * 토큰 유효성 검증
-     */
     public boolean validateToken(String token) {
         if (!StringUtils.hasText(token)) {
             return false;
@@ -198,25 +164,16 @@ public class JwtTokenProvider {
         return false;
     }
 
-    /**
-     * Access Token인지 확인
-     */
     public boolean isAccessToken(String token) {
         String tokenType = getTokenType(token);
         return "access".equals(tokenType);
     }
 
-    /**
-     * Refresh Token인지 확인
-     */
     public boolean isRefreshToken(String token) {
         String tokenType = getTokenType(token);
         return "refresh".equals(tokenType);
     }
 
-    /**
-     * 토큰 만료까지 남은 시간 (밀리초)
-     */
     public long getRemainingTime(String token) {
         try {
             Date expiration = getExpiration(token);

@@ -67,7 +67,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         // 사용자 정보 업데이트 (프로필 이미지, 이름 등이 변경될 수 있음)
         updateMemberInfo(member, userInfo);
 
-        log.info("OAuth2 user processed successfully: {} ({})", member.getUserId(), registrationId);
         return new CustomOAuth2User(member, oAuth2User.getAttributes());
     }
 
@@ -84,7 +83,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private Member createNewMember(String provider, OAuth2UserInfo userInfo) {
-        log.info("Creating new member for provider: {} with email: {}", provider, userInfo.getEmail());
 
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
@@ -99,14 +97,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(userInfo.getId())
                 .build();
 
-        Member savedMember = memberRepository.save(member);
-        log.info("New member created: {} with ID: {}", savedMember.getUserId(), savedMember.getId());
-        return savedMember;
+        return memberRepository.save(member);
     }
 
     private Member linkOAuthAccount(Member existingMember, String provider, OAuth2UserInfo userInfo) {
-        log.info("Linking OAuth account to existing member: {} with provider: {}",
-                existingMember.getUserId(), provider);
 
         // 기존 사용자에게 OAuth 정보 연결
         Member updatedMember = existingMember.toBuilder()
@@ -131,7 +125,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (updated) {
             memberRepository.save(member);
-            log.info("Member info updated: {}", member.getUserId());
         }
     }
 
@@ -168,7 +161,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             nickname = cleanedBaseName + "_" + System.currentTimeMillis() % 100000;
         }
 
-        log.debug("Generated unique nickname: {} (attempts: {})", nickname, attempts);
         return nickname;
     }
 

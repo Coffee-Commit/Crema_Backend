@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.util.Arrays;
-import java.util.Optional;
 
 @Component
 public class CookieUtil {
@@ -16,33 +15,20 @@ public class CookieUtil {
     public static final String ACCESS_TOKEN_COOKIE_NAME = "access_token";
     public static final String REFRESH_TOKEN_COOKIE_NAME = "refresh_token";
 
-    private static String domain;
-    private static boolean isProduction;
+    private final String domain;
+    private final boolean isProduction;
 
-    @Value("${app.cookie.domain:}")
-    public void setDomain(String domain) {
-        CookieUtil.domain = domain;
-    }
-
-    @Value("${spring.profiles.active:dev}")
-    public void setActiveProfile(String profile) {
-        CookieUtil.isProduction = "prod".equals(profile) || "production".equals(profile);
+    public CookieUtil(
+            @Value("${app.cookie.domain:}") String domain,
+            @Value("${spring.profiles.active:dev}") String profile) {
+        this.domain = domain;
+        this.isProduction = "prod".equals(profile) || "production".equals(profile);
     }
 
     /**
      * 쿠키 추가
      */
-    public static void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
-        Cookie cookie = new Cookie(name, value);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(maxAge);
-
-        // 운영환경에서는 Secure 설정
-        if (isProduction) {
-            cookie.setSecure(true);
-        }
-
+    public void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
         // SameSite 설정을 위한 헤더 직접 설정
         String cookieHeader = createCookieHeader(name, value, maxAge);
         response.addHeader("Set-Cookie", cookieHeader);
@@ -51,23 +37,14 @@ public class CookieUtil {
     /**
      * 쿠키 삭제
      */
-    public static void deleteCookie(HttpServletResponse response, String name) {
-        Cookie cookie = new Cookie(name, "");
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(0);
-
-        if (isProduction) {
-            cookie.setSecure(true);
-        }
-
+    public void deleteCookie(HttpServletResponse response, String name) {
         // SameSite 설정을 위한 헤더 직접 설정
         String cookieHeader = createDeleteCookieHeader(name);
         response.addHeader("Set-Cookie", cookieHeader);
     }
 
     /**
-     * 쿠키 값 조회
+     * 쿠키 값 조회 (static 유지 - 조회만 하므로 설정값 불필요)
      */
     public static String getCookie(HttpServletRequest request, String name) {
         if (request.getCookies() == null) {
@@ -84,7 +61,7 @@ public class CookieUtil {
     /**
      * SameSite 속성을 포함한 쿠키 헤더 생성
      */
-    private static String createCookieHeader(String name, String value, int maxAge) {
+    private String createCookieHeader(String name, String value, int maxAge) {
         StringBuilder sb = new StringBuilder();
         sb.append(name).append("=").append(value);
         sb.append("; Path=/");
@@ -106,7 +83,7 @@ public class CookieUtil {
     /**
      * 쿠키 삭제용 헤더 생성
      */
-    private static String createDeleteCookieHeader(String name) {
+    private String createDeleteCookieHeader(String name) {
         StringBuilder sb = new StringBuilder();
         sb.append(name).append("=");
         sb.append("; Path=/");
