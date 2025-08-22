@@ -44,6 +44,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
             scope:
               - email
               - profile
@@ -55,7 +56,6 @@ spring:
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             scope:
               - profile_nickname
-              - account_email
         provider:
           kakao:
             authorization-uri: https://kauth.kakao.com/oauth/authorize
@@ -79,7 +79,7 @@ jwt:
 
 app:
   oauth2:
-    authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
+    authorized-redirect-uri: http://localhost:8080/after-login # ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
   cookie:
     domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정, 개발환경에선 빈 문자열
 

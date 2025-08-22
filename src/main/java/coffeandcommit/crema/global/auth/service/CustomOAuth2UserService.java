@@ -44,22 +44,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo userInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
-        // 이메일 정보 필수 체크
-        if (!StringUtils.hasText(userInfo.getEmail())) {
-            log.error("OAuth2 authentication failed: Email not found from provider {}", registrationId);
-            throw new OAuth2AuthenticationException("이메일 정보를 찾을 수 없습니다.");
-        }
+        // 이메일 처리 - 없으면 임시 이메일 생성
+        final String email = StringUtils.hasText(userInfo.getEmail())
+                ? userInfo.getEmail()
+                : String.format("%s_%s@temp.crema.com", registrationId, userInfo.getId());
 
         // 기존 사용자 확인 또는 새 사용자 생성
         Member member = memberRepository.findByProviderAndProviderId(registrationId, userInfo.getId())
                 .orElseGet(() -> {
                     // 이메일로 기존 사용자 확인 (다른 OAuth 제공자로 이미 가입한 경우)
-                    return memberRepository.findByUserId(userInfo.getEmail())
+                    return memberRepository.findByUserId(email)
                             .map(existingMember -> linkOAuthAccount(existingMember, registrationId, userInfo))
-                            .orElseGet(() -> createNewMember(registrationId, userInfo));
+                            .orElseGet(() -> createNewMember(registrationId, userInfo, email));
                 });
 
-        // 탈퇴한 사용자의 경우 예외 처리, 재가입은 mvp에서 처리하지 않음
+        // 탈퇴한 사용자의 경우 예외 처리
         if (member.getIsDeleted()) {
             throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
         }
@@ -82,13 +81,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    private Member createNewMember(String provider, OAuth2UserInfo userInfo) {
-
+    private Member createNewMember(String provider, OAuth2UserInfo userInfo, String email) {
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
         Member member = Member.builder()
                 .id(UUID.randomUUID().toString())
-                .userId(userInfo.getEmail())
+                .userId(email) // 실제 이메일 또는 임시 이메일
                 .nickname(uniqueNickname)
                 .role(MemberRole.ROOKIE)
                 .point(0) // 초기 포인트
@@ -97,16 +95,21 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(userInfo.getId())
                 .build();
 
+        log.info("Creating new member with provider: {}, email: {}, nickname: {}",
+                provider, email, uniqueNickname);
+
         return memberRepository.save(member);
     }
 
     private Member linkOAuthAccount(Member existingMember, String provider, OAuth2UserInfo userInfo) {
-
         // 기존 사용자에게 OAuth 정보 연결
         Member updatedMember = existingMember.toBuilder()
                 .provider(provider)
                 .providerId(userInfo.getId())
                 .build();
+
+        log.info("Linking OAuth account to existing member: {} with provider: {}",
+                existingMember.getId(), provider);
 
         return memberRepository.save(updatedMember);
     }
@@ -125,6 +128,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         if (updated) {
             memberRepository.save(member);
+            log.info("Updated member info for: {}", member.getId());
         }
     }
 
@@ -141,12 +145,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String nickname = cleanedBaseName;
 
-        // 중복 체크 후 base 이름에 UUID 추가
+        // 중복 체크 후 UUID 추가
         if (memberRepository.existsByNickname(nickname)) {
             String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
             nickname = cleanedBaseName + "_" + randomSuffix;
 
-            // uuid가 중복인 1/1600만의 확률인 경우 최종 안전장치로 타입 스탬프 사용
+            // 극히 드문 경우의 최종 안전장치 (UUID 충돌 시)
             if (memberRepository.existsByNickname(nickname)) {
                 nickname = cleanedBaseName + "_" + System.currentTimeMillis() % 100000;
             }
