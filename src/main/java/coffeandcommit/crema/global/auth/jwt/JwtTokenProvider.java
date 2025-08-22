@@ -47,8 +47,8 @@ public class JwtTokenProvider {
                 accessTokenExpiration, refreshTokenExpiration);
     }
 
-    public String createAccessToken(String userId) {
-        if (!StringUtils.hasText(userId)) {
+    public String createAccessToken(String memberId) {
+        if (!StringUtils.hasText(memberId)) {
             throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
 
@@ -57,23 +57,23 @@ public class JwtTokenProvider {
 
         try {
             String token = Jwts.builder()
-                    .setSubject(userId)
+                    .setSubject(memberId)
                     .claim("type", "access")
                     .setIssuedAt(now)
                     .setExpiration(validity)
                     .signWith(key, SignatureAlgorithm.HS512)
                     .compact();
 
-            log.debug("Access token created for user: {}", userId);
+            log.debug("Access token created for member: {}", memberId);
             return token;
         } catch (Exception e) {
-            log.error("Failed to create access token for user: {} - {}", userId, e.getMessage());
+            log.error("Failed to create access token for member: {} - {}", memberId, e.getMessage());
             throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public String createRefreshToken(String userId) {
-        if (!StringUtils.hasText(userId)) {
+    public String createRefreshToken(String memberId) {
+        if (!StringUtils.hasText(memberId)) {
             throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
 
@@ -82,22 +82,22 @@ public class JwtTokenProvider {
 
         try {
             String token = Jwts.builder()
-                    .setSubject(userId)
+                    .setSubject(memberId)
                     .claim("type", "refresh")
                     .setIssuedAt(now)
                     .setExpiration(validity)
                     .signWith(key, SignatureAlgorithm.HS512)
                     .compact();
 
-            log.debug("Refresh token created for user: {}", userId);
+            log.debug("Refresh token created for member: {}", memberId);
             return token;
         } catch (Exception e) {
-            log.error("Failed to create refresh token for user: {} - {}", userId, e.getMessage());
+            log.error("Failed to create refresh token for member: {} - {}", memberId, e.getMessage());
             throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    public String getUsername(String token) {
+    public String getMemberId(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
                     .setSigningKey(key)
@@ -106,9 +106,14 @@ public class JwtTokenProvider {
                     .getBody();
             return claims.getSubject();
         } catch (JwtException e) {
-            log.debug("Failed to extract userId from token: {}", e.getMessage());
+            log.debug("Failed to extract memberId from token: {}", e.getMessage());
             throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
+    }
+
+    // Spring Security와 호환성을 위해 getUsername 메소드 유지 (내부적으로 getMemberId 호출)
+    public String getUsername(String token) {
+        return getMemberId(token);
     }
 
     public String getTokenType(String token) {

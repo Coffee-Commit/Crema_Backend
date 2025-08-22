@@ -2,7 +2,6 @@ package coffeandcommit.crema.global.auth.controller;
 
 import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
 import coffeandcommit.crema.domain.member.service.MemberService;
-import coffeandcommit.crema.global.auth.jwt.JwtTokenProvider;
 import coffeandcommit.crema.global.auth.service.AuthService;
 import coffeandcommit.crema.global.common.exception.response.ApiResponse;
 import coffeandcommit.crema.global.common.exception.code.SuccessStatus;
@@ -31,8 +30,8 @@ public class AuthController {
     @SecurityRequirement(name = "JWT")
     @GetMapping("/me")
     public ApiResponse<MemberResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        String userId = userDetails.getUsername();
-        MemberResponse member = memberService.getMemberByUserId(userId);
+        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
+        MemberResponse member = memberService.getMemberById(memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
@@ -41,8 +40,8 @@ public class AuthController {
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response,
                                     @AuthenticationPrincipal UserDetails userDetails) {
-        String userId = userDetails.getUsername();
-        authService.logout(request, response, userId);
+        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
+        authService.logout(request, response, memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
     }
 

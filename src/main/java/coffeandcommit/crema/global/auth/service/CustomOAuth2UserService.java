@@ -44,19 +44,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo userInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
-        // 이메일 처리 - 없으면 임시 이메일 생성
-        final String email = StringUtils.hasText(userInfo.getEmail())
-                ? userInfo.getEmail()
-                : String.format("%s_%s@temp.crema.com", registrationId, userInfo.getId());
-
         // 기존 사용자 확인 또는 새 사용자 생성
         Member member = memberRepository.findByProviderAndProviderId(registrationId, userInfo.getId())
-                .orElseGet(() -> {
-                    // 이메일로 기존 사용자 확인 (다른 OAuth 제공자로 이미 가입한 경우)
-                    return memberRepository.findByUserId(email)
-                            .map(existingMember -> linkOAuthAccount(existingMember, registrationId, userInfo))
-                            .orElseGet(() -> createNewMember(registrationId, userInfo, email));
-                });
+                .orElseGet(() -> createNewMember(registrationId, userInfo));
 
         // 탈퇴한 사용자의 경우 예외 처리
         if (member.getIsDeleted()) {
@@ -81,12 +71,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
     }
 
-    private Member createNewMember(String provider, OAuth2UserInfo userInfo, String email) {
+    private Member createNewMember(String provider, OAuth2UserInfo userInfo) {
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
         Member member = Member.builder()
                 .id(UUID.randomUUID().toString())
-                .userId(email) // 실제 이메일 또는 임시 이메일
                 .nickname(uniqueNickname)
                 .role(MemberRole.ROOKIE)
                 .point(0) // 초기 포인트
@@ -95,23 +84,10 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(userInfo.getId())
                 .build();
 
-        log.info("Creating new member with provider: {}, email: {}, nickname: {}",
-                provider, email, uniqueNickname);
+        log.info("Creating new member with provider: {}, nickname: {}",
+                provider, uniqueNickname);
 
         return memberRepository.save(member);
-    }
-
-    private Member linkOAuthAccount(Member existingMember, String provider, OAuth2UserInfo userInfo) {
-        // 기존 사용자에게 OAuth 정보 연결
-        Member updatedMember = existingMember.toBuilder()
-                .provider(provider)
-                .providerId(userInfo.getId())
-                .build();
-
-        log.info("Linking OAuth account to existing member: {} with provider: {}",
-                existingMember.getId(), provider);
-
-        return memberRepository.save(updatedMember);
     }
 
     private void updateMemberInfo(Member member, OAuth2UserInfo userInfo) {

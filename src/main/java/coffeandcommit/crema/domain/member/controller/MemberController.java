@@ -23,12 +23,12 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @Operation(summary = "회원 정보 조회 (사용자 아이디)", description = "사용자 아이디(이메일)로 회원 정보를 조회합니다.")
+    @Operation(summary = "회원 정보 조회 (ID)", description = "회원 ID로 회원 정보를 조회합니다.")
     @SecurityRequirement(name = "JWT")
-    @GetMapping("/userId/{userId}")
-    public ApiResponse<MemberResponse> getMemberByUserId(
-            @Parameter(description = "사용자 아이디 (이메일)", required = true) @PathVariable String userId) {
-        MemberResponse member = memberService.getMemberByUserId(userId);
+    @GetMapping("/id/{memberId}")
+    public ApiResponse<MemberResponse> getMemberById(
+            @Parameter(description = "회원 ID", required = true) @PathVariable String memberId) {
+        MemberResponse member = memberService.getMemberById(memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
@@ -46,8 +46,8 @@ public class MemberController {
     @GetMapping("/me")
     public ApiResponse<MemberResponse> getMyInfo(
             @AuthenticationPrincipal UserDetails userDetails) {
-        String userId = userDetails.getUsername(); // Spring Security에서 사용자 식별자는 username으로만 접근 가능
-        MemberResponse member = memberService.getMemberByUserId(userId);
+        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
+        MemberResponse member = memberService.getMemberById(memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
@@ -60,13 +60,12 @@ public class MemberController {
             @Parameter(description = "프로필 이미지 URL") @RequestParam(required = false) String profileImageUrl,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails.getUsername(); // Spring Security username = 우리의 userId
-        MemberResponse currentMember = memberService.getMemberByUserId(userId);
+        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
 
         MemberResponse updatedMember = memberService.updateMemberProfile(
-                currentMember.getId(), nickname, description, profileImageUrl);
+                memberId, nickname, description, profileImageUrl);
 
-        log.info("Profile updated by user: {}", userId);
+        log.info("Profile updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, updatedMember);
     }
 
@@ -76,20 +75,10 @@ public class MemberController {
     public ApiResponse<Void> deleteMember(
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails.getUsername(); // JWT에서 본인 userId 추출
-        MemberResponse currentMember = memberService.getMemberByUserId(userId);
-
-        memberService.deleteMember(currentMember.getId());
-        log.info("Member self-deleted: {}", userId);
+        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
+        memberService.deleteMember(memberId);
+        log.info("Member self-deleted: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
-    }
-
-    @Operation(summary = "사용자 아이디 중복 확인", description = "사용자 아이디(이메일) 사용 가능 여부를 확인합니다.")
-    @GetMapping("/check/userId/{userId}")
-    public ApiResponse<Boolean> checkUserIdAvailability(
-            @Parameter(description = "확인할 사용자 아이디 (이메일)", required = true) @PathVariable String userId) {
-        boolean available = memberService.isUserIdAvailable(userId);
-        return ApiResponse.onSuccess(SuccessStatus.OK, available);
     }
 
     @Operation(summary = "닉네임 중복 확인", description = "닉네임 사용 가능 여부를 확인합니다.")

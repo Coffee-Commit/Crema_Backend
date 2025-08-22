@@ -9,7 +9,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
@@ -92,11 +91,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private void setAuthentication(String token, HttpServletRequest request) {
         try {
-            String username = jwtTokenProvider.getUsername(token);
+            String memberId = jwtTokenProvider.getMemberId(token);
 
-            if (StringUtils.hasText(username)) {
+            if (StringUtils.hasText(memberId)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        username,
+                        memberId, // member ID를 username으로 설정
                         null,
                         Collections.emptyList() // role 없이 빈 권한 리스트
                 );
@@ -104,7 +103,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Set authentication for user: {}", username);
+                log.debug("Set authentication for member: {}", memberId);
             }
         } catch (Exception e) {
             log.error("Failed to set authentication: {}", e.getMessage());

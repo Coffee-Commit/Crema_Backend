@@ -28,10 +28,10 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                                         Authentication authentication) throws IOException {
 
         CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
-        String userId = oAuth2User.getMember().getUserId();
+        String memberId = oAuth2User.getMember().getId();
 
         // 쿠키에 토큰 설정
-        authService.setTokensToCookie(response, userId);
+        authService.setTokensToCookie(response, memberId);
 
         // 성공 페이지로 리다이렉트 (토큰 정보 없이)
         String targetUrl = redirectUri + "?status=success";

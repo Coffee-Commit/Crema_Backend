@@ -28,15 +28,6 @@ public class MemberService {
     }
 
     /**
-     * 사용자 아이디로 회원 조회 (로그인 아이디 = 이메일)
-     */
-    public MemberResponse getMemberByUserId(String userId) {
-        Member member = memberRepository.findByUserId(userId)
-                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
-        return MemberMapper.INSTANCE.memberToMemberResponse(member);
-    }
-
-    /**
      * 닉네임으로 회원 조회
      */
     public MemberResponse getMemberByNickname(String nickname) {
@@ -80,16 +71,6 @@ public class MemberService {
         member.softDelete(); // isDeleted = true로 변경
         memberRepository.save(member);
         log.info("Member soft deleted: {}", id);
-    }
-
-    /**
-     * 사용자 아이디 사용 가능 여부 확인
-     */
-    public boolean isUserIdAvailable(String userId) {
-        if (userId == null || userId.trim().isEmpty()) {
-            return false;
-        }
-        return !memberRepository.existsByUserId(userId);
     }
 
     /**

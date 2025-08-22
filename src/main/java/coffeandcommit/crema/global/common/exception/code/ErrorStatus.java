@@ -18,7 +18,6 @@ public enum ErrorStatus implements BaseCode {
 
     // Member Domain
     MEMBER_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 사용자를 찾을 수 없습니다."),
-    USERNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 사용자 아이디입니다."),
     NICKNAME_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 닉네임입니다."),
     INVALID_NICKNAME_FORMAT(HttpStatus.BAD_REQUEST, "닉네임 형식이 올바르지 않습니다. (2-32자, 한글/영문/숫자/언더스코어만 허용)"),
     PHONE_NUMBER_DUPLICATED(HttpStatus.BAD_REQUEST, "이미 사용 중인 전화번호입니다."),
