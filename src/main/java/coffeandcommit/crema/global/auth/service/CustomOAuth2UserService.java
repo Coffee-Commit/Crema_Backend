@@ -140,25 +140,16 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         }
 
         String nickname = cleanedBaseName;
-        int attempts = 0;
-        final int MAX_ATTEMPTS = 100;
 
-        // 닉네임 중복 확인 및 고유한 닉네임 생성
-        while (memberRepository.existsByNickname(nickname) && attempts < MAX_ATTEMPTS) {
-            attempts++;
-            if (attempts <= 10) {
-                // 처음 10번은 간단한 숫자 추가
-                nickname = cleanedBaseName + attempts;
-            } else {
-                // 그 이후는 UUID 일부 추가
-                String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
-                nickname = cleanedBaseName + "_" + randomSuffix;
-            }
-        }
-
-        // 최대 시도 횟수를 초과한 경우 타임스탬프 추가
+        // 중복 체크 후 base 이름에 UUID 추가
         if (memberRepository.existsByNickname(nickname)) {
-            nickname = cleanedBaseName + "_" + System.currentTimeMillis() % 100000;
+            String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
+            nickname = cleanedBaseName + "_" + randomSuffix;
+
+            // uuid가 중복인 1/1600만의 확률인 경우 최종 안전장치로 타입 스탬프 사용
+            if (memberRepository.existsByNickname(nickname)) {
+                nickname = cleanedBaseName + "_" + System.currentTimeMillis() % 100000;
+            }
         }
 
         return nickname;

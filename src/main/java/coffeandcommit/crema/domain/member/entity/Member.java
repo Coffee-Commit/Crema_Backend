@@ -3,14 +3,14 @@ package coffeandcommit.crema.domain.member.entity;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import jakarta.persistence.*;
 import lombok.*;
-import org.hibernate.annotations.Where;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Where(clause = "is_deleted = false")
+@SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @Table(name = "member")
 public class Member {
 
