@@ -17,60 +17,83 @@ import org.springframework.util.StringUtils;
 public class AuthService {
 
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenBlacklistService tokenBlacklistService;
 
     /**
      * 쿠키에 JWT 토큰 설정
      */
-    public void setTokensToCookie(HttpServletResponse response, String accessToken, String refreshToken) {
-        // Access Token 쿠키 설정 (30분)
+    public void setTokensToCookie(HttpServletResponse response, String userId) {
+        // JWT 토큰 생성
+        String accessToken = jwtTokenProvider.createAccessToken(userId);
+        String refreshToken = jwtTokenProvider.createRefreshToken(userId);
+
+        // 쿠키에 설정
         CookieUtil.addCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE_NAME, accessToken,
                 (int) (jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000));
 
-        // Refresh Token 쿠키 설정 (14일)
         CookieUtil.addCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME, refreshToken,
                 (int) (jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000));
 
-        log.info("JWT tokens set to cookies successfully");
+        log.info("JWT tokens set to cookies for user: {}", userId);
     }
 
     /**
-     * 로그아웃 - 쿠키에서 토큰 삭제
+     * 로그아웃 - 쿠키 삭제 및 토큰 블랙리스트 추가
      */
-    public void logout(HttpServletResponse response) {
+    public void logout(HttpServletRequest request, HttpServletResponse response, String userId) {
+        // 현재 토큰들을 블랙리스트에 추가
+        String accessToken = extractAccessToken(request);
+        String refreshToken = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
+
+        tokenBlacklistService.blacklistUserTokens(accessToken, refreshToken);
+
+        // 쿠키 삭제
         CookieUtil.deleteCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE_NAME);
         CookieUtil.deleteCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
-        log.info("Logout completed - cookies cleared");
+
+        log.info("Logout completed for user: {} - cookies cleared and tokens blacklisted", userId);
     }
 
     /**
      * 토큰 갱신
      */
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
-        String refreshToken = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
+        String refreshTokenValue = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
 
-        if (!StringUtils.hasText(refreshToken)) {
+        if (!StringUtils.hasText(refreshTokenValue)) {
             throw new BaseException(ErrorStatus.MISSING_TOKEN);
         }
 
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
+        // 토큰 검증
+        if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
             throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
 
-        if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
+        if (!jwtTokenProvider.isRefreshToken(refreshTokenValue)) {
             throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
 
-        // 기존 토큰에서 사용자 정보 추출
-        String userId = jwtTokenProvider.getUsername(refreshToken);
+        // 블랙리스트 확인
+        if (tokenBlacklistService.isTokenBlacklisted(refreshTokenValue)) {
+            throw new BaseException(ErrorStatus.INVALID_TOKEN);
+        }
 
-        // 새로운 Access Token 생성 (기존 Refresh Token의 role 정보 필요)
-        // Refresh Token에는 role 정보가 없으므로, 사용자 정보를 다시 조회해야 함
-        // 여기서는 간단히 ROOKIE로 설정하지만, 실제로는 DB에서 조회해야 함
-        String newAccessToken = jwtTokenProvider.createAccessToken(userId, "ROOKIE"); // TODO: DB에서 실제 role 조회
+        // 기존 토큰들을 블랙리스트에 추가
+        String oldAccessToken = extractAccessToken(request);
+        tokenBlacklistService.blacklistUserTokens(oldAccessToken, refreshTokenValue);
+
+        // 새로운 토큰 생성
+        String userId = jwtTokenProvider.getUsername(refreshTokenValue);
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId);
         String newRefreshToken = jwtTokenProvider.createRefreshToken(userId);
 
         // 새로운 토큰을 쿠키에 설정
-        setTokensToCookie(response, newAccessToken, newRefreshToken);
+        CookieUtil.addCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE_NAME, newAccessToken,
+                (int) (jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000));
+
+        CookieUtil.addCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken,
+                (int) (jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000));
 
         log.info("Tokens refreshed for user: {}", userId);
     }
@@ -79,13 +102,19 @@ public class AuthService {
      * 현재 로그인 상태 확인
      */
     public boolean isAuthenticated(HttpServletRequest request) {
-        String accessToken = CookieUtil.getCookie(request, CookieUtil.ACCESS_TOKEN_COOKIE_NAME);
+        String accessToken = extractAccessToken(request);
 
         if (!StringUtils.hasText(accessToken)) {
             return false;
         }
 
-        return jwtTokenProvider.validateToken(accessToken) && jwtTokenProvider.isAccessToken(accessToken);
+        // JWT 자체 검증
+        if (!jwtTokenProvider.validateToken(accessToken) || !jwtTokenProvider.isAccessToken(accessToken)) {
+            return false;
+        }
+
+        // 블랙리스트 확인
+        return !tokenBlacklistService.isTokenBlacklisted(accessToken);
     }
 
     /**

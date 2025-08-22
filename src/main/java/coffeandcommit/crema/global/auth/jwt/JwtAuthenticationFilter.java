@@ -1,6 +1,7 @@
 package coffeandcommit.crema.global.auth.jwt;
 
 import coffeandcommit.crema.global.auth.service.AuthService;
+import coffeandcommit.crema.global.auth.service.TokenBlacklistService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -26,6 +27,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthService authService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     // JWT 검증을 스킵할 경로들
     private static final List<String> SKIP_PATHS = List.of(
@@ -59,9 +61,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String token = authService.extractAccessToken(request);
 
             if (StringUtils.hasText(token)) {
+                // JWT 토큰 검증
                 if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)) {
-                    setAuthentication(token, request);
-                    log.debug("JWT authentication successful for URI: {}", requestURI);
+                    // 블랙리스트 확인
+                    if (!tokenBlacklistService.isTokenBlacklisted(token)) {
+                        setAuthentication(token, request);
+                        log.debug("JWT authentication successful for URI: {}", requestURI);
+                    } else {
+                        log.debug("Blacklisted token used for URI: {}", requestURI);
+                        SecurityContextHolder.clearContext();
+                    }
                 } else {
                     log.debug("Invalid JWT token for URI: {}", requestURI);
                     SecurityContextHolder.clearContext();
@@ -84,19 +93,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private void setAuthentication(String token, HttpServletRequest request) {
         try {
             String username = jwtTokenProvider.getUsername(token);
-            String role = jwtTokenProvider.getRole(token);
 
-            if (StringUtils.hasText(username) && StringUtils.hasText(role)) {
+            if (StringUtils.hasText(username)) {
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         username,
                         null,
-                        Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + role))
+                        Collections.emptyList() // role 없이 빈 권한 리스트
                 );
 
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
 
-                log.debug("Set authentication for user: {} with role: {}", username, role);
+                log.debug("Set authentication for user: {}", username);
             }
         } catch (Exception e) {
             log.error("Failed to set authentication: {}", e.getMessage());

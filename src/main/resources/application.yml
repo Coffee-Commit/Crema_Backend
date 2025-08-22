@@ -72,11 +72,6 @@ spring:
 server:
   port: 8080
 
-logging:
-  level:
-    org.springframework.security: debug
-    root: info
-
 jwt:
   secret: ${JWT_KEY} # 랜덤 비밀키(Base64 인코딩됨)
   access-token-expiration: 1800000  # 30분 (밀리초)
@@ -86,16 +81,7 @@ app:
   oauth2:
     authorized-redirect-uri: ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
   cookie:
-    domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정
-
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics
-  endpoint:
-    health:
-      show-details: always
+    domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정, 개발환경에선 빈 문자열
 
 cloud:
   aws:

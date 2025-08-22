@@ -26,7 +26,6 @@ public class AuthController {
 
     private final AuthService authService;
     private final MemberService memberService;
-    private final JwtTokenProvider jwtTokenProvider;
 
     @Operation(summary = "현재 로그인 사용자 정보 조회", description = "쿠키의 JWT 토큰을 통해 현재 로그인된 사용자 정보를 조회합니다.")
     @SecurityRequirement(name = "JWT")
@@ -37,13 +36,13 @@ public class AuthController {
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
-    @Operation(summary = "로그아웃", description = "쿠키에서 JWT 토큰을 삭제하여 로그아웃 처리합니다.")
+    @Operation(summary = "로그아웃", description = "쿠키에서 JWT 토큰을 삭제하고 토큰을 블랙리스트에 추가하여 로그아웃 처리합니다.")
     @SecurityRequirement(name = "JWT")
     @PostMapping("/logout")
-    public ApiResponse<Void> logout(HttpServletResponse response,
+    public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response,
                                     @AuthenticationPrincipal UserDetails userDetails) {
         String userId = userDetails.getUsername();
-        authService.logout(response);
+        authService.logout(request, response, userId);
         log.info("User logged out: {}", userId);
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
     }

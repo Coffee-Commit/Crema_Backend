@@ -48,9 +48,9 @@ public class JwtTokenProvider {
     /**
      * Access Token 생성
      */
-    public String createAccessToken(String userId, String role) {
-        if (!StringUtils.hasText(userId) || !StringUtils.hasText(role)) {
-            throw new IllegalArgumentException("Username and role cannot be null or empty");
+    public String createAccessToken(String userId) {
+        if (!StringUtils.hasText(userId)) {
+            throw new IllegalArgumentException("Username cannot be null or empty");
         }
 
         Date now = new Date();
@@ -59,14 +59,13 @@ public class JwtTokenProvider {
         try {
             String token = Jwts.builder()
                     .setSubject(userId)
-                    .claim("role", role)
                     .claim("type", "access")
                     .setIssuedAt(now)
                     .setExpiration(validity)
                     .signWith(key, SignatureAlgorithm.HS512)
                     .compact();
 
-            log.debug("Access token created for user: {} with role: {}", userId, role);
+            log.debug("Access token created for user: {}", userId);
             return token;
         } catch (Exception e) {
             log.error("Failed to create access token for user: {} - {}", userId, e.getMessage());
@@ -120,8 +119,9 @@ public class JwtTokenProvider {
     }
 
     /**
-     * 토큰에서 역할 추출
+     * 토큰에서 역할 추출 (더 이상 사용하지 않음 - 삭제 예정)
      */
+    @Deprecated
     public String getRole(String token) {
         try {
             Claims claims = Jwts.parserBuilder()
@@ -132,7 +132,7 @@ public class JwtTokenProvider {
             return claims.get("role", String.class);
         } catch (JwtException e) {
             log.debug("Failed to extract role from token: {}", e.getMessage());
-            throw new IllegalArgumentException("토큰에서 역할 추출에 실패했습니다.", e);
+            return null;
         }
     }
 
