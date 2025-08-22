@@ -59,6 +59,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                             .orElseGet(() -> createNewMember(registrationId, userInfo));
                 });
 
+        // 탈퇴한 사용자의 경우 예외 처리, 재가입은 mvp에서 처리하지 않음
+        if (member.getIsDeleted()) {
+            throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
+        }
+
         // 사용자 정보 업데이트 (프로필 이미지, 이름 등이 변경될 수 있음)
         updateMemberInfo(member, userInfo);
 

@@ -3,12 +3,14 @@ package coffeandcommit.crema.domain.member.entity;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.Where;
 
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
 @Builder(toBuilder = true)
+@Where(clause = "is_deleted = false")
 @Table(name = "member")
 public class Member {
 
@@ -42,6 +44,9 @@ public class Member {
 
     @Column(nullable = true, length = 100)
     private String providerId; // OAuth 로그인한 유저의 ID
+
+    @Column(nullable = false)
+    private Boolean isDeleted = false;
 
     // 프로필 업데이트 메서드
     public void updateProfile(String nickname, String description, String profileImageUrl) {
@@ -81,5 +86,10 @@ public class Member {
             throw new IllegalArgumentException("포인트는 0 이상이어야 합니다.");
         }
         this.point = point;
+    }
+
+    // 소프트 삭제 메서드
+    public void softDelete() {
+        this.isDeleted = true;
     }
 }

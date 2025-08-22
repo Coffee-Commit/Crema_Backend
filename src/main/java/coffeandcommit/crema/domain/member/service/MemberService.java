@@ -76,11 +76,10 @@ public class MemberService {
      */
     @Transactional
     public void deleteMember(String id) {
-        if (!memberRepository.existsById(id)) {
-            throw new BaseException(ErrorStatus.MEMBER_NOT_FOUND);
-        }
-        memberRepository.deleteById(id);
-        log.info("Member deleted: {}", id);
+        Member member = findMemberById(id);
+        member.softDelete(); // isDeleted = true로 변경
+        memberRepository.save(member);
+        log.info("Member soft deleted: {}", id);
     }
 
     /**
