@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.member.entity;
 
 import coffeandcommit.crema.domain.member.enums.MemberRole;
+import coffeandcommit.crema.global.common.entitiy.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
@@ -17,12 +18,12 @@ import java.time.LocalDateTime;
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
-        @Index(name = "idx_member_nickname", columnList = "nickname")
+        @Index(name = "idx_member_nickname", columnList = "nicknsame")
 })
-public class Member {
+public class Member extends BaseEntity {
 
     @Id
-    private String id; // OAuth2 연동을 위해 String 타입 사용 (UUID)
+    private String id; // UUID로 멤버 식별자 생성
 
     @Column(nullable = true, length = 64, unique = true)
     private String nickname;
@@ -52,10 +53,6 @@ public class Member {
     @Column(nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
-
-    @CreatedDate
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt;
 
     // 프로필 업데이트 메서드
     public void updateProfile(String nickname, String description, String profileImageUrl) {

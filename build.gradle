@@ -67,9 +67,6 @@ dependencies {
 
     //retryable annotation
     implementation 'org.springframework.retry:spring-retry'
-
-    // .env 파일 로드용
-    implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 }
 
 tasks.named('test') {
