@@ -13,14 +13,19 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
         stage('Set Dynamic Variables') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'main') {
+                    if (env.BRANCH_NAME.endsWith('main')) {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME == 'dev') {
+                    else if (env.BRANCH_NAME.endsWith('bug/#19-Jenkins-err-fixed')) {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
@@ -31,11 +36,6 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
         stage('Check JDK') {
             steps {
                 sh 'java -version'
