@@ -21,20 +21,17 @@ pipeline {
         stage('Set Dynamic Variables') {
             steps {
                 script {
-                    def branch = env.BRANCH_NAME ?: params.BRANCH_TO_BUILD
-                    echo "Selected branch for this build is: '${branch}'"
+                    echo "This build is for branch: '${env.BRANCH_NAME}'"
 
-                    if (branch) {
-                        checkout([$class: 'GitSCM', branches: [[name: branch]], userRemoteConfigs: scm.userRemoteConfigs])
-                    } else {
-                        error "Branch could not be determined."
-                    }
-
-                    if (branch.endsWith('main')) {
+                    if (env.BRANCH_NAME == 'main') {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (branch.endsWith('dev')) {
+                    else if (env.BRANCH_NAME == 'dev') {
+                        env.IMAGE_NAME = 'crema-backend-dev'
+                        env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
+                    }
+                    else if (env.BRANCH_NAME == 'bug/#19-Jenkins-err-fixed') {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
