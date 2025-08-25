@@ -21,6 +21,15 @@ pipeline {
         stage('Set Dynamic Variables') {
             steps {
                 script {
+                    def branch = env.BRANCH_NAME ?: params.BRANCH_TO_BUILD
+                    echo "Selected branch for this build is: '${branch}'"
+
+                    if (branch) {
+                        checkout([$class: 'GitSCM', branches: [[name: branch]], userRemoteConfigs: scm.userRemoteConfigs])
+                    } else {
+                        error "Branch could not be determined."
+                    }
+
                     if (env.BRANCH_NAME.endsWith('main')) {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
@@ -123,5 +132,5 @@ pipeline {
 //                 }
 //             }
 //         }
-    }
+//     }
 }
