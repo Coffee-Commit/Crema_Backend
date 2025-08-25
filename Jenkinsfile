@@ -25,7 +25,7 @@ pipeline {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME.endsWith('dev')) {
+                    else if (env.BRANCH_NAME.endsWith('bug/#19-Jenkins-err-fixed')) {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
@@ -74,7 +74,7 @@ pipeline {
             steps {
                 script {
                     def imageTag = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${imageTag}"
+                    def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${env.IMAGE_NAME}:${imageTag}"
 
                     echo "Updating manifest in Infra repository to use image: ${fullImageName}"
 
@@ -83,7 +83,7 @@ pipeline {
                         sh "git clone ${INFRA_REPO_URL}"
                         dir('Crema_Infra') {
                             sh """
-                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
+                            sed -i'' 's|image: .*${env.IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
                             """
 
                             sh 'git config --global user.email "jenkins@backend.ci"'
