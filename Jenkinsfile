@@ -106,31 +106,31 @@ pipeline {
             }
         }
     }
-//     post {
-//         always {
-//             script {
-//                 echo "Pipeline finished. Status: ${currentBuild.result}"
-//                 withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
-//                     def statusEmoji = (currentBuild.result == 'SUCCESS') ? ':white_check_mark:' : ':x:'
-//                     def statusColor = (currentBuild.result == 'SUCCESS') ? 65280 : 16711680
-//                     def nowIso = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))
-//
-//                     sh """
-//                     curl -H "Content-Type: application/json" -X POST -d '{
-//                         "username": "Jenkins CI",
-//                         "avatar_url": "https://infra-coffeechat.kro.kr/static/aa133e25/images/svgs/logo.svg",
-//                         "embeds": [
-//                             {
-//                                 "title": "${statusEmoji} 빌드 ${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-//                                 "description": "프로젝트: **${env.JOB_NAME}**\\n빌드 번호: **${env.BUILD_NUMBER}**\\n상태: **${currentBuild.result}**\\n자세히 보기: ${env.BUILD_URL}",
-//                                 "color": ${statusColor},
-//                                 "timestamp": "${nowIso}"
-//                             }
-//                         ]
-//                     }' ${DISCORD_WEBHOOK_URL}
-//                     """
-//                 }
-//             }
-//         }
-//     }
+    post {
+        always {
+            script {
+                echo "Pipeline finished. Status: ${currentBuild.result}"
+                withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_WEBHOOK_URL')]) {
+                    def statusEmoji = (currentBuild.result == 'SUCCESS') ? ':white_check_mark:' : ':x:'
+                    def statusColor = (currentBuild.result == 'SUCCESS') ? 65280 : 16711680
+                    def nowIso = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone('UTC'))
+
+                    sh """
+                    curl -H "Content-Type: application/json" -X POST -d '{
+                        "username": "Jenkins CI",
+                        "avatar_url": "https://infra-coffeechat.kro.kr/static/aa133e25/images/svgs/logo.svg",
+                        "embeds": [
+                            {
+                                "title": "${statusEmoji} 빌드 ${currentBuild.result}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                                "description": "프로젝트: **${env.JOB_NAME}**\\n빌드 번호: **${env.BUILD_NUMBER}**\\n상태: **${currentBuild.result}**\\n자세히 보기: ${env.BUILD_URL}",
+                                "color": ${statusColor},
+                                "timestamp": "${nowIso}"
+                            }
+                        ]
+                    }' ${DISCORD_WEBHOOK_URL}
+                    """
+                }
+            }
+        }
+    }
 }
