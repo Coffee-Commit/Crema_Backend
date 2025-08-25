@@ -30,11 +30,11 @@ pipeline {
                         error "Branch could not be determined."
                     }
 
-                    if (env.BRANCH_NAME.endsWith('main')) {
+                    if (branch.endsWith('main')) {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME.endsWith('bug/#19-Jenkins-err-fixed')) {
+                    else if (branch.endsWith('dev')) {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
