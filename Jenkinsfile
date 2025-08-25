@@ -31,10 +31,6 @@ pipeline {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME == 'bug/#19-Jenkins-err-fixed') {
-                        env.IMAGE_NAME = 'crema-backend-dev'
-                        env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
-                    }
                     else {
                         error "Unsupported branch"
                     }
