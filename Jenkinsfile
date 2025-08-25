@@ -6,18 +6,6 @@ pipeline {
         GCP_REGION = 'asia-northeast3'
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
-
-        script {
-            if (env.BRANCH_NAME == 'main') {
-                IMAGE_NAME = 'crema-backend'
-            }
-            else if (env.BRANCH_NAME == 'dev') {
-                IMAGE_NAME = 'crema-backend-dev'
-            }
-            else {
-                error "Unsupported branch"
-            }
-        }
     }
 
     tools {
@@ -25,6 +13,24 @@ pipeline {
     }
 
     stages {
+        stage('Set Dynamic Variables') {
+            steps {
+                script {
+                    if (env.BRANCH_NAME == 'main') {
+                        env.IMAGE_NAME = 'crema-backend'
+                        env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
+                    }
+                    else if (env.BRANCH_NAME == 'dev') {
+                        env.IMAGE_NAME = 'crema-backend-dev'
+                        env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
+                    }
+                    else {
+                        error "Unsupported branch"
+                    }
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -52,7 +58,7 @@ pipeline {
                         sh "gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev"
 
                         def imageTag = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                        def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${imageTag}"
+                        def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${env.IMAGE_NAME}:${imageTag}"
 
                         echo "Building Docker image: ${fullImageName}"
                         sh "docker build -t ${fullImageName} ."
@@ -70,13 +76,6 @@ pipeline {
                     def imageTag = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${imageTag}"
 
-                    def manifestPath = ""
-                    if (env.BRANCH_NAME == 'main') {
-                        manifestPath = "apps/backend/prod/deployment.yaml"
-                    }
-                    else if (env.BRANCH_NAME == 'dev') {
-                        manifestPath = "apps/backend/dev/deployment.yaml"
-                    }
                     echo "Updating manifest in Infra repository to use image: ${fullImageName}"
 
                     withCredentials([sshUserPrivateKey(credentialsId: 'github-ssh-key-for-infra', keyFileVariable: 'GIT_SSH_KEY')]) {
@@ -84,7 +83,7 @@ pipeline {
                         sh "git clone ${INFRA_REPO_URL}"
                         dir('Crema_Infra') {
                             sh """
-                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' ${manifestPath}
+                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
                             """
 
                             sh 'git config --global user.email "jenkins@backend.ci"'
