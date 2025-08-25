@@ -5,7 +5,6 @@ pipeline {
         GCP_PROJECT_ID = 'coffee-and-commit'
         GCP_REGION = 'asia-northeast3'
         REPO_NAME = 'coffee'
-        IMAGE_NAME = 'crema-backend'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
     }
 
@@ -14,6 +13,24 @@ pipeline {
     }
 
     stages {
+        stage('Set Dynamic Variables') {
+            steps {
+                script {
+                    if (env.BRANCH_NAME == 'main') {
+                        env.IMAGE_NAME = 'crema-backend'
+                        env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
+                    }
+                    else if (env.BRANCH_NAME == 'dev') {
+                        env.IMAGE_NAME = 'crema-backend-dev'
+                        env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
+                    }
+                    else {
+                        error "Unsupported branch"
+                    }
+                }
+            }
+        }
+
         stage('Checkout') {
             steps {
                 checkout scm
@@ -41,7 +58,7 @@ pipeline {
                         sh "gcloud auth configure-docker ${GCP_REGION}-docker.pkg.dev"
 
                         def imageTag = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                        def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${imageTag}"
+                        def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${env.IMAGE_NAME}:${imageTag}"
 
                         echo "Building Docker image: ${fullImageName}"
                         sh "docker build -t ${fullImageName} ."
@@ -66,7 +83,7 @@ pipeline {
                         sh "git clone ${INFRA_REPO_URL}"
                         dir('Crema_Infra') {
                             sh """
-                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' apps/backend/base/deployment.yaml
+                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
                             """
 
                             sh 'git config --global user.email "jenkins@backend.ci"'
