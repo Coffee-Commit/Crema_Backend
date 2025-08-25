@@ -25,8 +25,7 @@ pipeline {
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
                     else {
-                        env.IMAGE_NAME = 'crema-backend-dev'
-                        env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
+                        error "Unsupported branch"
                     }
                 }
             }
