@@ -23,15 +23,19 @@ public class Guide extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member memberId; // FK, 멤버 ID는 String (UUID)
 
-    @Column()
+    @Column(nullable = false)
     private boolean isApproved;
 
+    @Column(length = 1000)
     private String description;
 
+    @Column(nullable = false)
     private boolean isOpened;
 
+    @Column(nullable = false, length = 200)
     private String title;
 
+    @Column(length = 2048)
     private String certificationImageUrl;
 
     private LocalDateTime approvedAt;

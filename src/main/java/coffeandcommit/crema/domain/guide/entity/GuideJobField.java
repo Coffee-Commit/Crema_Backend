@@ -4,6 +4,8 @@ import coffeandcommit.crema.domain.globalTag.entity.JobField;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 
 @Entity
@@ -32,9 +34,11 @@ public class GuideJobField extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Guide guideId; // FK, 가이드 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_field_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private JobField jobFieldId; // FK, 직무 분야 ID
 }

@@ -4,6 +4,8 @@ import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 
 @Entity
@@ -31,9 +33,11 @@ public class MemberChatTopic extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private Member memberId; // FK, 멤버 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "chat_topic_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     private ChatTopic chatTopicId; // FK, 주제 ID
 }
