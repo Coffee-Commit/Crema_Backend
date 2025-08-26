@@ -68,9 +68,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
         }
 
-        // 사용자 정보 업데이트 (프로필 이미지, 이름 등이 변경될 수 있음)
-        updateMemberInfo(member, userInfo);
-
         return new CustomOAuth2User(member, oAuth2User.getAttributes());
     }
 
@@ -100,7 +97,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(uniqueNickname)
                 .role(MemberRole.ROOKIE)
                 .point(0) // 초기 포인트
-                .profileImageUrl(userInfo.getImageUrl())
+                .profileImageUrl(null) // 프로필 이미지는 항상 null로 시작
                 .provider(provider)
                 .providerId(userInfo.getId())
                 .build();
@@ -109,23 +106,6 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 provider, userInfo.getId(), uniqueNickname);
 
         return memberRepository.save(member);
-    }
-
-    private void updateMemberInfo(Member member, OAuth2UserInfo userInfo) {
-        boolean updated = false;
-
-        // 프로필 이미지 업데이트 (기존에 없거나 OAuth 제공자의 이미지가 더 최신인 경우)
-        if (StringUtils.hasText(userInfo.getImageUrl()) &&
-                !StringUtils.hasText(member.getProfileImageUrl())) {
-
-            member.updateProfile(null, null, userInfo.getImageUrl());
-            updated = true;
-        }
-
-        if (updated) {
-            memberRepository.save(member);
-            log.info("Updated member info for: {}", member.getId());
-        }
     }
 
     private String generateUniqueNickname(String baseName) {

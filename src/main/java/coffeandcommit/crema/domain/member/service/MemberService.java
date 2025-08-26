@@ -21,6 +21,7 @@ public class MemberService {
 
     private final MemberRepository memberRepository;
     private final MemberMapper memberMapper;
+    private final MemberProfileService memberProfileService;
 
     /**
      * ID로 회원 조회 - 본인용 (모든 정보 포함)
@@ -48,10 +49,10 @@ public class MemberService {
     }
 
     /**
-     * 회원 프로필 업데이트
+     * 회원 프로필 정보 업데이트 (닉네임, 자기소개만)
      */
     @Transactional
-    public MemberResponse updateMemberProfile(String id, String nickname, String description, String profileImageUrl) {
+    public MemberResponse updateMemberProfileInfo(String id, String nickname, String description) {
         Member member = findActiveMemberById(id);
 
         // 닉네임 중복 체크 (본인 제외, 활성 회원만)
@@ -66,10 +67,10 @@ public class MemberService {
             throw new BaseException(ErrorStatus.INVALID_NICKNAME_FORMAT);
         }
 
-        member.updateProfile(nickname, description, profileImageUrl);
+        member.updateProfile(nickname, description, null); // 이미지 URL은 null로 고정
         Member savedMember = memberRepository.save(member);
 
-        log.info("Member profile updated: {}", id);
+        log.info("Member profile info updated: {}", id);
         return memberMapper.memberToMemberResponse(savedMember);
     }
 
@@ -79,6 +80,17 @@ public class MemberService {
     @Transactional
     public void deleteMember(String id) {
         Member member = findActiveMemberById(id);
+
+        // 프로필 이미지가 있다면 삭제
+        if (member.getProfileImageUrl() != null) {
+            try {
+                memberProfileService.deleteProfileImage(id);
+            } catch (Exception e) {
+                log.error("Failed to delete profile image for member: {} - Error: {}", id, e.getMessage(), e);
+                // 프로필 이미지 삭제 실패해도 회원 탈퇴는 계속 진행
+            }
+        }
+
         member.softDelete(); // isDeleted = true로 변경
         memberRepository.save(member);
         log.info("Member soft deleted: {}", id);
@@ -123,8 +135,6 @@ public class MemberService {
         memberRepository.save(member);
         log.info("Points decreased from member {}: -{}", id, point);
     }
-
-    // === UserDetails 관련 메서드 추가 ===
 
     /**
      * JWT 인증을 위한 UserDetails 생성

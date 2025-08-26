@@ -65,9 +65,8 @@ public class Member extends BaseEntity {
         if (description != null) {
             this.description = description;
         }
-        if (profileImageUrl != null) {
-            this.profileImageUrl = profileImageUrl;
-        }
+        // profileImageUrl이 null이어도 명시적으로 전달된 경우 업데이트 (이미지 삭제 시)
+        this.profileImageUrl = profileImageUrl;
     }
 
     // 포인트 추가

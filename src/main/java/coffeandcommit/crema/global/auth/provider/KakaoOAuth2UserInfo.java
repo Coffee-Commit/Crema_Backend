@@ -38,49 +38,4 @@ public class KakaoOAuth2UserInfo implements OAuth2UserInfo {
 
         return null;
     }
-
-    @Override
-    public String getEmail() {
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        if (kakaoAccount == null) {
-            return null;
-        }
-
-        // 이메일 동의 및 유효성 체크
-        Boolean emailNeedsAgreement = (Boolean) kakaoAccount.get("email_needs_agreement");
-        Boolean isEmailValid = (Boolean) kakaoAccount.get("is_email_valid");
-        Boolean isEmailVerified = (Boolean) kakaoAccount.get("is_email_verified");
-
-        // 이메일 동의가 필요하거나, 유효하지 않거나, 인증되지 않은 경우 null 반환
-        if (Boolean.TRUE.equals(emailNeedsAgreement) ||
-                Boolean.FALSE.equals(isEmailValid) ||
-                Boolean.FALSE.equals(isEmailVerified)) {
-            return null;
-        }
-
-        return (String) kakaoAccount.get("email");
-    }
-
-    @Override
-    public String getImageUrl() {
-        // v2 권장 경로 우선 시도: kakao_account.profile.profile_image_url
-        Map<String, Object> kakaoAccount = (Map<String, Object>) attributes.get("kakao_account");
-        if (kakaoAccount != null) {
-            Map<String, Object> profile = (Map<String, Object>) kakaoAccount.get("profile");
-            if (profile != null) {
-                String profileImageUrl = (String) profile.get("profile_image_url");
-                if (profileImageUrl != null) {
-                    return profileImageUrl;
-                }
-            }
-        }
-
-        // 백워드 호환성을 위한 v1 경로: properties.profile_image
-        Map<String, Object> properties = (Map<String, Object>) attributes.get("properties");
-        if (properties != null) {
-            return (String) properties.get("profile_image");
-        }
-
-        return null;
-    }
 }
