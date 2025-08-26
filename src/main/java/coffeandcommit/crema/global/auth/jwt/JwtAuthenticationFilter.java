@@ -1,5 +1,6 @@
 package coffeandcommit.crema.global.auth.jwt;
 
+import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.service.AuthService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.auth.service.TokenBlacklistService;
@@ -17,7 +18,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 
 @Slf4j
@@ -28,6 +28,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final AuthService authService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final MemberService memberService;
 
     // JWT 검증을 스킵할 경로들
     private static final List<String> SKIP_PATHS = List.of(
@@ -107,7 +108,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String memberId = jwtTokenProvider.getMemberId(token);
 
             if (StringUtils.hasText(memberId)) {
-                CustomUserDetails userDetails = new CustomUserDetails(memberId);
+                // DB 조회 또는 토큰 클레임으로 사용자 상태 확인 (enabled) 조회
+                CustomUserDetails userDetails = memberService.createUserDetails(memberId);
+
+                // 사용자가 비활성 상태면 인증 실패
+                if (!userDetails.isEnabled()) {
+                    log.warn("User account is disabled: {}", memberId);
+                    SecurityContextHolder.clearContext();
+                    return;
+                }
 
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                         userDetails,

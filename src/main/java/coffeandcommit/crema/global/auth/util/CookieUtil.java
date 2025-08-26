@@ -4,6 +4,7 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
@@ -17,30 +18,31 @@ public class CookieUtil {
 
     private final String domain;
     private final boolean isProduction;
+    private final String sameSite;
 
     public CookieUtil(
             @Value("${app.cookie.domain:}") String domain,
-            @Value("${spring.profiles.active:dev}") String profile) {
+            @Value("${spring.profiles.active:dev}") String profile,
+            @Value("${app.cookie.same-site:Lax}") String sameSite) {
         this.domain = domain;
         this.isProduction = "prod".equals(profile) || "production".equals(profile);
+        this.sameSite = sameSite;
     }
 
     /**
-     * 쿠키 추가
+     * 쿠키 추가 (ResponseCookie 방식)
      */
-    public void addCookie(HttpServletResponse response, String name, String value, int maxAge) {
-        // SameSite 설정을 위한 헤더 직접 설정
-        String cookieHeader = createCookieHeader(name, value, maxAge);
-        response.addHeader("Set-Cookie", cookieHeader);
+    public void addCookie(HttpServletResponse response, String name, String value, int maxAgeSeconds) {
+        ResponseCookie cookie = createCookie(name, value, maxAgeSeconds);
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     /**
-     * 쿠키 삭제
+     * 쿠키 삭제 (ResponseCookie 방식)
      */
     public void deleteCookie(HttpServletResponse response, String name) {
-        // SameSite 설정을 위한 헤더 직접 설정
-        String cookieHeader = createDeleteCookieHeader(name);
-        response.addHeader("Set-Cookie", cookieHeader);
+        ResponseCookie cookie = createCookie(name, "", 0);
+        response.addHeader("Set-Cookie", cookie.toString());
     }
 
     /**
@@ -59,46 +61,16 @@ public class CookieUtil {
     }
 
     /**
-     * SameSite 속성을 포함한 쿠키 헤더 생성
+     * ResponseCookie 생성 헬퍼 메서드
      */
-    private String createCookieHeader(String name, String value, int maxAge) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name).append("=").append(value);
-        sb.append("; Path=/");
-        sb.append("; HttpOnly");
-        sb.append("; Max-Age=").append(maxAge);
-        sb.append("; SameSite=Strict");
-
-        if (isProduction) {
-            sb.append("; Secure");
-        }
-
-        if (StringUtils.hasText(domain)) {
-            sb.append("; Domain=").append(domain);
-        }
-
-        return sb.toString();
-    }
-
-    /**
-     * 쿠키 삭제용 헤더 생성
-     */
-    private String createDeleteCookieHeader(String name) {
-        StringBuilder sb = new StringBuilder();
-        sb.append(name).append("=");
-        sb.append("; Path=/");
-        sb.append("; HttpOnly");
-        sb.append("; Max-Age=0");
-        sb.append("; SameSite=Strict");
-
-        if (isProduction) {
-            sb.append("; Secure");
-        }
-
-        if (StringUtils.hasText(domain)) {
-            sb.append("; Domain=").append(domain);
-        }
-
-        return sb.toString();
+    private ResponseCookie createCookie(String name, String value, int maxAgeSeconds) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .sameSite(sameSite)
+                .secure(isProduction || "None".equalsIgnoreCase(sameSite))
+                .domain(StringUtils.hasText(domain) ? domain : null)
+                .build();
     }
 }

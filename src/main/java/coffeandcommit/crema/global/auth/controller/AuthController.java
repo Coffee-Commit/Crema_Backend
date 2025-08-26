@@ -1,8 +1,8 @@
 package coffeandcommit.crema.global.auth.controller;
 
-import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
-import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.service.AuthService;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.exception.response.ApiResponse;
 import coffeandcommit.crema.global.common.exception.code.SuccessStatus;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,22 +24,18 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
-    private final MemberService memberService;
-
-    @Operation(summary = "현재 로그인 사용자 정보 조회", description = "쿠키의 JWT 토큰을 통해 현재 로그인된 사용자 정보를 조회합니다.")
-    @SecurityRequirement(name = "JWT")
-    @GetMapping("/me")
-    public ApiResponse<MemberResponse> getCurrentUser(@AuthenticationPrincipal UserDetails userDetails) {
-        String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
-        MemberResponse member = memberService.getMemberById(memberId);
-        return ApiResponse.onSuccess(SuccessStatus.OK, member);
-    }
 
     @Operation(summary = "로그아웃", description = "쿠키에서 JWT 토큰을 삭제하고 토큰을 블랙리스트에 추가하여 로그아웃 처리합니다.")
     @SecurityRequirement(name = "JWT")
     @PostMapping("/logout")
     public ApiResponse<Void> logout(HttpServletRequest request, HttpServletResponse response,
                                     @AuthenticationPrincipal UserDetails userDetails) {
+
+        // 인증되지 않은 사용자 체크
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
         String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
         authService.logout(request, response, memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, null);

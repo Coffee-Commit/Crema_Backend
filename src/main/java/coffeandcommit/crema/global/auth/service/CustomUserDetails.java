@@ -11,6 +11,7 @@ import java.util.Collections;
 public class CustomUserDetails implements UserDetails {
 
     private final String memberId;
+    private final boolean enabled; // 사용자 활성/비활성 상태 필드 추가
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
@@ -44,6 +45,6 @@ public class CustomUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled; // 실제 회원 상태 반영
     }
 }

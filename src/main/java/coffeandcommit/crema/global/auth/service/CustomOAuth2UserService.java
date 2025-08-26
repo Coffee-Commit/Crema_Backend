@@ -44,11 +44,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo userInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
-        // 기존 사용자 확인 또는 새 사용자 생성
-        Member member = memberRepository.findByProviderAndProviderId(registrationId, userInfo.getId())
+        // 기존 사용자 확인 또는 새 사용자 생성 (활성 회원만 조회)
+        Member member = memberRepository.findByProviderAndProviderIdAndIsDeletedFalse(registrationId, userInfo.getId())
                 .orElseGet(() -> createNewMember(registrationId, userInfo));
 
-        // 탈퇴한 사용자의 경우 예외 처리
+        // 탈퇴한 사용자의 경우 예외 처리 (추가 안전장치)
         if (Boolean.TRUE.equals(member.getIsDeleted())) {
             throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
         }
@@ -121,8 +121,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
         String nickname = cleanedBaseName + "_" + randomSuffix;
 
-        // uuid가 1/1500만의 확률로 중복되면 타임 스탬프로 닉네임 생성
-        while (memberRepository.existsByNickname(nickname)) {
+        // uuid가 1/1500만의 확률로 중복되면 타임 스탬프로 닉네임 생성 (활성 회원만 체크)
+        while (memberRepository.existsByNicknameAndIsDeletedFalse(nickname)) {
             randomSuffix = UUID.randomUUID().toString().substring(0, 6);
             nickname = cleanedBaseName + "_" + randomSuffix;
         }

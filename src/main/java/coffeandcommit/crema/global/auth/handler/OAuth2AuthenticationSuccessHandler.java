@@ -27,7 +27,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
                                         Authentication authentication) throws IOException {
 
-        CustomOAuth2User oAuth2User = (CustomOAuth2User) authentication.getPrincipal();
+        // Principal 타입 안전성 검사
+        Object principal = authentication.getPrincipal();
+        if (!(principal instanceof CustomOAuth2User)) {
+            log.error("Unexpected principal type: {}", principal != null ? principal.getClass().getSimpleName() : "null");
+            response.sendError(HttpServletResponse.SC_UNAUTHORIZED);
+            return;
+        }
+
+        CustomOAuth2User oAuth2User = (CustomOAuth2User) principal;
         String memberId = oAuth2User.getMember().getId();
 
         // 쿠키에 토큰 설정

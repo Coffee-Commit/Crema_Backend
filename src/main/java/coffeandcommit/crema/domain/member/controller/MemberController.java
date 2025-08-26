@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.member.controller;
 
 import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
+import coffeandcommit.crema.domain.member.dto.response.MemberPublicResponse;
 import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.common.exception.response.ApiResponse;
 import coffeandcommit.crema.global.common.exception.code.SuccessStatus;
@@ -23,31 +24,31 @@ public class MemberController {
 
     private final MemberService memberService;
 
-    @Operation(summary = "회원 정보 조회 (ID)", description = "회원 ID로 회원 정보를 조회합니다.")
+    @Operation(summary = "회원 정보 조회 (ID) - 타인용", description = "회원 ID로 공개 회원 정보를 조회합니다.")
     @SecurityRequirement(name = "JWT")
     @GetMapping("/id/{memberId}")
-    public ApiResponse<MemberResponse> getMemberById(
+    public ApiResponse<MemberPublicResponse> getMemberById(
             @Parameter(description = "회원 ID", required = true) @PathVariable String memberId) {
-        MemberResponse member = memberService.getMemberById(memberId);
+        MemberPublicResponse member = memberService.getMemberById(memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
-    @Operation(summary = "회원 정보 조회 (닉네임)", description = "닉네임으로 회원 정보를 조회합니다.")
+    @Operation(summary = "회원 정보 조회 (닉네임) - 타인용", description = "닉네임으로 공개 회원 정보를 조회합니다.")
     @SecurityRequirement(name = "JWT")
     @GetMapping("/nickname/{nickname}")
-    public ApiResponse<MemberResponse> getMemberByNickname(
+    public ApiResponse<MemberPublicResponse> getMemberByNickname(
             @Parameter(description = "닉네임", required = true) @PathVariable String nickname) {
-        MemberResponse member = memberService.getMemberByNickname(nickname);
+        MemberPublicResponse member = memberService.getMemberByNickname(nickname);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
-    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 정보를 조회합니다.")
+    @Operation(summary = "내 정보 조회", description = "현재 로그인한 사용자의 모든 정보를 조회합니다.")
     @SecurityRequirement(name = "JWT")
     @GetMapping("/me")
     public ApiResponse<MemberResponse> getMyInfo(
             @AuthenticationPrincipal UserDetails userDetails) {
         String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
-        MemberResponse member = memberService.getMemberById(memberId);
+        MemberResponse member = memberService.getMyInfo(memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 

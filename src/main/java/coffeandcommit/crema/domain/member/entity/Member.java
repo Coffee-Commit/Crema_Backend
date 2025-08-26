@@ -1,14 +1,11 @@
 package coffeandcommit.crema.domain.member.entity;
 
 import coffeandcommit.crema.domain.member.enums.MemberRole;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
-import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
-
-import java.time.LocalDateTime;
 
 @Entity
 @Getter
@@ -18,8 +15,13 @@ import java.time.LocalDateTime;
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
-        @Index(name = "idx_member_nickname", columnList = "nicknsame")
-})
+        @Index(name = "idx_member_nickname", columnList = "nickname"),
+        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_member_provider", columnNames = {"provider", "provider_id"}), // OAuth 회원가입시 중복 방지
+                @UniqueConstraint(name = "uk_member_nickname_is_deleted", columnNames = {"nickname", "is_deleted"}) // 소프트 삭제된 계정의 닉네임을 재사용 가능하게 하되, 활성 계정 간 닉네임 충돌은 금지
+        })
 public class Member extends BaseEntity {
 
     @Id
@@ -36,7 +38,8 @@ public class Member extends BaseEntity {
     private String phoneNumber;
 
     @Column(nullable = false)
-    private Integer point;
+    @Builder.Default
+    private Integer point = 0;
 
     @Column(nullable = true, length = 500)
     private String profileImageUrl;
