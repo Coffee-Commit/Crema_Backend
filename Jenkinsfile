@@ -6,6 +6,10 @@ pipeline {
         GCP_REGION = 'asia-northeast3'
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
+
+        CLOUD_AWS_CREDENTIALS_SECRETKEY = credentials('S3SecretKey')
+        CLOUD_AWS_CREDENTIALS_ACCESSKEY = credentials('S3AccessKey')
+        CLOUD_AWS_S3_BUCKET             = credentials('S3Bucket')
     }
 
     tools {
@@ -13,9 +17,16 @@ pipeline {
     }
 
     stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
         stage('Set Dynamic Variables') {
             steps {
                 script {
+                    echo "This build is for branch: '${env.BRANCH_NAME}'"
+
                     if (env.BRANCH_NAME == 'main') {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
@@ -31,11 +42,6 @@ pipeline {
             }
         }
 
-        stage('Checkout') {
-            steps {
-                checkout scm
-            }
-        }
         stage('Check JDK') {
             steps {
                 sh 'java -version'
@@ -74,7 +80,7 @@ pipeline {
             steps {
                 script {
                     def imageTag = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${IMAGE_NAME}:${imageTag}"
+                    def fullImageName = "${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${REPO_NAME}/${env.IMAGE_NAME}:${imageTag}"
 
                     echo "Updating manifest in Infra repository to use image: ${fullImageName}"
 
@@ -83,7 +89,7 @@ pipeline {
                         sh "git clone ${INFRA_REPO_URL}"
                         dir('Crema_Infra') {
                             sh """
-                            sed -i'' 's|image: .*${IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
+                            sed -i'' 's|image: .*${env.IMAGE_NAME}.*|image: ${fullImageName}|g' ${env.MANIFEST_PATH}
                             """
 
                             sh 'git config --global user.email "jenkins@backend.ci"'
