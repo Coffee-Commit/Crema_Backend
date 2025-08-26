@@ -11,7 +11,19 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "guide_job_field")
+@Table(
+    name = "guide_job_field",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_guide_job_field_pair",
+            columnNames = {"guide_id", "job_field_id"}
+        )
+    },
+    indexes = {
+        @Index(name = "idx_guide_job_field_guide", columnList = "guide_id"),
+        @Index(name = "idx_guide_job_field_job_field", columnList = "job_field_id")
+    }
+)
 public class GuideJobField extends BaseEntity{
 
     @Id

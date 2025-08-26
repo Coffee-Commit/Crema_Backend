@@ -12,19 +12,31 @@ import java.time.LocalTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "time_slot")
+@Table(
+    name = "time_slot",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_time_slot__day_start_end",
+            columnNames = {"day", "start_time_option", "end_time_option"}
+        )
+    },
+    indexes = {
+        @Index(name = "idx_time_slot__day", columnList = "day")
+    }
+)
 public class TimeSlot extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "start_time_option", nullable = false)
     private LocalTime startTimeOption; // 시작 시간
 
-    @Column(nullable = false)
+    @Column(name = "end_time_option", nullable = false)
     private LocalTime endTimeOption; // 종료 시간
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "day", nullable = false)
     private DayType day;
 }

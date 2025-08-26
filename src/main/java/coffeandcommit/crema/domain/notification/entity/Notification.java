@@ -29,5 +29,7 @@ public class Notification extends BaseEntity {
 
     @Column(nullable = false, length = 1000)
     private String message;
+
+    @Column(name = "is_read", nullable = false)
     private boolean isRead;
 }
