@@ -23,7 +23,7 @@ public class Guide extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false)
     private Member memberId; // FK, 멤버 ID는 String (UUID)
 
-    @Column(nullable = false)
+    @Column(name = "is_approved", nullable = false)
     private boolean isApproved;
 
     @Column(length = 1000)
@@ -38,6 +38,7 @@ public class Guide extends BaseEntity {
     @Column(length = 2048)
     private String certificationImageUrl;
 
+    @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
 }
