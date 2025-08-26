@@ -1,4 +1,4 @@
-package coffeandcommit.crema.global.common.entitiy;
+package coffeandcommit.crema.global.common.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
