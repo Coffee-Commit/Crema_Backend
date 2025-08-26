@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.guide.entity;
 
 import coffeandcommit.crema.domain.guide.enums.TimeType;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +11,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "time_unit")
+@Table(
+    name = "time_unit",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            columnNames = {"guide_id", "time_type"}
+        )
+    },
+    indexes = {
+        @Index(columnList = "guide_id"),
+        @Index(columnList = "time_type")
+    }
+)
 public class TimeUnit extends BaseEntity{
 
     @Id

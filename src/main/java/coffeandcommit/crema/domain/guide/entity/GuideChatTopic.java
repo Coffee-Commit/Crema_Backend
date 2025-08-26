@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.guide.entity;
 
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

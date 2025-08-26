@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.review.entity;
 
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

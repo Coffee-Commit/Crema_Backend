@@ -1,6 +1,6 @@
 package coffeandcommit.crema.domain.survey.entity;
 
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -17,13 +17,13 @@ public class Survey extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 2048)
     private String fileUploadURL;
 
     @Column(nullable = false)
     private String talkSubject; // 대화주제
 
-    @Column(nullable = false)
+    @Column(columnDefinition = "TEXT")
     private String subjectDescription; // 직접입력 주제
 
 }

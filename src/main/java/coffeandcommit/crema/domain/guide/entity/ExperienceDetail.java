@@ -1,6 +1,6 @@
 package coffeandcommit.crema.domain.guide.entity;
 
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -18,7 +18,7 @@ public class ExperienceDetail extends BaseEntity{
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guide_id", nullable = false)
+    @JoinColumn(name = "experience_group_id", nullable = false)
     private ExperienceGroup groupId; // FK, 가이드 ID
 
     @Column(nullable = false)

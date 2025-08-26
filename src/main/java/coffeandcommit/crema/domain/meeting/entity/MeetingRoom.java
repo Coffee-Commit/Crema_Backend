@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.meeting.entity;
 
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -19,9 +19,9 @@ public class MeetingRoom extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reservation_id", nullable = false)
-    private Reservation reservationID; // FK, 예약 ID
+    private Reservation reservationId; // FK, 예약 ID
 
     @Column(nullable = false)
     private LocalDateTime startTime; // 시작 시간

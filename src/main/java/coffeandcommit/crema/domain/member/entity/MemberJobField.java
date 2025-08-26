@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.member.entity;
 
 import coffeandcommit.crema.domain.globalTag.entity.JobField;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +11,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "member_job_field")
+@Table(
+    name = "member_job_field",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            columnNames = {"member_id", "job_field_id"}
+        )
+    },
+    indexes = {
+        @Index(columnList = "member_id"),
+        @Index(columnList = "job_field_id")
+    }
+)
 public class MemberJobField extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

@@ -1,6 +1,6 @@
 package coffeandcommit.crema.domain.guide.entity;
 
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 

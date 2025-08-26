@@ -1,7 +1,7 @@
 package coffeandcommit.crema.domain.member.entity;
 
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
-import coffeandcommit.crema.global.common.entitiy.BaseEntity;
+import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +11,18 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "member_chat_topic")
+@Table(
+    name = "member_chat_topic",
+    uniqueConstraints = {
+        @UniqueConstraint(
+            columnNames = {"member_id", "chat_topic_id"}
+        )
+    },
+    indexes = {
+        @Index(columnList = "member_id"),
+        @Index(columnList = "chat_topic_id")
+    }
+)
 public class MemberChatTopic extends BaseEntity{
 
     @Id
