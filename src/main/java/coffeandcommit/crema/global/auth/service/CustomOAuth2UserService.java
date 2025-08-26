@@ -35,14 +35,29 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             OAuth2User oAuth2User = super.loadUser(userRequest);
             return processOAuth2User(userRequest, oAuth2User);
         } catch (Exception e) {
-            log.error("OAuth2 user loading failed: {}", e.getMessage(), e);
-            throw new OAuth2AuthenticationException("OAuth2 사용자 정보 로딩에 실패했습니다.");
+            // 보안: 민감한 정보 노출 방지, provider만 로깅
+            log.error("OAuth2 user loading failed: {}",
+                    userRequest.getClientRegistration().getRegistrationId(), e.getMessage());
+
+            // 기존 OAuth2AuthenticationException은 그대로 전파
+            if (e instanceof OAuth2AuthenticationException) {
+                throw (OAuth2AuthenticationException) e;
+            }
+
+            // 새로운 예외는 일반적인 메시지로 래핑
+            throw new OAuth2AuthenticationException("OAuth2 인증 처리 중 오류가 발생했습니다.");
         }
     }
 
     private OAuth2User processOAuth2User(OAuth2UserRequest userRequest, OAuth2User oAuth2User) {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo userInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
+
+        // Provider ID null 검증 - 핵심 보안 체크
+        if (!StringUtils.hasText(userInfo.getId())) {
+            log.error("OAuth2 Provider ID is null or empty for provider: {}", registrationId);
+            throw new OAuth2AuthenticationException("OAuth2 제공자에서 유효하지 않은 사용자 ID를 받았습니다.");
+        }
 
         // 기존 사용자 확인 또는 새 사용자 생성 (활성 회원만 조회)
         Member member = memberRepository.findByProviderAndProviderIdAndIsDeletedFalse(registrationId, userInfo.getId())
@@ -72,6 +87,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private Member createNewMember(String provider, OAuth2UserInfo userInfo) {
+        // Provider ID 재검증 (createNewMember 진입 전에도 확인)
+        if (!StringUtils.hasText(userInfo.getId())) {
+            log.error("Cannot create member with null/empty provider ID for provider: {}", provider);
+            throw new OAuth2AuthenticationException("사용자 생성에 필요한 정보가 부족합니다.");
+        }
+
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
         Member member = Member.builder()
@@ -84,8 +105,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(userInfo.getId())
                 .build();
 
-        log.info("Creating new member with provider: {}, nickname: {}",
-                provider, uniqueNickname);
+        log.info("Creating new member with provider: {}, providerId: {}, nickname: {}",
+                provider, userInfo.getId(), uniqueNickname);
 
         return memberRepository.save(member);
     }

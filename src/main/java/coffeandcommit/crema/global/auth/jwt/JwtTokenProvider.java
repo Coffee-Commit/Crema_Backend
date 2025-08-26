@@ -13,6 +13,7 @@ import org.springframework.util.StringUtils;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.UUID;
 
 @Slf4j
 @Component
@@ -68,6 +69,7 @@ public class JwtTokenProvider {
             String token = Jwts.builder()
                     .setSubject(memberId)
                     .claim("type", "access")
+                    .setId(UUID.randomUUID().toString()) // jti 클레임 추가
                     .setIssuedAt(now)
                     .setExpiration(validity)
                     .signWith(key, SignatureAlgorithm.HS512)
@@ -93,6 +95,7 @@ public class JwtTokenProvider {
             String token = Jwts.builder()
                     .setSubject(memberId)
                     .claim("type", "refresh")
+                    .setId(UUID.randomUUID().toString()) // jti 클레임 추가
                     .setIssuedAt(now)
                     .setExpiration(validity)
                     .signWith(key, SignatureAlgorithm.HS512)
@@ -136,6 +139,23 @@ public class JwtTokenProvider {
         } catch (JwtException e) {
             log.debug("Failed to extract token type: {}", e.getMessage());
             return null;
+        }
+    }
+
+    /**
+     * 토큰의 jti(JWT ID) 클레임 추출
+     */
+    public String getJti(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+            return claims.getId();
+        } catch (JwtException e) {
+            log.debug("Failed to extract jti from token: {}", e.getMessage());
+            throw new BaseException(ErrorStatus.INVALID_TOKEN);
         }
     }
 

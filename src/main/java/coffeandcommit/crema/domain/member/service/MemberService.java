@@ -133,7 +133,7 @@ public class MemberService {
         Member member = findActiveMemberById(memberId);
         // 탈퇴하지 않은 회원만 enabled=true
         boolean enabled = !Boolean.TRUE.equals(member.getIsDeleted());
-        return new CustomUserDetails(memberId, enabled);
+        return new CustomUserDetails(memberId, enabled, member.getRole());
     }
 
     // === Private Helper Methods ===

@@ -1,7 +1,9 @@
 package coffeandcommit.crema.global.auth.service;
 
+import coffeandcommit.crema.domain.member.enums.MemberRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
@@ -12,10 +14,13 @@ public class CustomUserDetails implements UserDetails {
 
     private final String memberId;
     private final boolean enabled; // 사용자 활성/비활성 상태 필드 추가
+    private final MemberRole memberRole; // 회원 역할 추가
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return Collections.emptyList();
+        // MemberRole을 Spring Security GrantedAuthority로 변환
+        String roleName = "ROLE_" + memberRole.name();
+        return Collections.singletonList(new SimpleGrantedAuthority(roleName));
     }
 
     @Override
