@@ -6,6 +6,10 @@ pipeline {
         GCP_REGION = 'asia-northeast3'
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
+
+        CLOUD_AWS_CREDENTIALS_SECRETKEY = credentials('S3SecretKey')
+        CLOUD_AWS_CREDENTIALS_ACCESSKEY = credentials('S3AccessKey')
+        CLOUD_AWS_S3_BUCKET             = credentials('S3Bucket')
     }
 
     tools {
