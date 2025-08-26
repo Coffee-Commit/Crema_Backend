@@ -6,7 +6,6 @@ import coffeandcommit.crema.global.common.entitiy.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 
 @Entity
 @Getter

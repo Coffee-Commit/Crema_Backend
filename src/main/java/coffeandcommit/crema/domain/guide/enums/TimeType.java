@@ -10,6 +10,6 @@ import lombok.ToString;
 public enum TimeType {
 
     MINUTE_30,
-    MINUTE_60;
+    MINUTE_60
 
 }
