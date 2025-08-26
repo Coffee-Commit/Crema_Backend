@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.guide.entity;
 
+import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.global.common.entitiy.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -23,4 +24,7 @@ public class Time extends BaseEntity{
 
     @Column(nullable = false)
     private LocalDateTime endTimeOption; // 종료 시간
+
+    @Enumerated(EnumType.STRING)
+    private DayType day;
 }

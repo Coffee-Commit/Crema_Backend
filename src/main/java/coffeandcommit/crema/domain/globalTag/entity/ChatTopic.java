@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.globalTag.entity;
 
+import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.global.common.entitiy.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -18,9 +20,9 @@ public class ChatTopic extends BaseEntity{
     private Long id;
 
     @Column(nullable = false)
-    private String chatTopic;
+    private ChatTopicType chatTopic;
 
     @Column(nullable = false)
-    private String topicName; // 서브 주제 이름
+    private TopicNameType topicName; // 서브 주제 이름
 
 }

@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.globalTag.entity;
 
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.JobType;
 import coffeandcommit.crema.global.common.entitiy.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -17,8 +19,8 @@ public class JobField extends BaseEntity{
     private Long id;
 
     @Column(nullable = false)
-    private String jobType; // 직무 대분류 이름
+    private JobType jobType; // 직무 대분류 이름
 
     @Column(nullable = false)
-    private String jobName; // 직무 분야 이름
+    private JobNameType jobName; // 직무 분야 이름
 }
