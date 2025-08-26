@@ -13,7 +13,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -36,18 +35,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf
-                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
-                        .ignoringRequestMatchers(
-                                "/api/auth/refresh",
-                                "/oauth2/**",
-                                "/login/oauth2/**",
-                                "/swagger-ui/**",
-                                "/v3/api-docs/**",
-                                "/actuator/**"
-                        )
-                )
+                .csrf(csrf -> csrf.disable()) // ← CSRF 완전 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .requestCache(cache -> cache.disable()) // ← 요청 캐시 비활성화 (JSESSIONID 제거)
+                .securityContext(context -> context.requireExplicitSave(false)) // ← 보안 컨텍스트 자동 저장 비활성화
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints (인증 불필요)
@@ -99,7 +90,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://yourdomain.com"
+                "https://yourdomain.com" // ← 운영환경에서 실제 도메인으로 변경 필요
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
