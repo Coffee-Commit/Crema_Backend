@@ -20,8 +20,12 @@ import java.time.Duration;
 @RequiredArgsConstructor
 @Service
 public class S3Service {
+
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
+
+    @Value("${cloud.aws.region.static}")
+    private String region;
 
     private final S3Client s3Client;
 
@@ -34,12 +38,12 @@ public class S3Service {
                 .contentType(multipartFile.getContentType())
                 .contentLength(multipartFile.getSize())
                 .build();
-        
+
         // S3에 객체 등록
         s3Client.putObject(putObjectRequest, RequestBody.fromInputStream(multipartFile.getInputStream(), multipartFile.getSize()));
-        
-        // 등록된 객체의 url 반환 (decoder: url 안의 한글or특수문자 깨짐 방지)
-        String url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, "ap-northeast-2", s3FileName);
+
+        // 등록된 객체의 url 반환 (decoder: url 안의 한글이나특수문자 깨짐 방지)
+        String url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, s3FileName);
         return URLDecoder.decode(url, "utf-8");
     }
 
@@ -61,7 +65,7 @@ public class S3Service {
     public String getImageUrl(String keyName) {
         try {
             // S3 객체의 직접 URL 반환 (만료 시간 없음)
-            String url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, "ap-northeast-2", keyName);
+            String url = String.format("https://%s.s3.%s.amazonaws.com/%s", bucket, region, keyName);
             return URLDecoder.decode(url, "utf-8");
         } catch (Exception e) {
             log.error("S3 이미지 URL 조회 중 오류 발생: " + e.toString());
@@ -77,14 +81,14 @@ public class S3Service {
                     .bucket(bucket)
                     .key(keyName)
                     .build();
-            
+
             // S3Presigner 생성 및 presigned URL 발급 (2분 유효)
             try (S3Presigner presigner = S3Presigner.create()) {
                 GetObjectPresignRequest presignRequest = GetObjectPresignRequest.builder()
                         .signatureDuration(Duration.ofMinutes(2))
                         .getObjectRequest(getObjectRequest)
                         .build();
-                
+
                 PresignedGetObjectRequest presignedRequest = presigner.presignGetObject(presignRequest);
                 return presignedRequest.url().toString();
             }
