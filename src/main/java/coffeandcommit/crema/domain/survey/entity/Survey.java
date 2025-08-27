@@ -4,6 +4,8 @@ import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+
 
 @Entity
 @Getter
@@ -20,10 +22,10 @@ public class Survey extends BaseEntity{
     @Column(nullable = false, length = 2048)
     private String fileUploadURL;
 
-    @Column(nullable = false)
-    private String talkSubject; // 대화주제
-
     @Column(columnDefinition = "TEXT")
-    private String subjectDescription; // 직접입력 주제
+    private String messageToGuide; // 직접입력 주제
+
+    @Column(nullable = false)
+    private LocalDateTime preferred_date; // 희망 날짜
 
 }
