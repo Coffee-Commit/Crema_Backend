@@ -1,0 +1,22 @@
+### 1. 루키 테스트 계정 생성
+POST http://localhost:8080/api/test/auth/create-rookie
+Content-Type: application/json
+
+### 2. 가이드 테스트 계정 생성
+POST http://localhost:8080/api/test/auth/create-guide
+Content-Type: application/json
+
+### 3. 테스트 계정 로그인 (🔥🔥🔥🔥🔥🔥1번 또는 2번으로 새로 생성된 계정의 닉네임을 수동으로 입력해야 함🔥🔥🔥🔥🔥🔥)
+POST http://localhost:8080/api/test/auth/login
+Content-Type: application/json
+
+{
+  "nickname": "rookie_1234예시5678"
+}
+
+### 4. JWT 토큰으로 내 정보 조회 테스트 (3번 에서 받은 accessToken을 Bearer 뒤에 붙여넣기, 다른 도메인에서도 token 사용 가능한지 확인용)
+GET http://localhost:8080/api/member/me
+Authorization: Bearer ~~~
+
+### 5. 테스트 계정 일괄 삭제
+DELETE http://localhost:8080/api/test/auth/cleanup
