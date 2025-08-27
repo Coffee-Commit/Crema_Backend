@@ -35,8 +35,10 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // ← CSRF 완전 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .requestCache(cache -> cache.disable()) // ← 요청 캐시 비활성화 (JSESSIONID 제거)
+                .securityContext(context -> context.requireExplicitSave(false)) // ← 보안 컨텍스트 자동 저장 비활성화
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         // Public endpoints (인증 불필요)
@@ -88,7 +90,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://yourdomain.com"
+                "https://yourdomain.com" // ← 운영환경에서 실제 도메인으로 변경 필요
         ));
 
         configuration.setAllowedMethods(Arrays.asList(

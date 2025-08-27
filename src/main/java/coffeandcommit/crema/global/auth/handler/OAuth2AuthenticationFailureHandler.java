@@ -10,8 +10,6 @@ import org.springframework.security.web.authentication.AuthenticationFailureHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 @Component
@@ -46,14 +44,17 @@ public class OAuth2AuthenticationFailureHandler implements AuthenticationFailure
             log.error("Exception cause: {}", exception.getCause().getMessage());
         }
 
-        // URL 인코딩을 통해 특수문자 처리
-        String encodedError = URLEncoder.encode(exception.getClass().getSimpleName(), StandardCharsets.UTF_8);
-        String encodedMessage = exception.getLocalizedMessage() != null
-                ? URLEncoder.encode(exception.getLocalizedMessage(), StandardCharsets.UTF_8)
-                : URLEncoder.encode("Unknown error", StandardCharsets.UTF_8);
+        // 에러 코드 결정
+        String errorCode = "AUTH_FAILED";
+        if (exception instanceof OAuth2AuthenticationException) {
+            OAuth2AuthenticationException oauth2Exception = (OAuth2AuthenticationException) exception;
+            if (oauth2Exception.getMessage() != null && oauth2Exception.getMessage().contains("탈퇴한 계정")) {
+                errorCode = "ACCOUNT_DELETED";
+            }
+        }
 
-        String targetUrl = String.format("%s?status=error&error=%s&message=%s",
-                redirectUri, encodedError, encodedMessage);
+        String targetUrl = String.format("%s?status=error&errorCode=%s",
+                redirectUri, errorCode);
 
         log.info("Redirecting to error page: {}", targetUrl);
         response.sendRedirect(targetUrl);

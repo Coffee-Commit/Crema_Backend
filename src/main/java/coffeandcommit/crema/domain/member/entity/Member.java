@@ -15,8 +15,13 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
-        @Index(name = "idx_member_nickname", columnList = "nicknsame")
-})
+        @Index(name = "idx_member_nickname", columnList = "nickname"),
+        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id")
+        },
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_member_provider", columnNames = {"provider", "provider_id"}), // OAuth 회원가입시 중복 방지
+                @UniqueConstraint(name = "uk_member_nickname_is_deleted", columnNames = {"nickname", "is_deleted"}) // 소프트 삭제된 계정의 닉네임을 재사용 가능하게 하되, 활성 계정 간 닉네임 충돌은 금지
+        })
 public class Member extends BaseEntity {
 
     @Id
@@ -33,7 +38,8 @@ public class Member extends BaseEntity {
     private String phoneNumber;
 
     @Column(nullable = false)
-    private Integer point;
+    @Builder.Default
+    private Integer point = 0;
 
     @Column(nullable = true, length = 500)
     private String profileImageUrl;
@@ -59,9 +65,8 @@ public class Member extends BaseEntity {
         if (description != null) {
             this.description = description;
         }
-        if (profileImageUrl != null) {
-            this.profileImageUrl = profileImageUrl;
-        }
+        // profileImageUrl이 null이어도 명시적으로 전달된 경우 업데이트 (이미지 삭제 시)
+        this.profileImageUrl = profileImageUrl;
     }
 
     // 포인트 추가

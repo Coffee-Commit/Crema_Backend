@@ -46,7 +46,6 @@ spring:
             client-secret: ${GOOGLE_CLIENT_SECRET}
             redirect-uri: "{baseUrl}/login/oauth2/code/google"
             scope:
-              - email
               - profile
           kakao:
             client-id: ${KAKAO_CLIENT_ID}
@@ -82,6 +81,7 @@ app:
     authorized-redirect-uri: http://localhost:8080/swagger-ui/index.html # ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
   cookie:
     domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정, 개발환경에선 빈 문자열
+    same-site: ${COOKIE_SAMESITE:Lax}  # OAuth2에서는 Lax가 적절, CSRF 공격 방어 가능
 
 cloud:
   aws:

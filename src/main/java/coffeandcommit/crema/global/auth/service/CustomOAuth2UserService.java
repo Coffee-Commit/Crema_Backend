@@ -35,8 +35,17 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             OAuth2User oAuth2User = super.loadUser(userRequest);
             return processOAuth2User(userRequest, oAuth2User);
         } catch (Exception e) {
-            log.error("OAuth2 user loading failed: {}", e.getMessage(), e);
-            throw new OAuth2AuthenticationException("OAuth2 사용자 정보 로딩에 실패했습니다.");
+            // 보안: 민감한 정보 노출 방지, provider만 로깅
+            log.error("OAuth2 user loading failed: {}",
+                    userRequest.getClientRegistration().getRegistrationId(), e.getMessage());
+
+            // 기존 OAuth2AuthenticationException은 그대로 전파
+            if (e instanceof OAuth2AuthenticationException) {
+                throw (OAuth2AuthenticationException) e;
+            }
+
+            // 새로운 예외는 일반적인 메시지로 래핑
+            throw new OAuth2AuthenticationException("OAuth2 인증 처리 중 오류가 발생했습니다.");
         }
     }
 
@@ -44,17 +53,20 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String registrationId = userRequest.getClientRegistration().getRegistrationId();
         OAuth2UserInfo userInfo = getOAuth2UserInfo(registrationId, oAuth2User.getAttributes());
 
-        // 기존 사용자 확인 또는 새 사용자 생성
-        Member member = memberRepository.findByProviderAndProviderId(registrationId, userInfo.getId())
+        // Provider ID null 검증 - 핵심 보안 체크
+        if (!StringUtils.hasText(userInfo.getId())) {
+            log.error("OAuth2 Provider ID is null or empty for provider: {}", registrationId);
+            throw new OAuth2AuthenticationException("OAuth2 제공자에서 유효하지 않은 사용자 ID를 받았습니다.");
+        }
+
+        // 기존 사용자 확인 또는 새 사용자 생성 (활성 회원만 조회)
+        Member member = memberRepository.findByProviderAndProviderIdAndIsDeletedFalse(registrationId, userInfo.getId())
                 .orElseGet(() -> createNewMember(registrationId, userInfo));
 
-        // 탈퇴한 사용자의 경우 예외 처리
+        // 탈퇴한 사용자의 경우 예외 처리 (추가 안전장치)
         if (Boolean.TRUE.equals(member.getIsDeleted())) {
             throw new OAuth2AuthenticationException("탈퇴한 계정입니다.");
         }
-
-        // 사용자 정보 업데이트 (프로필 이미지, 이름 등이 변경될 수 있음)
-        updateMemberInfo(member, userInfo);
 
         return new CustomOAuth2User(member, oAuth2User.getAttributes());
     }
@@ -72,6 +84,12 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
     }
 
     private Member createNewMember(String provider, OAuth2UserInfo userInfo) {
+        // Provider ID 재검증 (createNewMember 진입 전에도 확인)
+        if (!StringUtils.hasText(userInfo.getId())) {
+            log.error("Cannot create member with null/empty provider ID for provider: {}", provider);
+            throw new OAuth2AuthenticationException("사용자 생성에 필요한 정보가 부족합니다.");
+        }
+
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
         Member member = Member.builder()
@@ -79,32 +97,15 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .nickname(uniqueNickname)
                 .role(MemberRole.ROOKIE)
                 .point(0) // 초기 포인트
-                .profileImageUrl(userInfo.getImageUrl())
+                .profileImageUrl(null) // 프로필 이미지는 항상 null로 시작
                 .provider(provider)
                 .providerId(userInfo.getId())
                 .build();
 
-        log.info("Creating new member with provider: {}, nickname: {}",
-                provider, uniqueNickname);
+        log.info("Creating new member with provider: {}, providerId: {}, nickname: {}",
+                provider, userInfo.getId(), uniqueNickname);
 
         return memberRepository.save(member);
-    }
-
-    private void updateMemberInfo(Member member, OAuth2UserInfo userInfo) {
-        boolean updated = false;
-
-        // 프로필 이미지 업데이트 (기존에 없거나 OAuth 제공자의 이미지가 더 최신인 경우)
-        if (StringUtils.hasText(userInfo.getImageUrl()) &&
-                !StringUtils.hasText(member.getProfileImageUrl())) {
-
-            member.updateProfile(null, null, userInfo.getImageUrl());
-            updated = true;
-        }
-
-        if (updated) {
-            memberRepository.save(member);
-            log.info("Updated member info for: {}", member.getId());
-        }
     }
 
     private String generateUniqueNickname(String baseName) {
@@ -121,8 +122,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         String randomSuffix = UUID.randomUUID().toString().substring(0, 6);
         String nickname = cleanedBaseName + "_" + randomSuffix;
 
-        // uuid가 1/1500만의 확률로 중복되면 타임 스탬프로 닉네임 생성
-        while (memberRepository.existsByNickname(nickname)) {
+        // uuid가 1/1500만의 확률로 중복되면 타임 스탬프로 닉네임 생성 (활성 회원만 체크)
+        while (memberRepository.existsByNicknameAndIsDeletedFalse(nickname)) {
             randomSuffix = UUID.randomUUID().toString().substring(0, 6);
             nickname = cleanedBaseName + "_" + randomSuffix;
         }
