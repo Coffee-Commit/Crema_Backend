@@ -1,0 +1,7 @@
+# 로컬 개발환경 전용 설정
+app:
+  oauth2:
+    authorized-redirect-uri: http://localhost:8080/swagger-ui/index.html  # OAuth 성공 후 Swagger로 리다이렉트
+  cookie:
+    domain: ${COOKIE_DOMAIN:}  # 로컬에서는 쿠키 도메인 없음
+    same-site: ${COOKIE_SAMESITE:Lax}

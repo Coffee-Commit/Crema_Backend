@@ -16,7 +16,7 @@ public class MemberResponse {
     private String id;
     private String nickname;
     private MemberRole role;
-    private String phoneNumber;
+    private String email;
     private Integer point;
     private String profileImageUrl;
     private String description;

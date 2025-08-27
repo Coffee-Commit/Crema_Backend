@@ -59,8 +59,8 @@ public class MemberProfileService {
             // 새 프로필 이미지 업로드
             var uploadResponse = imageService.uploadProfileImage(imageFile, id);
 
-            // DB 업데이트
-            member.updateProfile(null, null, uploadResponse.getImageUrl());
+            // DB 업데이트 - updateProfile 메서드 수정된 시그니처로 호출
+            member.updateProfile(null, null, uploadResponse.getImageUrl(), null);
             Member savedMember = memberRepository.save(member);
 
             log.info("Member profile image updated: {}, new imageKey: {}", id, uploadResponse.getImageKey());
@@ -95,7 +95,7 @@ public class MemberProfileService {
             }
 
             // DB에서 프로필 이미지 URL 제거
-            member.updateProfile(null, null, null);
+            member.updateProfile(null, null, null, null);
             memberRepository.save(member);
         }
     }

@@ -3,6 +3,7 @@ package coffeandcommit.crema.domain.member.entity;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -17,7 +18,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @Table(name = "member", indexes = {
         @Index(name = "idx_member_nickname", columnList = "nickname"),
         @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id")
-        },
+},
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_member_provider", columnNames = {"provider", "provider_id"}), // OAuth 회원가입시 중복 방지
                 @UniqueConstraint(name = "uk_member_nickname_is_deleted", columnNames = {"nickname", "is_deleted"}) // 소프트 삭제된 계정의 닉네임을 재사용 가능하게 하되, 활성 계정 간 닉네임 충돌은 금지
@@ -34,8 +35,9 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    @Column(nullable = true, length = 13)
-    private String phoneNumber;
+    @Email(message = "올바른 이메일 형식이 아닙니다")
+    @Column(nullable = true, length = 320) // 이메일 표준 최대 길이
+    private String email;
 
     @Column(nullable = false)
     @Builder.Default
@@ -57,16 +59,20 @@ public class Member extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
-    // 프로필 업데이트 메서드
-    public void updateProfile(String nickname, String description, String profileImageUrl) {
+    // 프로필 업데이트 (이메일 추가)
+    public void updateProfile(String nickname, String description, String profileImageUrl, String email) {
         if (nickname != null) {
             this.nickname = nickname;
         }
         if (description != null) {
             this.description = description;
         }
-        // profileImageUrl이 null이어도 명시적으로 전달된 경우 업데이트 (이미지 삭제 시)
-        this.profileImageUrl = profileImageUrl;
+        if (profileImageUrl != null) {
+            this.profileImageUrl = profileImageUrl;
+        }
+        if (email != null) {
+            this.email = email.trim().toLowerCase(); // 소문자로 정규화
+        }
     }
 
     // 포인트 추가

@@ -56,18 +56,19 @@ public class MemberController {
         return ApiResponse.onSuccess(SuccessStatus.OK, member);
     }
 
-    @Operation(summary = "내 프로필 정보 업데이트", description = "현재 로그인한 사용자의 닉네임과 자기소개를 업데이트합니다.")
+    @Operation(summary = "내 프로필 정보 업데이트", description = "현재 로그인한 사용자의 닉네임, 자기소개, 이메일을 업데이트합니다.")
     @SecurityRequirement(name = "JWT")
     @PutMapping("/me/profile/info")
     public ApiResponse<MemberResponse> updateMyProfileInfo(
             @Parameter(description = "닉네임") @RequestParam(required = false) String nickname,
             @Parameter(description = "자기소개") @RequestParam(required = false) String description,
+            @Parameter(description = "이메일") @RequestParam(required = false) String email,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         String memberId = userDetails.getUsername(); // JWT에서 member ID 추출
 
         MemberResponse updatedMember = memberService.updateMemberProfileInfo(
-                memberId, nickname, description);
+                memberId, nickname, description, email);
 
         log.info("Profile info updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, updatedMember);
