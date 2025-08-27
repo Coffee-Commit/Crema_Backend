@@ -3,6 +3,7 @@ package coffeandcommit.crema.domain.member.entity;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Email;
 import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -16,8 +17,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
         @Index(name = "idx_member_nickname", columnList = "nickname"),
-        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id"),
-        @Index(name = "idx_member_email", columnList = "email") // 이메일 검색용 인덱스 추가
+        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id")
 },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_member_provider", columnNames = {"provider", "provider_id"}), // OAuth 회원가입시 중복 방지
@@ -35,6 +35,7 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
+    @Email(message = "올바른 이메일 형식이 아닙니다")
     @Column(nullable = true, length = 320) // 이메일 표준 최대 길이
     private String email;
 
@@ -58,7 +59,7 @@ public class Member extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
-    // 프로필 업데이트
+    // 프로필 업데이트 (이메일 추가)
     public void updateProfile(String nickname, String description, String profileImageUrl, String email) {
         if (nickname != null) {
             this.nickname = nickname;
@@ -73,11 +74,6 @@ public class Member extends BaseEntity {
         if (email != null) {
             this.email = email.trim().toLowerCase(); // 소문자로 정규화
         }
-    }
-
-    // 이메일만 업데이트하는 메서드 추가
-    public void updateEmail(String email) {
-        this.email = (email != null) ? email.trim().toLowerCase() : null;
     }
 
     // 포인트 추가

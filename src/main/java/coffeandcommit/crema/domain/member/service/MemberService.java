@@ -195,7 +195,19 @@ public class MemberService {
             return false;
         }
 
-        // 간단한 이메일 형식 검사: @ 포함, @앞뒤로 최소 1글자씩
-        return trimmed.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
+        // @ 정확히 1개만 허용
+        if (trimmed.indexOf('@') != trimmed.lastIndexOf('@')) {
+            return false;
+        }
+
+        // 기본적인 잘못된 패턴 체크
+        if (trimmed.startsWith(".") || trimmed.endsWith(".") ||
+                trimmed.startsWith("@") || trimmed.endsWith("@") ||
+                trimmed.contains("..") || trimmed.contains("@.") || trimmed.contains(".@")) {
+            return false;
+        }
+
+        // 영문, 숫자, 일부 특수문자(.-_)만 허용, 도메인은 2-8자 제한
+        return trimmed.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9-]+\\.[a-zA-Z]{2,8}$");
     }
 }
