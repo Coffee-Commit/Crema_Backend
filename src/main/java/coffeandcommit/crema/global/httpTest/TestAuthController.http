@@ -11,7 +11,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "rookie_1234예시5678"
+  "nickname": "rookie_4926예제6f5d"
 }
 
 ### 4. JWT 토큰으로 내 정보 조회 테스트 (3번 에서 받은 accessToken을 Bearer 뒤에 붙여넣기, 다른 도메인에서도 token 사용 가능한지 확인용)

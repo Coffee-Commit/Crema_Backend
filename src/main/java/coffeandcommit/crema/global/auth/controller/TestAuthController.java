@@ -24,7 +24,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/test/auth")
 @RequiredArgsConstructor
-@Profile("local") // 로컬 환경에서만 활성화
+@Profile("local")
 @Tag(name = "Test Auth API", description = "로컬 개발용 테스트 인증 API (local 프로필에서만 활성화)")
 public class TestAuthController {
 
@@ -73,7 +73,6 @@ public class TestAuthController {
             throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
 
-        // 테스트 계정인지 확인
         if (!isTestAccount(nickname)) {
             throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
@@ -81,7 +80,6 @@ public class TestAuthController {
         Member member = memberRepository.findByNicknameAndIsDeletedFalse(nickname)
                 .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // JWT 토큰 생성
         String accessToken = jwtTokenProvider.createAccessToken(member.getId());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
@@ -100,13 +98,6 @@ public class TestAuthController {
     @Operation(summary = "테스트 계정 일괄 삭제", description = "생성된 모든 테스트 계정을 완전 삭제합니다.")
     @DeleteMapping("/cleanup")
     public ApiResponse<Map<String, Object>> cleanupTestAccounts() {
-        // 네이티브 쿼리로 테스트 계정 직접 삭제 (is_deleted 조건 무시)
-        String deleteQuery = """
-            DELETE FROM member 
-            WHERE (nickname LIKE 'rookie_%' OR nickname LIKE 'guide_%')
-            AND provider = 'test'
-            """;
-
         int deletedCount = memberRepository.deleteTestAccountsNative();
 
         log.info("테스트 계정 완전 삭제 완료: {}개", deletedCount);
@@ -118,43 +109,49 @@ public class TestAuthController {
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
 
-    // === Private Helper Methods ===
-
-    /**
-     * 고유한 닉네임 생성 (role_uuid 형식)
-     */
     private String generateNickname(String rolePrefix) {
-        String uuid = UUID.randomUUID().toString().substring(0, 8);
-        String nickname = rolePrefix + "_" + uuid;
+        for (int i = 0; i < 5; i++) {
+            String uuid = UUID.randomUUID().toString().substring(0, 8);
+            String nickname = rolePrefix + "_" + uuid;
 
-        // 중복 체크 (만약의 경우를 대비)
-        while (memberRepository.existsByNicknameAndIsDeletedFalse(nickname)) {
-            uuid = UUID.randomUUID().toString().substring(0, 8);
-            nickname = rolePrefix + "_" + uuid;
+            if (!memberRepository.existsByNicknameAndIsDeletedFalse(nickname)) {
+                return nickname;
+            }
         }
 
-        return nickname;
+        throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
 
-    /**
-     * 테스트 멤버 생성
-     */
     private Member createTestMember(String nickname, MemberRole role) {
-        Member member = Member.builder()
-                .id(UUID.randomUUID().toString())
-                .nickname(nickname)
-                .role(role)
-                .point(0)
-                .provider("test") // 테스트 계정 구분자
-                .providerId(nickname) // 테스트용으로 닉네임과 동일하게 설정
-                .build();
+        try {
+            Member member = Member.builder()
+                    .id(UUID.randomUUID().toString())
+                    .nickname(nickname)
+                    .role(role)
+                    .point(0)
+                    .provider("test")
+                    .providerId(nickname)
+                    .build();
 
-        return memberRepository.save(member);
+            return memberRepository.saveAndFlush(member);
+
+        } catch (Exception e) {
+            log.warn("테스트 계정 생성 실패, 닉네임 재생성 후 재시도: {}", nickname);
+            String newNickname = generateNickname(role == MemberRole.ROOKIE ? "rookie" : "guide");
+
+            Member member = Member.builder()
+                    .id(UUID.randomUUID().toString())
+                    .nickname(newNickname)
+                    .role(role)
+                    .point(0)
+                    .provider("test")
+                    .providerId(newNickname)
+                    .build();
+
+            return memberRepository.save(member);
+        }
     }
 
-    /**
-     * 테스트 계정인지 확인 (rookie_* 또는 guide_* 패턴)
-     */
     private boolean isTestAccount(String nickname) {
         return nickname != null &&
                 (nickname.startsWith("rookie_") || nickname.startsWith("guide_"));
