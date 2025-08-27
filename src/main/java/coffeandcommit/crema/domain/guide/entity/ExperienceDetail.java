@@ -22,5 +22,11 @@ public class ExperienceDetail extends BaseEntity{
     private ExperienceGroup groupId; // FK, 가이드 ID
 
     @Column(nullable = false)
-    private String experienceDetail; // 상세 설명
+    private String who;
+
+    @Column(nullable = false)
+    private String solution;
+
+    @Column(nullable = false)
+    private String how;
 }
