@@ -29,6 +29,7 @@ class NewVideoCallV3Manager {
         this.localScreenShare = null;     // 자신의 화면공유 스트림
         this.remoteScreenShareUsername = null; // 화면공유하는 상대방 이름
         this.localCameraStream = null;    // 자신의 원래 캠 스트림
+        this.localCameraMediaStream = null; // 자신의 카메라 MediaStream (화면공유 시 PIP용)
         
         // 듀얼 화면 관리
         this.leftVideoStream = null;
@@ -265,12 +266,12 @@ class NewVideoCallV3Manager {
             
             // 즉시 우선순위 배치 시도 (이벤트 기다리지 말고)
             console.log('🚀 Subscriber 생성 즉시 우선순위 배치 시작');
-            this.arrangeVideosByPriority();
+            this.scheduleVideoArrangement('Subscriber 생성');
             
             // 여러 이벤트로 화면 배치를 시도 (안정성 향상)
             subscriber.on('streamPlaying', () => {
                 console.log('✅ 원격 스트림 준비 완료 (streamPlaying), 우선순위 배치 시작');
-                this.arrangeVideosByPriority();
+                this.scheduleVideoArrangement('원격 스트림 준비완료');
             });
             
             subscriber.on('videoElementCreated', () => {
@@ -319,7 +320,7 @@ class NewVideoCallV3Manager {
             if (wasRemoteScreenShare || isDestroyedScreenShare) {
                 console.log('🔄 화면공유 종료로 인한 화면 재배치');
                 setTimeout(() => {
-                    this.arrangeVideosByPriority();
+                    this.scheduleVideoArrangement('화면공유 종료');
                 }, 100);
             }
         });
@@ -389,6 +390,8 @@ class NewVideoCallV3Manager {
             
             // 자신의 카메라 스트림 저장 (화면공유 시 참조용)
             this.localCameraStream = this.publisher.stream;
+            // MediaStream 직접 저장 (더 안전한 방법)
+            this.localCameraMediaStream = this.publisher.stream.getMediaStream();
             
             // 내 비디오를 오른쪽 슬롯에 배치
             this.assignVideoToSlot(this.publisher.stream, this.sessionData.username, true);
@@ -400,7 +403,7 @@ class NewVideoCallV3Manager {
                 // 혹시나 해서 우선순위 배치도 한 번 시도
                 setTimeout(() => {
                     console.log('📺 Publisher 준비 완료로 인한 우선순위 배치 시도');
-                    this.arrangeVideosByPriority();
+                    this.scheduleVideoArrangement('Publisher 준비완료');
                 }, 500);
             });
             
@@ -442,34 +445,86 @@ class NewVideoCallV3Manager {
         }
     }
     
+    // 비디오 배치를 안전하게 스케줄링 (타이밍 문제 해결)
+    scheduleVideoArrangement(reason = '일반') {
+        console.log(`📅 비디오 배치 스케줄링: ${reason}`);
+        
+        // 즉시 한 번 시도
+        this.arrangeVideosByPriority();
+        
+        // 안전장치: 여러 번의 지연된 시도
+        setTimeout(() => {
+            console.log(`⏰ 500ms 후 비디오 재배치 (${reason})`);
+            this.arrangeVideosByPriority();
+        }, 500);
+        
+        setTimeout(() => {
+            console.log(`⏰ 1000ms 후 비디오 재배치 (${reason})`);
+            this.arrangeVideosByPriority();
+        }, 1000);
+        
+        setTimeout(() => {
+            console.log(`⏰ 2000ms 후 최종 비디오 재배치 (${reason})`);
+            this.arrangeVideosByPriority();
+        }, 2000);
+    }
+
     // 우선순위 기반 듀얼 화면 배치
     arrangeVideosByPriority() {
         console.log('🎯 우선순위 기반 듀얼 화면 배치 시작');
-        console.log('🔍 현재 상태:', {
+        // 상세한 현재 상태 로그
+        console.log('🔍 상세 현재 상태:', {
             remoteScreenShare: !!this.remoteScreenShare,
             localScreenShare: !!this.localScreenShare, 
             localCameraStream: !!this.localCameraStream,
+            localCameraMediaStream: !!this.localCameraMediaStream,
             subscribers: this.subscribers.length,
             leftVideo: !!this.leftVideo,
-            rightVideo: !!this.rightVideo
+            rightVideo: !!this.rightVideo,
+            isScreenSharing: this.isScreenSharing
         });
+        
+        if (this.remoteScreenShare) {
+            console.log('📺 상대방 화면공유 스트림 상세:', {
+                streamId: this.remoteScreenShare.streamId,
+                username: this.remoteScreenShareUsername,
+                hasMediaStream: !!this.remoteScreenShare.getMediaStream()
+            });
+        }
+        
+        if (this.localScreenShare) {
+            console.log('📺 자신의 화면공유 스트림 상세:', {
+                streamId: this.localScreenShare.streamId,
+                hasMediaStream: !!this.localScreenShare.getMediaStream()
+            });
+        }
+        
+        if (this.localCameraMediaStream) {
+            console.log('📹 저장된 카메라 MediaStream 상세:', {
+                videoTracks: this.localCameraMediaStream.getVideoTracks().length,
+                audioTracks: this.localCameraMediaStream.getAudioTracks().length,
+                active: this.localCameraMediaStream.active
+            });
+        }
         
         // 우선순위: 상대방 화면공유 > 자신의 화면공유 > 상대방 캠 > 자신의 캠
         if (this.remoteScreenShare) {
+            console.log('🎯 1번 조건 타김: 상대방 화면공유 우선 모드');
             // 상대방의 화면공유가 있으면 왼쪽(메인)에 배치
             console.log('📺 상대방 화면공유를 왼쪽(메인)으로 배치:', this.remoteScreenShareUsername);
+            console.log('📺 DOM 업데이트 시작: leftVideo <- 상대방 화면공유');
             this.leftVideo.srcObject = this.remoteScreenShare.getMediaStream();
             this.leftVideoStream = this.remoteScreenShare;
             this.leftUsername = this.remoteScreenShareUsername;
             this.leftUserTag.textContent = `${this.remoteScreenShareUsername} (화면공유)`;
             this.leftVideoOverlay.classList.add('hidden');
             
-            // 자신의 캠을 오른쪽(작은 화면)에 배치
-            if (this.localCameraStream) {
-                console.log('📱 자신의 캠을 오른쪽(작은 화면)으로 배치');
-                this.rightVideo.srcObject = this.localCameraStream.getMediaStream();
+            // 자신의 캠을 오른쪽(작은 화면)에 배치 (저장된 MediaStream 사용)
+            if (this.localCameraMediaStream) {
+                console.log('📱 자신의 캠을 오른쪽(작은 화면)으로 배치 (저장된 MediaStream 사용)');
+                this.rightVideo.srcObject = this.localCameraMediaStream;
                 this.rightVideo.muted = true;
-                this.rightVideoStream = this.localCameraStream;
+                this.rightVideoStream = null; // MediaStream 직접 사용하므로 stream 객체는 null
                 this.rightUsername = this.sessionData.username;
                 this.rightUserTag.textContent = `${this.sessionData.username} (나)`;
                 this.rightVideoOverlay.classList.add('hidden');
@@ -482,8 +537,10 @@ class NewVideoCallV3Manager {
             }
             
         } else if (this.localScreenShare) {
+            console.log('🎯 2번 조건 타김: 자신의 화면공유 단독 모드');
             // 자신의 화면공유만 있는 경우 - 왼쪽(메인)에 배치
             console.log('📺 자신의 화면공유를 왼쪽(메인)으로 배치');
+            console.log('📺 DOM 업데이트 시작: leftVideo <- 자신의 화면공유');
             this.leftVideo.srcObject = this.localScreenShare.getMediaStream();
             this.leftVideoStream = this.localScreenShare;
             this.leftUsername = this.sessionData.username;
@@ -507,6 +564,7 @@ class NewVideoCallV3Manager {
             }
             
         } else {
+            console.log('🎯 3번 조건 타김: 일반 듀얼 화면 모드 (화면공유 없음)');
             // 화면공유가 없는 경우 - 일반 듀얼 화면 배치
             console.log('📺 일반 듀얼 화면 모드');
             
@@ -550,18 +608,19 @@ class NewVideoCallV3Manager {
                 console.log('⚠️ 원격 일반 스트림을 찾을 수 없음');
             }
             
-            // 자신을 오른쪽에 배치
-            if (this.localCameraStream) {
-                console.log('👤 자신을 오른쪽으로 배치');
+            // 자신을 오른쪽에 배치 (저장된 MediaStream 우선 사용)
+            const myMediaStream = this.localCameraMediaStream || (this.localCameraStream && this.localCameraStream.getMediaStream());
+            if (myMediaStream) {
+                console.log('👤 자신을 오른쪽으로 배치 (저장된 MediaStream 우선)');
                 try {
-                    const localMediaStream = this.localCameraStream.getMediaStream();
                     console.log('👤 자신의 스트림 정보:', {
-                        hasMediaStream: !!localMediaStream,
-                        videoTracks: localMediaStream ? localMediaStream.getVideoTracks().length : 0,
-                        audioTracks: localMediaStream ? localMediaStream.getAudioTracks().length : 0
+                        hasMediaStream: !!myMediaStream,
+                        videoTracks: myMediaStream.getVideoTracks().length,
+                        audioTracks: myMediaStream.getAudioTracks().length,
+                        usingStoredStream: !!this.localCameraMediaStream
                     });
                     
-                    this.rightVideo.srcObject = localMediaStream;
+                    this.rightVideo.srcObject = myMediaStream;
                     this.rightVideo.muted = true; // 자신의 오디오는 음소거
                     this.rightVideo.play().catch(e => console.log('⚠️ 오른쪽 비디오 재생 실패:', e));
                     this.rightVideoStream = this.localCameraStream;
@@ -576,6 +635,104 @@ class NewVideoCallV3Manager {
                 console.log('⚠️ 로컬 카메라 스트림이 없음');
             }
         }
+        
+        // DOM 업데이트 결과 확인
+        console.log('🔍 최종 DOM 업데이트 결과:', {
+            leftVideo_srcObject: !!this.leftVideo?.srcObject,
+            rightVideo_srcObject: !!this.rightVideo?.srcObject,
+            leftUserTag: this.leftUserTag?.textContent,
+            rightUserTag: this.rightUserTag?.textContent
+        });
+        
+        // UI 모드 업데이트 (전체화면/PIP 모드 전환)
+        this.updateUIMode();
+        
+        console.log('✨ arrangeVideosByPriority() 완료');
+    }
+    
+    // ===================================
+    // UI 모드 관리 함수들
+    // ===================================
+    
+    // 전체화면 모드 설정 (화면공유 시)
+    setFullscreenMode(mainScreenId, pipScreenId) {
+        console.log('🔄 전체화면 모드 전환:', {mainScreenId, pipScreenId});
+        
+        const videoArea = document.querySelector('.video-area');
+        const mainScreen = document.getElementById(mainScreenId);
+        const pipScreen = document.getElementById(pipScreenId);
+        
+        if (!videoArea || !mainScreen || !pipScreen) {
+            console.error('❌ UI 요소를 찾을 수 없음:', {videoArea: !!videoArea, mainScreen: !!mainScreen, pipScreen: !!pipScreen});
+            return;
+        }
+        
+        // 전체화면 모드 클래스 추가
+        videoArea.classList.add('fullscreen-mode');
+        
+        // 기존 클래스 제거
+        mainScreen.classList.remove('main', 'pip');
+        pipScreen.classList.remove('main', 'pip');
+        
+        // 새로운 클래스 적용
+        mainScreen.classList.add('main');
+        pipScreen.classList.add('pip');
+        
+        console.log('✅ 전체화면 모드 설정 완료 - Main:', mainScreenId, 'PIP:', pipScreenId);
+    }
+    
+    // 듀얼 화면 모드 복귀 (화면공유 종료 시)
+    setDualScreenMode() {
+        console.log('🔄 듀얼 화면 모드 복귀');
+        
+        const videoArea = document.querySelector('.video-area');
+        const leftScreen = document.getElementById('leftVideoScreen');
+        const rightScreen = document.getElementById('rightVideoScreen');
+        
+        if (!videoArea || !leftScreen || !rightScreen) {
+            console.error('❌ UI 요소를 찾을 수 없음');
+            return;
+        }
+        
+        // 모든 모드 클래스 제거
+        videoArea.classList.remove('fullscreen-mode');
+        leftScreen.classList.remove('main', 'pip');
+        rightScreen.classList.remove('main', 'pip');
+        
+        console.log('✅ 듀얼 화면 모드 복귀 완료');
+    }
+    
+    // 현재 상태에 따라 UI 모드 결정 및 적용
+    updateUIMode() {
+        console.log('🎨 UI 모드 업데이트 시작');
+        
+        // 화면공유가 있는지 확인
+        const hasScreenShare = !!(this.remoteScreenShare || this.localScreenShare);
+        
+        if (!hasScreenShare) {
+            // 화면공유가 없으면 듀얼 화면 모드
+            console.log('📺 화면공유 없음 -> 듀얼 화면 모드');
+            this.setDualScreenMode();
+            return;
+        }
+        
+        // 화면공유가 있으면 전체화면 모드
+        let mainScreenId, pipScreenId;
+        
+        if (this.remoteScreenShare) {
+            // 상대방 화면공유 -> 왼쪽이 메인, 오른쪽이 PIP
+            mainScreenId = 'leftVideoScreen';
+            pipScreenId = 'rightVideoScreen';
+            console.log('📺 상대방 화면공유 -> 왼쪽 메인, 오른쪽 PIP');
+        } else if (this.localScreenShare) {
+            // 자신의 화면공유 -> 왼쪽이 메인, 오른쪽이 PIP
+            mainScreenId = 'leftVideoScreen';
+            pipScreenId = 'rightVideoScreen';
+            console.log('📺 자신의 화면공유 -> 왼쪽 메인, 오른쪽 PIP');
+        }
+        
+        this.setFullscreenMode(mainScreenId, pipScreenId);
+        console.log('✅ UI 모드 업데이트 완료');
     }
     
     // 듀얼 화면에 비디오 스트림 할당
@@ -686,8 +843,13 @@ class NewVideoCallV3Manager {
                 mirror: false
             });
             
-            // 기존 Publisher를 화면공유 Publisher로 교체
+            // MediaStream 저장 후 기존 Publisher 교체
             if (this.publisher) {
+                // 화면공유 전 카메라 MediaStream 보전
+                if (!this.localCameraMediaStream) {
+                    this.localCameraMediaStream = this.publisher.stream.getMediaStream();
+                    console.log('📹 카메라 MediaStream 보전 완료');
+                }
                 await this.session.unpublish(this.publisher);
             }
             
@@ -700,8 +862,8 @@ class NewVideoCallV3Manager {
             this.isScreenSharing = true;
             this.toggleScreenShareBtn.classList.add('active');
             
-            // 우선순위에 따른 듀얼 화면 배치
-            this.arrangeVideosByPriority();
+            // 스트림 준비 완료 대기 후 우선순위 배치
+            this.scheduleVideoArrangement('화면공유 시작');
             
             // 화면공유 종료 감지
             screenStream.getVideoTracks()[0].addEventListener('ended', () => {
@@ -742,9 +904,9 @@ class NewVideoCallV3Manager {
             this.isScreenSharing = false;
             this.toggleScreenShareBtn.classList.remove('active');
             
-            // 우선순위에 따른 화면 재배치 (약간의 지연 후)
+            // 우선순위에 따른 화면 재배치 (스케줄링 사용)
             setTimeout(() => {
-                this.arrangeVideosByPriority();
+                this.scheduleVideoArrangement('화면공유 중단');
             }, 100);
             
             this.showToast('화면공유가 중단되었습니다');
