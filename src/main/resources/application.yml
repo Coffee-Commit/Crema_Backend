@@ -1,3 +1,13 @@
+# 메인 설정 파일 - 프로필 선택
+spring:
+  profiles:
+    # 여기서 원하는 프로필을 활성화
+    # local: 로컬 개발용 (OAuth -> Swagger 리다이렉트)
+    # dev: dev 서버용 (OAuth -> 프론트엔드 리다이렉트)
+    active: local  # 기본값: local, dev 서버에서는 환경변수로 오버라이드
+
+---
+# 공통 설정 (모든 프로필에서 사용)
 spring:
   application:
     name: Crema
@@ -7,7 +17,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true  # 개발환경이니까 SQL 로그 유지
+    show-sql: true
   servlet:
     multipart:
       max-file-size: 10MB
@@ -36,7 +46,6 @@ spring:
           min-idle: 2
   profiles:
     include: oauth
-    active: ${SPRING_PROFILES_ACTIVE:dev}
   security:
     oauth2:
       client:
@@ -44,7 +53,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"  # 자동으로 현재 서버 주소로 치환
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"
             scope:
               - profile
           kakao:
@@ -52,7 +61,7 @@ spring:
             client-secret: ${KAKAO_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"   # 자동으로 현재 서버 주소로 치환
+            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
             scope:
               - profile_nickname
         provider:
@@ -61,7 +70,6 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-  # S3 자동 설정 비활성화
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
@@ -72,16 +80,9 @@ server:
   port: 8080
 
 jwt:
-  secret: ${JWT_KEY} # 랜덤 비밀키(Base64 인코딩됨)
-  access-token-expiration: 1800000  # 30분 (밀리초)
-  refresh-token-expiration: 1209600000  # 14일 (밀리초)
-
-app:
-  oauth2:
-    authorized-redirect-uri: ${FRONTEND_URL}/oauth2/redirect  # 환경변수로 프론트엔드 주소 설정
-  cookie:
-    domain: ${COOKIE_DOMAIN:}  # 로컬에서는 빈값, dev에서는 .coffeechat.kro.kr
-    same-site: ${COOKIE_SAMESITE:Lax}  # OAuth2에서는 Lax가 적절, CSRF 공격 방어 가능
+  secret: ${JWT_KEY}
+  access-token-expiration: 1800000  # 30분
+  refresh-token-expiration: 1209600000  # 14일
 
 cloud:
   aws:
