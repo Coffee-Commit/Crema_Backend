@@ -11,13 +11,13 @@ import java.util.List;
 @Schema(description = "프론트엔드 설정 정보 응답")
 public class SessionConfigResponse {
 
-    @Schema(description = "OpenVidu 서버 URL", example = "http://localhost:25565")
+    @Schema(description = "OpenVidu 서버 URL", example = "https://crema.bitcointothemars.com")
     private String openviduServerUrl;
 
-    @Schema(description = "백엔드 API 기본 URL", example = "http://localhost:8081")
+    @Schema(description = "백엔드 API 기본 URL", example = "https://crema.bitcointothemars.com")
     private String apiBaseUrl;
 
-    @Schema(description = "WebSocket URL", example = "ws://localhost:25565")
+    @Schema(description = "WebSocket URL", example = "wss://crema.bitcointothemars.com/openvidu")
     private String webSocketUrl;
 
     @Schema(description = "기본 비디오 설정")

@@ -21,13 +21,13 @@ public class QuickJoinResponse {
     @Schema(description = "OpenVidu 연결 토큰")
     private String token;
 
-    @Schema(description = "OpenVidu 서버 URL", example = "http://localhost:25565")
+    @Schema(description = "OpenVidu 서버 URL", example = "https://crema.bitcointothemars.com")
     private String openviduServerUrl;
 
-    @Schema(description = "백엔드 API 기본 URL", example = "http://localhost:8081")
+    @Schema(description = "백엔드 API 기본 URL", example = "https://crema.bitcointothemars.com")
     private String apiBaseUrl;
 
-    @Schema(description = "WebSocket URL", example = "ws://localhost:25565")
+    @Schema(description = "WebSocket URL", example = "wss://crema.bitcointothemars.com/openvidu")
     private String webSocketUrl;
 
     @Schema(description = "새로 생성된 세션 여부", example = "true")

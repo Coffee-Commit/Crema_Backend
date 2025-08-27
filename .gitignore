@@ -36,5 +36,66 @@ out/
 ### VS Code ###
 .vscode/
 
+# 환경 설정 파일 (보안 중요)
+.env
+.env.*
+*.env
+.env.local
+.env.production
+.env.development
+
+# OpenVidu 설정 및 인증서 (보안 중요)
+openvidu/
+openvidu-*/
+*.p12
+*.key
+*.crt
+*.pem
+certificates/
+
+# AWS 관련 설정 (보안 중요)
+iam-policy-*.json
+*.json.backup
+aws-config/
+
+# 백업 파일들
+*.backup
+*-backup-*/
+*.bak
+*.copy
+
+# Claude 작업 파일들
+.claude/
+CLAUDE.md
+.claude*/
+
+# 로그 파일들
+*.log
+logs/
+app.log*
+
+# 업로드 디렉토리
+uploads/
+temp/
+tmp/
+
+# 문서 디렉토리 (별도 관리)
+docs/
+doc/
+
+# 설치 스크립트 (로컬 환경 전용)
+scripts/install-*
+scripts/setup-*
+scripts/local-*
+
+# 중복 파일들
+*.copy
+* copy
+* copy/
+.gradle copy/
+.gitattributes copy
+.github copy/
+.gitignore copy
+
+# 기존 설정 유지
 *.yml
-/doc/

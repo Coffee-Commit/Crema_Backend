@@ -24,7 +24,7 @@ public class Participant {
     @Column(name = "token", nullable = false)
     private String token;
 
-    @Column(name = "username", nullable = false)
+    @Column(name = "username", nullable = false, length = 50)
     private String username;
 
     @Column(name = "joined_at", nullable = false)

@@ -74,6 +74,7 @@ public class VideoCallService {
     }
 
     public String joinSession(String sessionId, String username) {
+        log.info("세션 참가 요청 - sessionId: {}, username: {}", sessionId, username);
         try {
             VideoSession videoSession = videoSessionRepository
                     .findBySessionIdAndIsActiveTrue(sessionId)
@@ -81,11 +82,15 @@ public class VideoCallService {
 
             Session openviduSession = openVidu.getActiveSession(sessionId);
             if (openviduSession == null) {
+                log.info("OpenVidu 세션이 존재하지 않아 새로 생성합니다 - sessionId: {}", sessionId);
                 openviduSession = openVidu.createSession(
                     new SessionProperties.Builder()
                             .customSessionId(sessionId)
                             .build()
                 );
+                log.info("OpenVidu 세션 생성 완료 - sessionId: {}", sessionId);
+            } else {
+                log.info("기존 OpenVidu 세션 발견 - sessionId: {}", sessionId);
             }
 
             ConnectionProperties connectionProperties = new ConnectionProperties.Builder()
@@ -95,9 +100,38 @@ public class VideoCallService {
                     .build();
 
             Connection connection = openviduSession.createConnection(connectionProperties);
-            String token = connection.getToken();
+            String originalToken = connection.getToken();
             
-            log.info("Generated token: {}", token);
+            log.info("Original token from OpenVidu Java Client: {}", originalToken);
+            
+            // 토큰 형식 통일 및 ALB 라우팅 개선
+            String token = originalToken;
+            
+            // 다양한 토큰 형식 처리 및 통일
+            if (originalToken.startsWith("wss://")) {
+                log.info("Processing WebSocket token format");
+                
+                // wss://crema.bitcointothemars.com?sessionId=xxx&token=yyy 형태 처리
+                if (originalToken.contains("crema.bitcointothemars.com?")) {
+                    // ALB 라우팅을 위한 /openvidu 경로 추가 (경로 없는 형태로 수정)
+                    token = originalToken.replace(
+                        "wss://crema.bitcointothemars.com?", 
+                        "wss://crema.bitcointothemars.com?"
+                    );
+                }
+                
+                // 이미 /openvidu 경로가 있는 경우 제거 (클라이언트에서 동적 처리)
+                token = token.replace("/openvidu?", "?");
+                
+            } else if (originalToken.startsWith("tok_")) {
+                log.info("Processing pure token format: {}", originalToken);
+                // 순수 토큰 형태인 경우 WebSocket URL로 변환
+                token = String.format("wss://crema.bitcointothemars.com?sessionId=%s&token=%s", 
+                                    sessionId, originalToken);
+            }
+            
+            log.info("Unified token format: {}", token);
+            
             log.info("Connection ID: {}", connection.getConnectionId());
 
             Participant participant = Participant.builder()

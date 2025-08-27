@@ -161,14 +161,20 @@ class NewVideoCallManager {
         const wsUrl = window.OPENVIDU_SERVER_URL.replace('http://', 'ws://') + '/openvidu';
         console.log('Setting WebSocket URL to:', wsUrl);
         
-        // WebSocket 생성을 가로채서 URL 강제 변경
+        // WebSocket 생성을 가로채서 ALB path mapping에 맞춘 URL로 변경
         const originalWebSocket = window.WebSocket;
         window.WebSocket = function(url, protocols) {
             console.log('Original WebSocket URL:', url);
             
-            // 4443 포트를 25565로 강제 변경
-            if (url.includes('localhost:4443')) {
-                url = url.replace('localhost:4443', 'localhost:25565');
+            // OpenVidu WebSocket URL을 ALB path-based routing에 맞게 변경
+            if (url.includes('crema.bitcointothemars.com') && url.includes('wss://')) {
+                // OpenVidu가 DOMAIN_OR_PUBLIC_IP를 사용해서 경로 없이 URL을 생성하므로
+                // /openvidu 경로를 강제로 추가해야 함
+                if (!url.includes('/openvidu')) {
+                    // wss://crema.bitcointothemars.com?sessionId=... 
+                    // → wss://crema.bitcointothemars.com/openvidu?sessionId=...
+                    url = url.replace('crema.bitcointothemars.com', 'crema.bitcointothemars.com/openvidu');
+                }
                 console.log('Modified WebSocket URL:', url);
             }
             
@@ -995,11 +1001,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // OpenVidu 서버 URL 전역 설정 확인 및 재설정
     console.log('Current OPENVIDU_SERVER_URL:', window.OPENVIDU_SERVER_URL);
     
-    // WebSocket URL을 HTTP URL에서 WS URL로 변환
-    if (window.OPENVIDU_SERVER_URL && window.OPENVIDU_SERVER_URL.includes('http://localhost:25565')) {
-        window.OPENVIDU_WEBSOCKET_URL = 'ws://localhost:25565/openvidu';
-        console.log('Set OPENVIDU_WEBSOCKET_URL:', window.OPENVIDU_WEBSOCKET_URL);
-    }
+    // WebSocket URL을 ALB 경로 기반으로 설정 (HTTPS → WSS)
+    window.OPENVIDU_WEBSOCKET_URL = 'wss://crema.bitcointothemars.com/openvidu';
+    console.log('Set OPENVIDU_WEBSOCKET_URL:', window.OPENVIDU_WEBSOCKET_URL);
     
     new NewVideoCallManager();
 });

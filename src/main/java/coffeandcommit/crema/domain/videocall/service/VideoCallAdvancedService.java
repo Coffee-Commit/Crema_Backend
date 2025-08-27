@@ -67,15 +67,15 @@ public class VideoCallAdvancedService {
             // 세션 참가 및 토큰 발급
             String token = videoCallService.joinSession(session.getSessionId(), username);
             
-            // 세션 설정 정보 포함하여 응답
+            // 세션 설정 정보 포함하여 응답 (EC2 직접 연결)
             return QuickJoinResponse.builder()
                     .sessionId(session.getSessionId())
                     .sessionName(session.getSessionName())
                     .username(username)
                     .token(token)
-                    .openviduServerUrl(openviduUrl)
-                    .apiBaseUrl("http://localhost:" + serverPort)
-                    .webSocketUrl(openviduUrl.replace("http://", "ws://"))
+                    .openviduServerUrl("https://crema.bitcointothemars.com/openvidu")
+                    .apiBaseUrl("https://crema.bitcointothemars.com")
+                    .webSocketUrl("wss://crema.bitcointothemars.com/openvidu")
                     .isNewSession(java.time.Duration.between(session.getCreatedAt(), java.time.LocalDateTime.now()).toMillis() < 5000) // 5초 내 생성된 세션
                     .configInfo(buildConfigInfo())
                     .build();
@@ -99,9 +99,9 @@ public class VideoCallAdvancedService {
      */
     public SessionConfigResponse getFrontendConfig() {
         return SessionConfigResponse.builder()
-                .openviduServerUrl(openviduUrl)
-                .apiBaseUrl("http://localhost:" + serverPort)
-                .webSocketUrl(openviduUrl.replace("http://", "ws://"))
+                .openviduServerUrl("https://ec2-13-209-15-208.ap-northeast-2.compute.amazonaws.com:5443")
+                .apiBaseUrl("https://crema.bitcointothemars.com")
+                .webSocketUrl("wss://crema.bitcointothemars.com/openvidu")
                 .defaultVideoConfig(SessionConfigResponse.VideoConfig.builder()
                         .resolution("640x480")
                         .frameRate(30)
@@ -159,9 +159,9 @@ public class VideoCallAdvancedService {
                     .sessionName(session.getSessionName())
                     .username(username)
                     .token(newToken)
-                    .openviduServerUrl(openviduUrl)
-                    .apiBaseUrl("http://localhost:" + serverPort)
-                    .webSocketUrl(openviduUrl.replace("http://", "ws://"))
+                    .openviduServerUrl("https://crema.bitcointothemars.com/openvidu")
+                    .apiBaseUrl("https://crema.bitcointothemars.com")
+                    .webSocketUrl("wss://crema.bitcointothemars.com/openvidu")
                     .isTokenRefresh(true)
                     .configInfo(buildConfigInfo())
                     .build();
@@ -197,9 +197,9 @@ public class VideoCallAdvancedService {
                     .sessionName(session.getSessionName())
                     .username(username)
                     .token(newToken)
-                    .openviduServerUrl(openviduUrl)
-                    .apiBaseUrl("http://localhost:" + serverPort)
-                    .webSocketUrl(openviduUrl.replace("http://", "ws://"))
+                    .openviduServerUrl("https://crema.bitcointothemars.com/openvidu")
+                    .apiBaseUrl("https://crema.bitcointothemars.com")
+                    .webSocketUrl("wss://crema.bitcointothemars.com/openvidu")
                     .isReconnection(true)
                     .configInfo(buildConfigInfo())
                     .build();

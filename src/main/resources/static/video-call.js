@@ -105,9 +105,11 @@ class VideoCallManager {
             if (window.WebSocket) {
                 const originalWebSocket = window.WebSocket;
                 window.WebSocket = function(url, protocols) {
-                    if (url.includes('localhost:4443')) {
-                        url = url.replace('localhost:4443', 'localhost:25565');
-                        console.log('WebSocket URL redirected to:', url);
+                    // ALB 경로 기반 WebSocket 연결로 변환
+                    if (url.includes('localhost:4443') || url.includes('localhost')) {
+                        url = url.replace(/https?:\/\/[^\/]+/, 'wss://crema.bitcointothemars.com');
+                        url = url.replace(/ws:\/\/[^\/]+/, 'wss://crema.bitcointothemars.com');
+                        console.log('WebSocket URL redirected to ALB:', url);
                     }
                     return new originalWebSocket(url, protocols);
                 };

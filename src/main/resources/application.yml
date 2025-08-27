@@ -16,9 +16,9 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-    url: jdbc:mysql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: jdbc:mysql://localhost:3306/crema?characterEncoding=UTF-8&useUnicode=true&characterSetResults=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Seoul
+    username: crema
+    password: crema123
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
@@ -35,24 +35,142 @@ spring:
 server:
   port: 8080
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,loggers,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+    loggers:
+      enabled: true
 
 logging:
   level:
     org.springframework.security: debug
+    org.springframework.web: debug
+    org.springframework.web.socket: debug
+    io.openvidu: debug
+    coffeandcommit.crema.domain.videocall: debug
     root: info
 
 
 jwt:
-  secret: ${JWT_KEY} # 랜덤 비밀키(Base64 인코딩됨)
+  secret: bXlfc2VjcmV0X2tleV8xMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo= # 랜덤 비밀키(Base64 인코딩됨)
   access-token-expiration: 1800000  # 30분
   refresh-token-expiration: 1209600000  # 14일
 
 cloud:
   aws:
     s3:
-      bucket: ${AWS_S3_NAME}
+      bucket: dummy-bucket
     stack.auto: false
     region.static: ap-northeast-2
     credentials:
-      accessKey: ${AWS_ACCESS_KEY}
-      secretKey: ${AWS_SECRET_KEY}
+      accessKey: dummy-access-key
+      secretKey: dummy-secret-key
+
+openvidu:
+  url: ${OPENVIDU_URL:http://localhost:5443}
+  secret: ${OPENVIDU_SECRET:MY_SECRET}
+
+---
+# 프로덕션 환경 설정
+spring:
+  config:
+    activate:
+      on-profile: prod
+  
+  application:
+    name: Crema
+  
+  jpa:
+    hibernate:
+      ddl-auto: validate  # 프로덕션에서는 스키마 자동 생성 비활성화
+    show-sql: false       # 프로덕션에서는 SQL 로깅 비활성화
+  
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 15MB
+  
+  datasource:
+    hikari:
+      minimum-idle: 10
+      maximum-pool-size: 20
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:crema}?characterEncoding=UTF-8&useUnicode=true&characterSetResults=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME:crema}
+    password: ${DB_PASSWORD:crema123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 2000ms
+      connect-timeout: 2000ms
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,loggers
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+    loggers:
+      enabled: true
+    metrics:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.security: warn
+    org.springframework.web: warn
+    org.springframework.web.socket: info
+    io.openvidu: info
+    coffeandcommit.crema.domain.videocall: info
+    coffeandcommit.crema: info
+    root: info
+  file:
+    name: /app/logs/crema.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+
+jwt:
+  secret: ${JWT_KEY:bXlfc2VjcmV0X2tleV8xMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=}
+  access-token-expiration: 1800000
+  refresh-token-expiration: 1209600000
+
+cloud:
+  aws:
+    s3:
+      bucket: ${AWS_S3_BUCKET:dummy-bucket}
+    stack.auto: false
+    region.static: ap-northeast-2
+    credentials:
+      accessKey: ${AWS_ACCESS_KEY:dummy-access-key}
+      secretKey: ${AWS_SECRET_KEY:dummy-secret-key}
+
+openvidu:
+  url: ${OPENVIDU_URL:http://localhost:5443}
+  secret: ${OPENVIDU_SECRET:MY_SECRET}
