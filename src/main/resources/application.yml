@@ -70,7 +70,7 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-  # Spring Cloud AWS 자동설정 완전 비활성화
+  # Spring Cloud AWS 자동설정 비활성화 (S3 config 직접 구현한 것 적용하기 위함)
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration

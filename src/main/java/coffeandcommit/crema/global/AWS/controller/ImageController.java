@@ -20,7 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RestController
-@RequestMapping("/api/v1/images")
+@RequestMapping("/api/images")
 @RequiredArgsConstructor
 @Tag(name = "Image API", description = "이미지 업로드/삭제/조회 API")
 public class ImageController {
@@ -75,10 +75,10 @@ public class ImageController {
             summary = "이미지 삭제",
             description = "S3에서 이미지를 삭제합니다. imageKey는 전체 경로를 포함해야 합니다."
     )
-    @DeleteMapping("/{imageKey:.+}")
+    @DeleteMapping("/delete")
     public ResponseEntity<Response<ImageDeleteResponse>> deleteImage(
             @Parameter(description = "삭제할 이미지의 S3 키 (예: study-diary-images/user123_20241201_image.jpg)", required = true)
-            @PathVariable String imageKey,
+            @RequestParam("imageKey") String imageKey,
 
             @AuthenticationPrincipal UserDetails userDetails) {
 
@@ -125,10 +125,10 @@ public class ImageController {
             summary = "이미지 URL 조회",
             description = "이미지의 Presigned URL을 생성합니다. (2분간 유효)"
     )
-    @GetMapping("/{imageKey:.+}/url")
+    @GetMapping("/url")
     public ResponseEntity<Response<ImageUrlResponse>> getImageUrl(
             @Parameter(description = "조회할 이미지의 S3 키", required = true)
-            @PathVariable String imageKey,
+            @RequestParam("imageKey") String imageKey,
 
             @AuthenticationPrincipal UserDetails userDetails) {
 
