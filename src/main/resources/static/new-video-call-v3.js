@@ -475,10 +475,10 @@ class NewVideoCallV3Manager {
                 this.rightVideoOverlay.classList.add('hidden');
             }
             
-            // 자신의 화면공유가 있다면 숨김 처리 (상대방 우선)
+            // 두 명 다 화면공유하는 경우: 자신의 화면공유는 보이지 않음 (상대방 우선)
             if (this.localScreenShare) {
-                console.log('🫥 자신의 화면공유 숨김 처리 (상대방 우선)');
-                // 자신의 화면공유는 표시하지 않음 (요구사항)
+                console.log('🫥 둘 다 화면공유 중: 자신의 화면공유는 숨김 처리, 상대방 화면공유 우선 표시');
+                // 자신의 화면공유는 표시하지 않음 (요구사항: 둘 다 화면공유 시 서로 상대방 것만 보임)
             }
             
         } else if (this.localScreenShare) {
@@ -490,14 +490,19 @@ class NewVideoCallV3Manager {
             this.leftUserTag.textContent = `${this.sessionData.username} (화면공유)`;
             this.leftVideoOverlay.classList.add('hidden');
             
-            // 자신의 캠을 오른쪽(작은 화면)에 배치
-            if (this.localCameraStream) {
-                console.log('📱 자신의 캠을 오른쪽(작은 화면)으로 배치');
-                this.rightVideo.srcObject = this.localCameraStream.getMediaStream();
-                this.rightVideo.muted = true;
-                this.rightVideoStream = this.localCameraStream;
-                this.rightUsername = this.sessionData.username;
-                this.rightUserTag.textContent = `${this.sessionData.username} (나)`;
+            // 상대방의 캠을 오른쪽(작은 화면)에 배치 (요구사항에 맞게 수정)
+            const remoteCameraSubscriber = this.subscribers.find(sub => !this.isScreenShareStream(sub.stream));
+            if (remoteCameraSubscriber) {
+                const remoteConnection = remoteCameraSubscriber.stream.connection;
+                const remoteUsername = remoteConnection.data.split('%')[0] || '상대방';
+                const remoteMediaStream = remoteCameraSubscriber.stream.getMediaStream();
+                
+                console.log('📱 상대방의 캠을 오른쪽(작은 화면)으로 배치:', remoteUsername);
+                this.rightVideo.srcObject = remoteMediaStream;
+                this.rightVideo.muted = false; // 상대방 오디오는 들을 수 있게
+                this.rightVideoStream = remoteCameraSubscriber.stream;
+                this.rightUsername = remoteUsername;
+                this.rightUserTag.textContent = remoteUsername;
                 this.rightVideoOverlay.classList.add('hidden');
             }
             

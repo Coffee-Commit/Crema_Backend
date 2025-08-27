@@ -16,14 +16,14 @@ spring:
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
-    url: jdbc:mysql://localhost:3306/crema?characterEncoding=UTF-8&useUnicode=true&characterSetResults=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Seoul
-    username: crema
-    password: crema123
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:crema}?characterEncoding=UTF-8&useUnicode=true&characterSetResults=utf8&connectionCollation=utf8mb4_unicode_ci&serverTimezone=Asia/Seoul
+    username: ${DB_USERNAME:crema}
+    password: ${DB_PASSWORD:crema123}
     driver-class-name: com.mysql.cj.jdbc.Driver
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
       timeout: 2000ms
       connect-timeout: 2000ms
       lettuce:
@@ -58,19 +58,19 @@ logging:
 
 
 jwt:
-  secret: bXlfc2VjcmV0X2tleV8xMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo= # 랜덤 비밀키(Base64 인코딩됨)
+  secret: ${JWT_KEY:bXlfc2VjcmV0X2tleV8xMjM0NTY3ODkwYWJjZGVmZ2hpamtsbW5vcHFyc3R1dnd4eXo=} # 환경변수 사용
   access-token-expiration: 1800000  # 30분
   refresh-token-expiration: 1209600000  # 14일
 
 cloud:
   aws:
     s3:
-      bucket: dummy-bucket
+      bucket: ${AWS_S3_BUCKET:dummy-bucket}
     stack.auto: false
     region.static: ap-northeast-2
     credentials:
-      accessKey: dummy-access-key
-      secretKey: dummy-secret-key
+      accessKey: ${AWS_ACCESS_KEY:dummy-access-key}
+      secretKey: ${AWS_SECRET_KEY:dummy-secret-key}
 
 openvidu:
   url: ${OPENVIDU_URL:http://localhost:5443}
