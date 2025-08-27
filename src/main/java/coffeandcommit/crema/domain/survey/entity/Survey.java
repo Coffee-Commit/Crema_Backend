@@ -22,7 +22,7 @@ public class Survey extends BaseEntity{
     @Column(nullable = false, length = 2048)
     private String fileUploadURL;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(nullable = true)
     private String messageToGuide; // 직접입력 주제
 
     @Column(name = "preferred_date",nullable = false)
