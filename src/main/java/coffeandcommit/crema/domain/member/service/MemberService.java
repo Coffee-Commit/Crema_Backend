@@ -72,7 +72,7 @@ public class MemberService {
             throw new BaseException(ErrorStatus.INVALID_EMAIL_FORMAT);
         }
 
-        member.updateProfile(nickname, description, null, email); // 이미지 URL은 null로 고정
+        member.updateProfile(nickname, description, member.getProfileImageUrl(), email);
         Member savedMember = memberRepository.save(member);
 
         log.info("Member profile info updated: {}", id);
