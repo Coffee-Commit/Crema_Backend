@@ -16,8 +16,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
         @Index(name = "idx_member_nickname", columnList = "nickname"),
-        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id")
-        },
+        @Index(name = "idx_member_provider_provider_id", columnList = "provider, provider_id"),
+        @Index(name = "idx_member_email", columnList = "email") // 이메일 검색용 인덱스 추가
+},
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_member_provider", columnNames = {"provider", "provider_id"}), // OAuth 회원가입시 중복 방지
                 @UniqueConstraint(name = "uk_member_nickname_is_deleted", columnNames = {"nickname", "is_deleted"}) // 소프트 삭제된 계정의 닉네임을 재사용 가능하게 하되, 활성 계정 간 닉네임 충돌은 금지
@@ -34,8 +35,8 @@ public class Member extends BaseEntity {
     @Enumerated(EnumType.STRING)
     private MemberRole role;
 
-    @Column(nullable = true, length = 13)
-    private String phoneNumber;
+    @Column(nullable = true, length = 320) // 이메일 표준 최대 길이
+    private String email;
 
     @Column(nullable = false)
     @Builder.Default
@@ -58,7 +59,7 @@ public class Member extends BaseEntity {
     private Boolean isDeleted = false;
 
     // 프로필 업데이트
-    public void updateProfile(String nickname, String description, String profileImageUrl) {
+    public void updateProfile(String nickname, String description, String profileImageUrl, String email) {
         if (nickname != null) {
             this.nickname = nickname;
         }
@@ -67,6 +68,16 @@ public class Member extends BaseEntity {
         }
         // profileImageUrl이 null이어도 명시적으로 전달된 경우 업데이트 (이미지 삭제 시)
         this.profileImageUrl = profileImageUrl;
+
+        // 이메일 업데이트
+        if (email != null) {
+            this.email = email.trim().toLowerCase(); // 소문자로 정규화
+        }
+    }
+
+    // 이메일만 업데이트하는 메서드 추가
+    public void updateEmail(String email) {
+        this.email = (email != null) ? email.trim().toLowerCase() : null;
     }
 
     // 포인트 추가

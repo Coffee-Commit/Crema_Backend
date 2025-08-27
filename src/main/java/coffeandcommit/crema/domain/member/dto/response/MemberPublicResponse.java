@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 /**
  * 타인 조회용 회원 정보 응답 DTO
- * 개인정보 (phoneNumber, point, provider, createdAt) 제외
+ * 개인정보 (email, point, provider, createdAt) 제외
  */
 @Data
 @NoArgsConstructor

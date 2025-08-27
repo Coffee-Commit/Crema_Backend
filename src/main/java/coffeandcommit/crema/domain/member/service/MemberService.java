@@ -49,10 +49,10 @@ public class MemberService {
     }
 
     /**
-     * 회원 프로필 정보 업데이트 (닉네임, 자기소개만)
+     * 회원 프로필 정보 업데이트 (닉네임, 자기소개, 이메일)
      */
     @Transactional
-    public MemberResponse updateMemberProfileInfo(String id, String nickname, String description) {
+    public MemberResponse updateMemberProfileInfo(String id, String nickname, String description, String email) {
         Member member = findActiveMemberById(id);
 
         // 닉네임 중복 체크 (본인 제외, 활성 회원만)
@@ -67,7 +67,12 @@ public class MemberService {
             throw new BaseException(ErrorStatus.INVALID_NICKNAME_FORMAT);
         }
 
-        member.updateProfile(nickname, description, null); // 이미지 URL은 null로 고정
+        // 이메일 유효성 검사
+        if (email != null && !email.trim().isEmpty() && !isValidEmail(email)) {
+            throw new BaseException(ErrorStatus.INVALID_EMAIL_FORMAT);
+        }
+
+        member.updateProfile(nickname, description, null, email); // 이미지 URL은 null로 고정
         Member savedMember = memberRepository.save(member);
 
         log.info("Member profile info updated: {}", id);
@@ -156,6 +161,9 @@ public class MemberService {
                 .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
     }
 
+    /**
+     * 닉네임 유효성 검사
+     */
     private boolean isValidNickname(String nickname) {
         if (nickname == null || nickname.trim().isEmpty()) {
             return false;
@@ -170,5 +178,24 @@ public class MemberService {
 
         // 한글, 영문, 숫자, 언더스코어만 허용
         return trimmed.matches("^[가-힣a-zA-Z0-9_]+$");
+    }
+
+    /**
+     * 이메일 유효성 검사
+     */
+    private boolean isValidEmail(String email) {
+        if (email == null || email.trim().isEmpty()) {
+            return false;
+        }
+
+        String trimmed = email.trim();
+
+        // 길이 체크 (최대 320자)
+        if (trimmed.length() > 320) {
+            return false;
+        }
+
+        // 간단한 이메일 형식 검사: @ 포함, @앞뒤로 최소 1글자씩
+        return trimmed.matches("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
     }
 }
