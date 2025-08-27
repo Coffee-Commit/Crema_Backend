@@ -24,6 +24,12 @@ class NewVideoCallV3Manager {
         this.isScreenSharing = false;
         this.screenSharePublisher = null;
         
+        // 화면공유 우선순위 관리
+        this.remoteScreenShare = null;    // 상대방의 화면공유 스트림
+        this.localScreenShare = null;     // 자신의 화면공유 스트림
+        this.remoteScreenShareUsername = null; // 화면공유하는 상대방 이름
+        this.localCameraStream = null;    // 자신의 원래 캠 스트림
+        
         // 듀얼 화면 관리
         this.leftVideoStream = null;
         this.rightVideoStream = null;
@@ -237,103 +243,85 @@ class NewVideoCallV3Manager {
                 hasAudio: event.stream.hasAudio
             });
             
-            // 사용자명 추출 및 표시
+            // 사용자명 추출
             const username = event.stream.connection.data.split('%')[0];
             console.log('👤 구독자 사용자명:', username);
             
-            // Subscriber 생성 시 왼쪽 비디오 요소를 직접 지정
-            const subscriber = this.session.subscribe(event.stream, this.leftVideo);
-            this.subscribers.push(subscriber);
-            console.log('✅ Subscriber 생성됨, 왼쪽 비디오에 연결');
+            // 🎯 화면공유 감지 및 우선순위 처리
+            const isScreenShare = this.isScreenShareStream(event.stream);
+            console.log(`📺 스트림 타입 감지: ${username} - ${isScreenShare ? '화면공유' : '일반 비디오'}`);
             
-            // 추가적으로 addVideoElement도 시도
-            try {
-                subscriber.addVideoElement(this.leftVideo);
-                console.log('✅ addVideoElement로 비디오 요소 추가됨');
-            } catch (error) {
-                console.log('⚠️ addVideoElement 실패 (정상적일 수 있음):', error.message);
+            if (isScreenShare) {
+                // 상대방의 화면공유 스트림 등록
+                this.remoteScreenShare = event.stream;
+                this.remoteScreenShareUsername = username;
+                console.log('📺 상대방 화면공유 등록:', username);
             }
             
-            // 타임아웃으로 강제 연결 시도 (2초 후)
+            // Subscriber 생성 (비디오 요소는 우선순위에 따라 나중에 배치)
+            const subscriber = this.session.subscribe(event.stream, undefined);
+            this.subscribers.push(subscriber);
+            console.log('✅ Subscriber 생성됨');
+            
+            // 즉시 우선순위 배치 시도 (이벤트 기다리지 말고)
+            console.log('🚀 Subscriber 생성 즉시 우선순위 배치 시작');
+            this.arrangeVideosByPriority();
+            
+            // 여러 이벤트로 화면 배치를 시도 (안정성 향상)
+            subscriber.on('streamPlaying', () => {
+                console.log('✅ 원격 스트림 준비 완료 (streamPlaying), 우선순위 배치 시작');
+                this.arrangeVideosByPriority();
+            });
+            
+            subscriber.on('videoElementCreated', () => {
+                console.log('✅ 원격 비디오 요소 생성됨 (videoElementCreated), 우선순위 배치 시작');
+                this.arrangeVideosByPriority();
+            });
+            
+            // 추가 안전장치: 여러 번의 지연된 시도
             setTimeout(() => {
-                console.log('⏰ 타임아웃 - 강제 스트림 연결 시도');
-                try {
-                    if (this.leftVideo.srcObject === null && subscriber.stream) {
-                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
-                        this.leftVideo.muted = false;  // 음소거 해제
-                        this.leftVideo.play();  // 비디오 재생 시작
-                        this.leftVideoStream = subscriber.stream;
-                        this.leftUsername = username;
-                        this.leftUserTag.textContent = username;
-                        this.leftVideoOverlay.classList.add('hidden');
-                        console.log('✅ 타임아웃 강제 연결 성공');
-                    } else if (this.leftVideo.srcObject !== null) {
-                        console.log('✅ 이미 스트림이 연결되어 있음');
-                        // 이미 연결되어 있어도 재생 시도
-                        try {
-                            this.leftVideo.play();
-                        } catch (playError) {
-                            console.log('⚠️ 비디오 재생 시도 실패:', playError.message);
-                        }
-                    }
-                } catch (error) {
-                    console.error('❌ 타임아웃 강제 연결 실패:', error);
-                }
+                console.log('⏰ 500ms 후 강제 우선순위 배치 시작');
+                this.arrangeVideosByPriority();
+            }, 500);
+            
+            setTimeout(() => {
+                console.log('⏰ 1000ms 후 강제 우선순위 배치 시작');
+                this.arrangeVideosByPriority();
+            }, 1000);
+            
+            setTimeout(() => {
+                console.log('⏰ 2000ms 후 강제 우선순위 배치 시작');
+                this.arrangeVideosByPriority();
             }, 2000);
             
-            subscriber.on('videoElementCreated', (videoEvent) => {
-                console.log('✅ 구독자 비디오 요소 생성됨');
-                
-                // 왼쪽 슬롯 설정
-                this.leftVideoStream = subscriber.stream;
-                this.leftUsername = username;
-                this.leftUserTag.textContent = username;
-                this.leftVideoOverlay.classList.add('hidden');
-                
-                // 즉시 스트림 연결 시도
-                console.log('🔧 즉시 스트림 연결 시도');
-                try {
-                    if (subscriber.stream && subscriber.stream.getMediaStream()) {
-                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
-                        this.leftVideo.muted = false;  // 음소거 해제 (상대방 오디오를 들을 수 있도록)
-                        this.leftVideo.play();  // 비디오 재생 시작
-                        console.log('✅ 즉시 스트림 연결 성공');
-                    } else {
-                        console.log('⚠️ 스트림이 아직 준비되지 않음');
-                    }
-                } catch (error) {
-                    console.error('❌ 즉시 스트림 연결 실패:', error);
-                }
-            });
-            
-            subscriber.on('streamReady', () => {
-                console.log('✅ 구독자 스트림 준비됨');
-                console.log('🔄 스트림 준비 완료 - 사용자:', username);
-                
-                // 스트림이 준비되면 다시 한번 확실하게 설정
-                this.leftVideoStream = subscriber.stream;
-                this.leftUsername = username;
-                this.leftUserTag.textContent = username;
-                this.leftVideoOverlay.classList.add('hidden');
-                
-                // 추가: 수동으로 비디오 요소에 스트림 연결 (혹시 자동 연결이 안된 경우 대비)
-                if (this.leftVideo.srcObject === null) {
-                    console.log('🔧 수동으로 비디오 스트림 연결 시도');
-                    try {
-                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
-                        console.log('✅ 수동 비디오 스트림 연결 성공');
-                    } catch (error) {
-                        console.error('❌ 수동 비디오 스트림 연결 실패:', error);
-                    }
-                }
-            });
         });
         
         // 스트림 삭제 이벤트
         this.session.on('streamDestroyed', (event) => {
             console.log('🎥 스트림 삭제됨:', event);
+            
+            // 제거되는 스트림이 화면공유인지 확인
+            const isDestroyedScreenShare = this.isScreenShareStream(event.stream);
+            let wasRemoteScreenShare = false;
+            
+            // 상대방의 화면공유 스트림이 제거되는 경우
+            if (this.remoteScreenShare && this.remoteScreenShare.streamId === event.stream.streamId) {
+                console.log('📺 상대방 화면공유 스트림 제거됨:', this.remoteScreenShareUsername);
+                this.remoteScreenShare = null;
+                this.remoteScreenShareUsername = null;
+                wasRemoteScreenShare = true;
+            }
+            
             this.removeVideoFromSlot(event.stream);
             this.subscribers = this.subscribers.filter(sub => sub.stream !== event.stream);
+            
+            // 화면공유 제거 시 우선순위 재배치
+            if (wasRemoteScreenShare || isDestroyedScreenShare) {
+                console.log('🔄 화면공유 종료로 인한 화면 재배치');
+                setTimeout(() => {
+                    this.arrangeVideosByPriority();
+                }, 100);
+            }
         });
         
         // 참가자 연결 이벤트
@@ -399,17 +387,189 @@ class NewVideoCallV3Manager {
             await this.session.publish(this.publisher);
             console.log('✅ Publisher 발행 완료');
             
+            // 자신의 카메라 스트림 저장 (화면공유 시 참조용)
+            this.localCameraStream = this.publisher.stream;
+            
             // 내 비디오를 오른쪽 슬롯에 배치
             this.assignVideoToSlot(this.publisher.stream, this.sessionData.username, true);
             
             // Publisher 이벤트 리스너
             this.publisher.on('streamReady', () => {
                 console.log('✅ Publisher 스트림 준비됨');
+                
+                // 혹시나 해서 우선순위 배치도 한 번 시도
+                setTimeout(() => {
+                    console.log('📺 Publisher 준비 완료로 인한 우선순위 배치 시도');
+                    this.arrangeVideosByPriority();
+                }, 500);
             });
             
         } catch (error) {
             console.error('❌ Publisher 초기화 실패:', error);
             throw error;
+        }
+    }
+    
+    // 화면공유 스트림 감지 유틸리티 함수
+    isScreenShareStream(stream) {
+        try {
+            // OpenVidu에서 화면공유 스트림 확인 방법들
+            // 1. typeOfVideo 속성 확인 (화면공유의 경우 'SCREEN' 또는 'CAMERA')
+            if (stream.typeOfVideo === 'SCREEN') {
+                return true;
+            }
+            
+            // 2. MediaStream의 비디오 트랙 설정 확인
+            const mediaStream = stream.getMediaStream();
+            if (mediaStream && mediaStream.getVideoTracks().length > 0) {
+                const videoTrack = mediaStream.getVideoTracks()[0];
+                // 화면공유 트랙은 보통 label에 'screen' 관련 문자열이 포함됨
+                if (videoTrack.label && (videoTrack.label.toLowerCase().includes('screen') || 
+                    videoTrack.label.toLowerCase().includes('display'))) {
+                    return true;
+                }
+            }
+            
+            // 3. videoSource 확인 (없을 경우 fallback)
+            if (stream.videoSource && stream.videoSource.toString().includes('screen')) {
+                return true;
+            }
+            
+            return false;
+        } catch (error) {
+            console.warn('화면공유 스트림 감지 실패:', error);
+            return false;
+        }
+    }
+    
+    // 우선순위 기반 듀얼 화면 배치
+    arrangeVideosByPriority() {
+        console.log('🎯 우선순위 기반 듀얼 화면 배치 시작');
+        console.log('🔍 현재 상태:', {
+            remoteScreenShare: !!this.remoteScreenShare,
+            localScreenShare: !!this.localScreenShare, 
+            localCameraStream: !!this.localCameraStream,
+            subscribers: this.subscribers.length,
+            leftVideo: !!this.leftVideo,
+            rightVideo: !!this.rightVideo
+        });
+        
+        // 우선순위: 상대방 화면공유 > 자신의 화면공유 > 상대방 캠 > 자신의 캠
+        if (this.remoteScreenShare) {
+            // 상대방의 화면공유가 있으면 왼쪽(메인)에 배치
+            console.log('📺 상대방 화면공유를 왼쪽(메인)으로 배치:', this.remoteScreenShareUsername);
+            this.leftVideo.srcObject = this.remoteScreenShare.getMediaStream();
+            this.leftVideoStream = this.remoteScreenShare;
+            this.leftUsername = this.remoteScreenShareUsername;
+            this.leftUserTag.textContent = `${this.remoteScreenShareUsername} (화면공유)`;
+            this.leftVideoOverlay.classList.add('hidden');
+            
+            // 자신의 캠을 오른쪽(작은 화면)에 배치
+            if (this.localCameraStream) {
+                console.log('📱 자신의 캠을 오른쪽(작은 화면)으로 배치');
+                this.rightVideo.srcObject = this.localCameraStream.getMediaStream();
+                this.rightVideo.muted = true;
+                this.rightVideoStream = this.localCameraStream;
+                this.rightUsername = this.sessionData.username;
+                this.rightUserTag.textContent = `${this.sessionData.username} (나)`;
+                this.rightVideoOverlay.classList.add('hidden');
+            }
+            
+            // 자신의 화면공유가 있다면 숨김 처리 (상대방 우선)
+            if (this.localScreenShare) {
+                console.log('🫥 자신의 화면공유 숨김 처리 (상대방 우선)');
+                // 자신의 화면공유는 표시하지 않음 (요구사항)
+            }
+            
+        } else if (this.localScreenShare) {
+            // 자신의 화면공유만 있는 경우 - 왼쪽(메인)에 배치
+            console.log('📺 자신의 화면공유를 왼쪽(메인)으로 배치');
+            this.leftVideo.srcObject = this.localScreenShare.getMediaStream();
+            this.leftVideoStream = this.localScreenShare;
+            this.leftUsername = this.sessionData.username;
+            this.leftUserTag.textContent = `${this.sessionData.username} (화면공유)`;
+            this.leftVideoOverlay.classList.add('hidden');
+            
+            // 자신의 캠을 오른쪽(작은 화면)에 배치
+            if (this.localCameraStream) {
+                console.log('📱 자신의 캠을 오른쪽(작은 화면)으로 배치');
+                this.rightVideo.srcObject = this.localCameraStream.getMediaStream();
+                this.rightVideo.muted = true;
+                this.rightVideoStream = this.localCameraStream;
+                this.rightUsername = this.sessionData.username;
+                this.rightUserTag.textContent = `${this.sessionData.username} (나)`;
+                this.rightVideoOverlay.classList.add('hidden');
+            }
+            
+        } else {
+            // 화면공유가 없는 경우 - 일반 듀얼 화면 배치
+            console.log('📺 일반 듀얼 화면 모드');
+            
+            // 원격 일반 스트림 찾기
+            console.log('🔍 Subscribers 검색:', this.subscribers.map(sub => ({
+                streamId: sub.stream.streamId,
+                isScreenShare: this.isScreenShareStream(sub.stream),
+                hasMediaStream: !!sub.stream.getMediaStream()
+            })));
+            
+            const remoteSubscriber = this.subscribers.find(sub => !this.isScreenShareStream(sub.stream));
+            console.log('🔍 찾은 원격 Subscriber:', !!remoteSubscriber);
+            
+            if (remoteSubscriber) {
+                const remoteConnection = remoteSubscriber.stream.connection;
+                const remoteUsername = remoteConnection.data.split('%')[0] || '상대방';
+                const mediaStream = remoteSubscriber.stream.getMediaStream();
+                
+                console.log('👥 상대방 배치 정보:', {
+                    username: remoteUsername,
+                    hasMediaStream: !!mediaStream,
+                    videoTracks: mediaStream ? mediaStream.getVideoTracks().length : 0,
+                    audioTracks: mediaStream ? mediaStream.getAudioTracks().length : 0
+                });
+                
+                // 상대방을 왼쪽에 배치
+                console.log('👥 상대방을 왼쪽으로 배치:', remoteUsername);
+                try {
+                    this.leftVideo.srcObject = mediaStream;
+                    this.leftVideo.muted = false; // 상대방 오디오는 들을 수 있게
+                    this.leftVideo.play().catch(e => console.log('⚠️ 왼쪽 비디오 재생 실패:', e));
+                    this.leftVideoStream = remoteSubscriber.stream;
+                    this.leftUsername = remoteUsername;
+                    this.leftUserTag.textContent = remoteUsername;
+                    this.leftVideoOverlay.classList.add('hidden');
+                    console.log('✅ 상대방 비디오 배치 완료');
+                } catch (error) {
+                    console.error('❌ 상대방 비디오 배치 실패:', error);
+                }
+            } else {
+                console.log('⚠️ 원격 일반 스트림을 찾을 수 없음');
+            }
+            
+            // 자신을 오른쪽에 배치
+            if (this.localCameraStream) {
+                console.log('👤 자신을 오른쪽으로 배치');
+                try {
+                    const localMediaStream = this.localCameraStream.getMediaStream();
+                    console.log('👤 자신의 스트림 정보:', {
+                        hasMediaStream: !!localMediaStream,
+                        videoTracks: localMediaStream ? localMediaStream.getVideoTracks().length : 0,
+                        audioTracks: localMediaStream ? localMediaStream.getAudioTracks().length : 0
+                    });
+                    
+                    this.rightVideo.srcObject = localMediaStream;
+                    this.rightVideo.muted = true; // 자신의 오디오는 음소거
+                    this.rightVideo.play().catch(e => console.log('⚠️ 오른쪽 비디오 재생 실패:', e));
+                    this.rightVideoStream = this.localCameraStream;
+                    this.rightUsername = this.sessionData.username;
+                    this.rightUserTag.textContent = `${this.sessionData.username} (나)`;
+                    this.rightVideoOverlay.classList.add('hidden');
+                    console.log('✅ 자신의 비디오 배치 완료');
+                } catch (error) {
+                    console.error('❌ 자신의 비디오 배치 실패:', error);
+                }
+            } else {
+                console.log('⚠️ 로컬 카메라 스트림이 없음');
+            }
         }
     }
     
@@ -528,12 +688,15 @@ class NewVideoCallV3Manager {
             
             await this.session.publish(this.screenSharePublisher);
             
-            // 화면공유를 오른쪽 슬롯에 표시
-            this.assignVideoToSlot(this.screenSharePublisher.stream, `${this.sessionData.username} (화면공유)`, true);
+            // 자신의 화면공유 스트림 등록
+            this.localScreenShare = this.screenSharePublisher.stream;
             
             // 상태 업데이트
             this.isScreenSharing = true;
             this.toggleScreenShareBtn.classList.add('active');
+            
+            // 우선순위에 따른 듀얼 화면 배치
+            this.arrangeVideosByPriority();
             
             // 화면공유 종료 감지
             screenStream.getVideoTracks()[0].addEventListener('ended', () => {
@@ -560,15 +723,24 @@ class NewVideoCallV3Manager {
                 this.screenSharePublisher = null;
             }
             
+            // 자신의 화면공유 스트림 제거
+            this.localScreenShare = null;
+            
             // 기존 Publisher 다시 발행
             if (this.publisher) {
                 await this.session.publish(this.publisher);
-                this.assignVideoToSlot(this.publisher.stream, this.sessionData.username, true);
+                // 카메라 스트림 복원
+                this.localCameraStream = this.publisher.stream;
             }
             
             // 상태 업데이트
             this.isScreenSharing = false;
             this.toggleScreenShareBtn.classList.remove('active');
+            
+            // 우선순위에 따른 화면 재배치 (약간의 지연 후)
+            setTimeout(() => {
+                this.arrangeVideosByPriority();
+            }, 100);
             
             this.showToast('화면공유가 중단되었습니다');
             console.log('화면공유 중단 완료');
