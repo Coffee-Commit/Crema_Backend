@@ -190,6 +190,33 @@ button:active {
     font-style: italic;
 }
 
+/* v3 새로운 UI 강조 스타일 */
+.radio-option:has(input[value="v3"]) {
+    background: linear-gradient(135deg, #fff8f0 0%, #fff4e6 100%);
+    border-color: #ff9500;
+    position: relative;
+}
+
+.radio-option:has(input[value="v3"]) .radio-text {
+    background: linear-gradient(135deg, #ff9500 0%, #ff6b35 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+}
+
+.radio-option:has(input[value="v3"]):hover {
+    border-color: #ff6b35;
+    background: linear-gradient(135deg, #fff4e6 0%, #ffedda 100%);
+    box-shadow: 0 4px 12px rgba(255, 149, 0, 0.2);
+}
+
+.radio-option:has(input[value="v3"]:checked) {
+    border-color: #ff6b35;
+    background: linear-gradient(135deg, #fff0e6 0%, #ffe6d9 100%);
+    box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+}
+
 .session-info p {
     margin-bottom: 8px;
     color: #333;

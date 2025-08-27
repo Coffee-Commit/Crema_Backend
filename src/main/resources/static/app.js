@@ -171,7 +171,19 @@ class VideoCallApp {
         });
         
         // 선택된 UI 버전에 따라 다른 페이지로 이동
-        const pageUrl = selectedVersion === 'v2' ? 'new-video-call-v2.html' : 'new-video-call.html';
+        let pageUrl;
+        switch(selectedVersion) {
+            case 'v2':
+                pageUrl = 'new-video-call-v2.html';
+                break;
+            case 'v3':
+                pageUrl = 'new-video-call-v3.html';
+                break;
+            default:
+                pageUrl = 'new-video-call.html';
+                break;
+        }
+        
         window.location.href = `/${pageUrl}?${params.toString()}`;
     }
 

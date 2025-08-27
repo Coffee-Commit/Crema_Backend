@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CremaChat - 화상통화 v3</title>
+    <link rel="stylesheet" href="new-video-call-v3.css">
+    <!-- Font Awesome 아이콘 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- OpenVidu 라이브러리 -->
+    <script src="https://github.com/OpenVidu/openvidu/releases/download/v2.30.0/openvidu-browser-2.30.0.js"></script>
+    <script type="text/javascript">
+        // OpenVidu 서버 URL 전역 설정
+        window.OPENVIDU_SERVER_URL = 'https://crema.bitcointothemars.com/openvidu';
+        window.OPENVIDU_SERVER_SECRET = 'MY_SECRET';
+        
+        // 페이지 로드 후 OpenVidu 초기화 확인
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('OpenVidu available:', typeof OpenVidu !== 'undefined');
+            console.log('WebRTC available:', typeof RTCPeerConnection !== 'undefined');
+        });
+    </script>
+</head>
+<body>
+    <div class="chat-container">
+        <!-- 헤더 -->
+        <header class="chat-header">
+            <div class="logo-timer">
+                <span class="logo">CremaChat</span>
+                <span class="timer" id="callDuration">11:01</span>
+            </div>
+            <div class="header-tabs">
+                <button class="tab-button active" id="chatTabBtn">채팅 <span class="badge" id="chatBadge">0</span></button>
+                <button class="tab-button" id="filesTabBtn">공유된 자료</button>
+            </div>
+        </header>
+
+        <!-- 메인 컨텐츠 -->
+        <main class="main-content">
+            <!-- 비디오 영역 -->
+            <div class="video-area">
+                <!-- 첫 번째 비디오 화면 -->
+                <div class="video-screen" id="leftVideoScreen">
+                    <video id="leftVideo" autoplay playsinline></video>
+                    <div class="video-overlay" id="leftVideoOverlay">
+                        <div class="no-video-message">
+                            <div class="no-video-avatar">📹</div>
+                            <p>비디오가 꺼져있습니다</p>
+                        </div>
+                    </div>
+                    <span class="user-tag" id="leftUserTag">가이드, 정유경</span>
+                </div>
+                
+                <!-- 두 번째 비디오 화면 -->
+                <div class="video-screen" id="rightVideoScreen">
+                    <video id="rightVideo" autoplay playsinline></video>
+                    <div class="video-overlay" id="rightVideoOverlay">
+                        <div class="no-video-message">
+                            <div class="no-video-avatar">📹</div>
+                            <p>비디오가 꺼져있습니다</p>
+                        </div>
+                    </div>
+                    <span class="user-tag" id="rightUserTag">튜티, 정유경</span>
+                </div>
+            </div>
+
+            <!-- 사이드바 -->
+            <aside class="sidebar">
+                <!-- 채팅 섹션 -->
+                <div class="sidebar-section" id="chatSection">
+                    <div class="chat-messages" id="chatMessages">
+                        <!-- 채팅 메시지들이 여기에 표시됩니다 -->
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" id="chatInput" placeholder="메시지를 입력하세요..." maxlength="200">
+                        <input type="file" id="fileInput" style="display: none;" accept="image/*,.pdf,.doc,.docx,.txt">
+                        <button id="fileUploadBtn" title="파일 첨부">📎</button>
+                        <button id="sendMessageBtn">전송</button>
+                    </div>
+                </div>
+                
+                <!-- 공유 자료 섹션 -->
+                <div class="sidebar-section" id="filesSection" style="display: none;">
+                    <div class="files-content">
+                        <p class="section-title">구체적 정보 (사진 공유 자료 포함)</p>
+                        <div class="info-placeholder" id="infoPlaceholder"></div>
+                        
+                        <p class="section-title">사진 업로드 | 공유 자료</p>
+                        <div class="shared-files" id="sharedFiles">
+                            <div class="file-placeholder"></div>
+                            <div class="file-placeholder"></div>
+                            <div class="file-placeholder"></div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </main>
+
+        <!-- 컨트롤 바 -->
+        <footer class="control-bar">
+            <div class="controls-left">
+                <button class="control-button" id="settingsBtn" title="설정">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+            <div class="controls-center">
+                <button class="control-button" id="toggleAudioBtn" title="마이크 on/off">
+                    <i class="fas fa-microphone"></i>
+                </button>
+                <button class="control-button" id="toggleVideoBtn" title="비디오 on/off">
+                    <i class="fas fa-video"></i>
+                </button>
+                <button class="control-button" id="toggleScreenShareBtn" title="화면공유">
+                    <i class="fas fa-desktop"></i>
+                </button>
+                <button class="control-button end-call" id="leaveSessionBtn" title="통화 종료">
+                    <i class="fas fa-phone"></i>
+                </button>
+            </div>
+            <div class="controls-right">
+                <!-- 참가자 정보 -->
+                <div class="participant-info">
+                    <div class="user-avatar" id="currentUserAvatar">👤</div>
+                    <span class="user-name" id="currentUserName">사용자</span>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 로딩 화면 -->
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="loading-spinner"></div>
+        <p>연결 중...</p>
+    </div>
+
+    <!-- 알림 토스트 -->
+    <div id="toast" class="toast" style="display: none;">
+        <span id="toastMessage"></span>
+    </div>
+
+    <!-- 참가자 목록 숨겨진 컨테이너 (데이터 저장용) -->
+    <div style="display: none;">
+        <div id="participantsList"></div>
+        <span id="participantCount">0</span>
+    </div>
+
+    <script src="new-video-call-v3.js"></script>
+</body>
+</html>
