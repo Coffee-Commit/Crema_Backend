@@ -7,7 +7,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
+    show-sql: true  # 개발환경이니까 SQL 로그 유지
   servlet:
     multipart:
       max-file-size: 10MB
@@ -44,7 +44,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "{baseUrl}/login/oauth2/code/google"  # 자동으로 현재 서버 주소로 치환
             scope:
               - profile
           kakao:
@@ -52,7 +52,7 @@ spring:
             client-secret: ${KAKAO_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"   # 자동으로 현재 서버 주소로 치환
             scope:
               - profile_nickname
         provider:
@@ -78,9 +78,9 @@ jwt:
 
 app:
   oauth2:
-    authorized-redirect-uri: http://localhost:8080/swagger-ui/index.html # ${FRONTEND_URL:http://localhost:3000}/oauth2/redirect
+    authorized-redirect-uri: ${FRONTEND_URL}/oauth2/redirect  # 환경변수로 프론트엔드 주소 설정
   cookie:
-    domain: ${COOKIE_DOMAIN:} # 운영환경에서 도메인 설정, 개발환경에선 빈 문자열
+    domain: ${COOKIE_DOMAIN:}  # 로컬에서는 빈값, dev에서는 .coffeechat.kro.kr
     same-site: ${COOKIE_SAMESITE:Lax}  # OAuth2에서는 Lax가 적절, CSRF 공격 방어 가능
 
 cloud:

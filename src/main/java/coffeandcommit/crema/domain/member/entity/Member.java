@@ -57,7 +57,7 @@ public class Member extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
-    // 프로필 업데이트 메서드
+    // 프로필 업데이트
     public void updateProfile(String nickname, String description, String profileImageUrl) {
         if (nickname != null) {
             this.nickname = nickname;

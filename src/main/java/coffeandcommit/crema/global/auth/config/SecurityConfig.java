@@ -90,7 +90,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:3000",
                 "http://localhost:3001",
-                "https://yourdomain.com" // ← 운영환경에서 실제 도메인으로 변경 필요
+                "https://coffeechat.kro.kr"
         ));
 
         configuration.setAllowedMethods(Arrays.asList(
