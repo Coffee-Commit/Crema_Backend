@@ -230,12 +230,102 @@ class NewVideoCallV3Manager {
         // 스트림 생성 이벤트
         this.session.on('streamCreated', (event) => {
             console.log('🎥 새 스트림 생성됨:', event);
-            const subscriber = this.session.subscribe(event.stream, undefined);
+            console.log('📋 스트림 정보:', {
+                streamId: event.stream.streamId,
+                connectionId: event.stream.connection.connectionId,
+                hasVideo: event.stream.hasVideo,
+                hasAudio: event.stream.hasAudio
+            });
+            
+            // 사용자명 추출 및 표시
+            const username = event.stream.connection.data.split('%')[0];
+            console.log('👤 구독자 사용자명:', username);
+            
+            // Subscriber 생성 시 왼쪽 비디오 요소를 직접 지정
+            const subscriber = this.session.subscribe(event.stream, this.leftVideo);
             this.subscribers.push(subscriber);
+            console.log('✅ Subscriber 생성됨, 왼쪽 비디오에 연결');
+            
+            // 추가적으로 addVideoElement도 시도
+            try {
+                subscriber.addVideoElement(this.leftVideo);
+                console.log('✅ addVideoElement로 비디오 요소 추가됨');
+            } catch (error) {
+                console.log('⚠️ addVideoElement 실패 (정상적일 수 있음):', error.message);
+            }
+            
+            // 타임아웃으로 강제 연결 시도 (2초 후)
+            setTimeout(() => {
+                console.log('⏰ 타임아웃 - 강제 스트림 연결 시도');
+                try {
+                    if (this.leftVideo.srcObject === null && subscriber.stream) {
+                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
+                        this.leftVideo.muted = false;  // 음소거 해제
+                        this.leftVideo.play();  // 비디오 재생 시작
+                        this.leftVideoStream = subscriber.stream;
+                        this.leftUsername = username;
+                        this.leftUserTag.textContent = username;
+                        this.leftVideoOverlay.classList.add('hidden');
+                        console.log('✅ 타임아웃 강제 연결 성공');
+                    } else if (this.leftVideo.srcObject !== null) {
+                        console.log('✅ 이미 스트림이 연결되어 있음');
+                        // 이미 연결되어 있어도 재생 시도
+                        try {
+                            this.leftVideo.play();
+                        } catch (playError) {
+                            console.log('⚠️ 비디오 재생 시도 실패:', playError.message);
+                        }
+                    }
+                } catch (error) {
+                    console.error('❌ 타임아웃 강제 연결 실패:', error);
+                }
+            }, 2000);
+            
+            subscriber.on('videoElementCreated', (videoEvent) => {
+                console.log('✅ 구독자 비디오 요소 생성됨');
+                
+                // 왼쪽 슬롯 설정
+                this.leftVideoStream = subscriber.stream;
+                this.leftUsername = username;
+                this.leftUserTag.textContent = username;
+                this.leftVideoOverlay.classList.add('hidden');
+                
+                // 즉시 스트림 연결 시도
+                console.log('🔧 즉시 스트림 연결 시도');
+                try {
+                    if (subscriber.stream && subscriber.stream.getMediaStream()) {
+                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
+                        this.leftVideo.muted = false;  // 음소거 해제 (상대방 오디오를 들을 수 있도록)
+                        this.leftVideo.play();  // 비디오 재생 시작
+                        console.log('✅ 즉시 스트림 연결 성공');
+                    } else {
+                        console.log('⚠️ 스트림이 아직 준비되지 않음');
+                    }
+                } catch (error) {
+                    console.error('❌ 즉시 스트림 연결 실패:', error);
+                }
+            });
             
             subscriber.on('streamReady', () => {
                 console.log('✅ 구독자 스트림 준비됨');
-                this.assignVideoToSlot(subscriber.stream, event.stream.connection.data.split('%')[0]);
+                console.log('🔄 스트림 준비 완료 - 사용자:', username);
+                
+                // 스트림이 준비되면 다시 한번 확실하게 설정
+                this.leftVideoStream = subscriber.stream;
+                this.leftUsername = username;
+                this.leftUserTag.textContent = username;
+                this.leftVideoOverlay.classList.add('hidden');
+                
+                // 추가: 수동으로 비디오 요소에 스트림 연결 (혹시 자동 연결이 안된 경우 대비)
+                if (this.leftVideo.srcObject === null) {
+                    console.log('🔧 수동으로 비디오 스트림 연결 시도');
+                    try {
+                        this.leftVideo.srcObject = subscriber.stream.getMediaStream();
+                        console.log('✅ 수동 비디오 스트림 연결 성공');
+                    } catch (error) {
+                        console.error('❌ 수동 비디오 스트림 연결 실패:', error);
+                    }
+                }
             });
         });
         
@@ -309,7 +399,7 @@ class NewVideoCallV3Manager {
             await this.session.publish(this.publisher);
             console.log('✅ Publisher 발행 완료');
             
-            // 내 비디오를 왼쪽 슬롯에 배치
+            // 내 비디오를 오른쪽 슬롯에 배치
             this.assignVideoToSlot(this.publisher.stream, this.sessionData.username, true);
             
             // Publisher 이벤트 리스너
@@ -328,19 +418,21 @@ class NewVideoCallV3Manager {
         console.log('🎯 비디오 슬롯 할당:', username, isLocal ? '(로컬)' : '(원격)');
         
         if (isLocal) {
-            // 로컬 스트림을 왼쪽에 배치
+            // 로컬 스트림을 오른쪽에 배치
+            this.rightVideo.srcObject = stream.getMediaStream();
+            this.rightVideo.muted = true;  // 자신의 오디오는 음소거 (에코 방지)
+            this.rightVideo.play();  // 비디오 재생 시작
+            this.rightVideoStream = stream;
+            this.rightUsername = username;
+            this.rightUserTag.textContent = `${username} (나)`;
+            this.rightVideoOverlay.classList.add('hidden');
+        } else {
+            // 원격 스트림을 왼쪽에 배치
             this.leftVideo.srcObject = stream.getMediaStream();
             this.leftVideoStream = stream;
             this.leftUsername = username;
-            this.leftUserTag.textContent = `${username} (나)`;
+            this.leftUserTag.textContent = username;
             this.leftVideoOverlay.classList.add('hidden');
-        } else {
-            // 원격 스트림을 오른쪽에 배치
-            this.rightVideo.srcObject = stream.getMediaStream();
-            this.rightVideoStream = stream;
-            this.rightUsername = username;
-            this.rightUserTag.textContent = username;
-            this.rightVideoOverlay.classList.add('hidden');
         }
     }
     
@@ -388,11 +480,11 @@ class NewVideoCallV3Manager {
             if (enabled) {
                 this.toggleVideoBtn.classList.add('disabled');
                 this.toggleVideoBtn.querySelector('i').className = 'fas fa-video-slash';
-                this.leftVideoOverlay.classList.remove('hidden');
+                this.rightVideoOverlay.classList.remove('hidden');
             } else {
                 this.toggleVideoBtn.classList.remove('disabled');
                 this.toggleVideoBtn.querySelector('i').className = 'fas fa-video';
-                this.leftVideoOverlay.classList.add('hidden');
+                this.rightVideoOverlay.classList.add('hidden');
             }
             
             this.showToast(enabled ? '비디오가 꺼졌습니다' : '비디오가 켜졌습니다');
@@ -436,7 +528,7 @@ class NewVideoCallV3Manager {
             
             await this.session.publish(this.screenSharePublisher);
             
-            // 화면공유를 왼쪽 슬롯에 표시
+            // 화면공유를 오른쪽 슬롯에 표시
             this.assignVideoToSlot(this.screenSharePublisher.stream, `${this.sessionData.username} (화면공유)`, true);
             
             // 상태 업데이트
