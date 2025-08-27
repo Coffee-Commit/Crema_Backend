@@ -30,14 +30,14 @@ public class Reservation extends BaseEntity{
     @JoinColumn(name = "member_id", nullable = false)
     private Member memberId; // FK, 멤버 ID는 String (UUID)
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "survey_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "survey_id", nullable = false, unique = true)
     private Survey surveyId; // FK, 설문 ID
 
     private LocalDateTime matchingTime;
 
     @Enumerated(EnumType.STRING)
-    private Status status; // 예약 상태 (예: PENDING, CONFIRMED, CANCELLED 등)
+    private Status status; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
     private String reason;
 
