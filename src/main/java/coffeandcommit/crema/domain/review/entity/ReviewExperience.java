@@ -37,6 +37,6 @@ public class ReviewExperience extends BaseEntity {
     @JoinColumn(name = "experience_group_id", nullable = false)
     private ExperienceGroup experienceGroupId; // FK, 경험 대주제 ID
 
-    @Column(nullable = false)
+    @Column(name = "thumbs_up", nullable = false)
     private boolean thumbsUp; // 좋아요 여부
 }
