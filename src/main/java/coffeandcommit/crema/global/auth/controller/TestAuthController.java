@@ -86,38 +86,35 @@ public class TestAuthController {
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
 
         Map<String, String> response = new LinkedHashMap<>();
-        response.put("tokenType", "Bearer");
         response.put("accessToken", accessToken);
         response.put("refreshToken", refreshToken);
         response.put("memberId", member.getId());
         response.put("nickname", member.getNickname());
         response.put("role", member.getRole().name());
+        response.put("tokenType", "Bearer");
 
         log.info("테스트 계정 로그인: {}", nickname);
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
 
-    @Operation(summary = "테스트 계정 일괄 삭제", description = "생성된 모든 테스트 계정을 삭제합니다.")
+    @Operation(summary = "테스트 계정 일괄 삭제", description = "생성된 모든 테스트 계정을 완전 삭제합니다.")
     @DeleteMapping("/cleanup")
     public ApiResponse<Map<String, Object>> cleanupTestAccounts() {
-        // rookie_* 또는 guide_* 패턴의 테스트 계정 조회
-        var testMembers = memberRepository.findAll().stream()
-                .filter(member -> !Boolean.TRUE.equals(member.getIsDeleted()))
-                .filter(member -> "test".equals(member.getProvider()))
-                .filter(member -> isTestAccount(member.getNickname()))
-                .toList();
+        // 네이티브 쿼리로 테스트 계정 직접 삭제 (is_deleted 조건 무시)
+        String deleteQuery = """
+            DELETE FROM member 
+            WHERE (nickname LIKE 'rookie_%' OR nickname LIKE 'guide_%')
+            AND provider = 'test'
+            """;
 
-        int deletedCount = testMembers.size();
+        int deletedCount = memberRepository.deleteTestAccountsNative();
 
-        // 소프트 삭제 처리
-        testMembers.forEach(Member::softDelete);
-        memberRepository.saveAll(testMembers);
+        log.info("테스트 계정 완전 삭제 완료: {}개", deletedCount);
 
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("deletedCount", deletedCount);
-        response.put("message", deletedCount + "개의 테스트 계정이 삭제되었습니다.");
+        response.put("message", deletedCount + "개의 테스트 계정이 완전 삭제되었습니다.");
 
-        log.info("테스트 계정 일괄 삭제 완료: {}개", deletedCount);
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
 
