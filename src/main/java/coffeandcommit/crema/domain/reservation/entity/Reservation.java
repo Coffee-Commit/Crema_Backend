@@ -31,7 +31,7 @@ public class Reservation extends BaseEntity{
     private Member memberId; // FK, 멤버 ID는 String (UUID)
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "survey_id", nullable = false)
+    @JoinColumn(name = "survey_id", nullable = false, unique = true)
     private Survey surveyId; // FK, 설문 ID
 
     private LocalDateTime matchingTime;

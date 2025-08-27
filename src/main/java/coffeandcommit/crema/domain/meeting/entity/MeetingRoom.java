@@ -20,7 +20,7 @@ public class MeetingRoom extends BaseEntity{
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "reservation_id", nullable = false)
+    @JoinColumn(name = "reservation_id", nullable = false, unique = true)
     private Reservation reservationId; // FK, 예약 ID
 
     @Column(nullable = false)

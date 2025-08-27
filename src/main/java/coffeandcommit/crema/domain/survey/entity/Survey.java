@@ -25,7 +25,7 @@ public class Survey extends BaseEntity{
     @Column(columnDefinition = "TEXT")
     private String messageToGuide; // 직접입력 주제
 
-    @Column(nullable = false)
-    private LocalDateTime preferred_date; // 희망 날짜
+    @Column(name = "preferred_date",nullable = false)
+    private LocalDateTime preferredDate; // 희망 날짜
 
 }
