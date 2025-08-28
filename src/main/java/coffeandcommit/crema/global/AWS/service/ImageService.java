@@ -34,8 +34,8 @@ public class ImageService {
     // 허용되는 폴더명 (보안 강화)
     private static final Set<String> ALLOWED_FOLDERS = Set.of(
             "profile-images",
-            "study-diary-images",
             "guide-posts",
+            "chat-images",
             "test-images"
     );
 
@@ -167,12 +167,22 @@ public class ImageService {
      * 폴더명 검증 (보안 강화)
      */
     private void validateFolder(String folder) {
-        if (folder == null || folder.trim().isEmpty()) {
+        if (folder == null) {
             throw new IllegalArgumentException("폴더명이 필요합니다.");
         }
 
-        if (!ALLOWED_FOLDERS.contains(folder)) {
-            throw new IllegalArgumentException("허용되지 않은 폴더입니다: " + folder);
+        String normalized = folder.trim();
+        if (normalized.isEmpty()) {
+            throw new IllegalArgumentException("폴더명이 필요합니다.");
+        }
+
+        // 경로 조작 공격 방지
+        if (normalized.contains("/") || normalized.contains("\\") || normalized.contains(".")) {
+            throw new IllegalArgumentException("폴더명에 허용되지 않은 문자가 포함되어 있습니다.");
+        }
+
+        if (!ALLOWED_FOLDERS.contains(normalized)) {
+            throw new IllegalArgumentException("허용되지 않은 폴더입니다: " + normalized);
         }
     }
 
