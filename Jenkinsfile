@@ -46,9 +46,9 @@ pipeline {
         stage('Build & Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_ACCESS_KEY'),
-                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'S3Bucket', variable: 'CLOUD_AWS_S3_BUCKET')
+                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_KEY'),
+                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY'),
+                    string(credentialsId: 'S3Bucket', variable: 'AWS_S3_BUCKET')
                 ]) {
                     sh 'chmod +x ./gradlew'
                     echo "==== 환경변수 출력 ===="
@@ -57,9 +57,9 @@ pipeline {
 
                     sh """
                     ./gradlew clean build \
-                        -DAWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
-                        -DAWS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} \
-                        -DAWS_S3_BUCKET=${CLOUD_AWS_S3_BUCKET}
+                        -DAWS_ACCESS_KEY=${AWS_ACCESS_KEY} \
+                        -DAWS_SECRET_KEY=${AWS_SECRET_KEY} \
+                        -DAWS_S3_BUCKET=${AWS_S3_BUCKET}
                     """
                 }
             }
