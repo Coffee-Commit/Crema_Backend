@@ -70,6 +70,7 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
+  # Spring Cloud AWS 자동설정 비활성화 (S3 config 직접 구현한 것 적용하기 위함)
   autoconfigure:
     exclude:
       - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
@@ -84,12 +85,13 @@ jwt:
   access-token-expiration: 1800000  # 30분
   refresh-token-expiration: 1209600000  # 14일
 
+# AWS S3 설정 (우리 커스텀 S3Config에서 사용)
 cloud:
   aws:
     credentials:
-      accessKey: ${AWS_ACCESS_KEY:dummy-access-key}
-      secretKey: ${AWS_SECRET_KEY:dummy-secret-key}
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
     s3:
-      bucket: ${AWS_S3_BUCKET:dummy-bucket}
+      bucket: ${AWS_S3_BUCKET}
     region:
-      static: ${AWS_REGION:ap-northeast-2}
+      static: ${AWS_REGION}
