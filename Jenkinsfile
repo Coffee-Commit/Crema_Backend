@@ -26,7 +26,7 @@ pipeline {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME == 'dev') {
+                    else if (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == null) {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
@@ -46,18 +46,12 @@ pipeline {
         stage('Build & Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_ACCESS_KEY'),
-                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY_ID'),
-                    string(credentialsId: 'S3Bucket', variable: 'CLOUD_AWS_S3_BUCKET')
+                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_KEY'),
+                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY'),
+                    string(credentialsId: 'S3Bucket', variable: 'AWS_S3_BUCKET')
                 ]) {
                     sh 'chmod +x ./gradlew'
-
-                    sh """
-                    ./gradlew clean build \
-                        -Dcloud.aws.credentials.access-key=${AWS_ACCESS_KEY_ID_SECURE} \
-                        -Dcloud.aws.credentials.secret-key=${AWS_SECRET_ACCESS_KEY_SECURE} \
-                        -Dcloud.aws.s3.bucket=${CLOUD_AWS_S3_BUCKET_SECURE}
-                    """
+                    sh './gradlew clean build'
                 }
             }
         }
