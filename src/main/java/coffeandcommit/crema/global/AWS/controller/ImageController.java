@@ -38,7 +38,7 @@ public class ImageController {
             @Parameter(description = "업로드할 이미지 파일", required = true)
             @RequestPart("image") MultipartFile image,
 
-            @Parameter(description = "S3 폴더명 (예: study-diary-images, guide-posts)", required = true)
+            @Parameter(description = "S3 폴더명 (택 1: profile-images, chat-images, guide-posts, test-images)", required = true)
             @RequestParam("folder") String folder,
 
             @AuthenticationPrincipal UserDetails userDetails) {
