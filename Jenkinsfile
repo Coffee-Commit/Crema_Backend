@@ -54,9 +54,9 @@ pipeline {
 
                     sh """
                     ./gradlew clean build \
-                        -Dcloud.aws.credentials.access-key=${AWS_ACCESS_KEY_ID} \
-                        -Dcloud.aws.credentials.secret-key=${AWS_SECRET_ACCESS_KEY} \
-                        -Dcloud.aws.s3.bucket=${CLOUD_AWS_S3_BUCKET}
+                        -DAWS_ACCESS_KEY=${AWS_ACCESS_KEY_ID} \
+                        -DAWS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY} \
+                        -DAWS_S3_BUCKET=${CLOUD_AWS_S3_BUCKET}
                     """
                 }
             }
