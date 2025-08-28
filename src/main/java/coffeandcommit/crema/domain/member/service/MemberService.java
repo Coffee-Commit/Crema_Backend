@@ -64,7 +64,7 @@ public class MemberService {
 
             try {
                 Member member = memberSupplier.get(); // Member 객체 생성 (ID 포함)
-                Member savedMember = memberRepository.save(member);
+                Member savedMember = memberRepository.saveAndFlush(member); // 즉시 DB 반영하여 제약조건 검증
 
                 log.debug("Member saved successfully: {} (attempts: {})", member.getId(), attempts);
                 return savedMember;
