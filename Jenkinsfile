@@ -7,15 +7,14 @@ pipeline {
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
 
-        CLOUD_AWS_CREDENTIALS_SECRETKEY = credentials('S3SecretKey')
-        CLOUD_AWS_CREDENTIALS_ACCESSKEY = credentials('S3AccessKey')
+        AWS_SECRET_ACCESS_KEY           = credentials('S3SecretKey')
+        AWS_ACCESS_KEY_ID               = credentials('S3AccessKey')
         CLOUD_AWS_S3_BUCKET             = credentials('S3Bucket')
     }
 
     tools {
         jdk 'JDK21'
     }
-
     stages {
         stage('Checkout') {
             steps {
