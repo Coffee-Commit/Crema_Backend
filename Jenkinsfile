@@ -51,6 +51,9 @@ pipeline {
                     string(credentialsId: 'S3Bucket', variable: 'CLOUD_AWS_S3_BUCKET')
                 ]) {
                     sh 'chmod +x ./gradlew'
+                    echo "==== 환경변수 출력 ===="
+                    sh 'printenv | sort'
+                    echo "===================="
 
                     sh """
                     ./gradlew clean build \
