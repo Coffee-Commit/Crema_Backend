@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
@@ -30,10 +31,18 @@ public class ImageService {
     // 최대 파일 크기 (10MB)
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024;
 
+    // 허용되는 폴더명 (보안 강화)
+    private static final Set<String> ALLOWED_FOLDERS = Set.of(
+            "profile-images",
+            "chat-images",
+            "guide-posts",
+            "test-images"
+    );
+
     /**
      * 이미지 업로드 (범용)
      * @param file 업로드할 이미지 파일
-     * @param folder S3 내 폴더명 (예: "study-diary-images", "guide-posts")
+     * @param folder S3 내 폴더명 (허용된 폴더만 사용 가능)
      * @param userId 사용자 ID (파일명에 사용)
      * @return ImageUploadResponse
      */
@@ -41,6 +50,9 @@ public class ImageService {
         try {
             // 파일 검증
             validateImageFile(file);
+
+            // 폴더명 검증 (보안 강화)
+            validateFolder(folder);
 
             // 파일명 생성
             String storedFileName = generateFileName(file.getOriginalFilename(), userId);
@@ -85,13 +97,18 @@ public class ImageService {
      */
     public ImageDeleteResponse deleteImage(String imageKey) {
         try {
-            s3Service.delete(imageKey);
+            // S3에서 실제 삭제 수행 및 결과 확인
+            boolean deletionSuccess = s3Service.delete(imageKey);
 
-            log.info("Image deleted successfully: {}", imageKey);
+            if (deletionSuccess) {
+                log.info("Image deleted successfully: {}", imageKey);
+            } else {
+                log.warn("Image deletion returned false: {}", imageKey);
+            }
 
             return ImageDeleteResponse.builder()
                     .deletedImageKey(imageKey)
-                    .success(true)
+                    .success(deletionSuccess)
                     .deletedAt(LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME))
                     .build();
 
@@ -125,6 +142,19 @@ public class ImageService {
         } catch (Exception e) {
             log.error("Failed to generate presigned URL for image: {} - {}", imageKey, e.getMessage());
             throw new RuntimeException("이미지 URL 생성 중 오류가 발생했습니다: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 폴더명 검증 (보안 강화)
+     */
+    private void validateFolder(String folder) {
+        if (folder == null || folder.trim().isEmpty()) {
+            throw new IllegalArgumentException("폴더명이 필요합니다.");
+        }
+
+        if (!ALLOWED_FOLDERS.contains(folder)) {
+            throw new IllegalArgumentException("허용되지 않은 폴더입니다: " + folder);
         }
     }
 
