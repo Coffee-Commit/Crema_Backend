@@ -1,6 +1,7 @@
 package coffeandcommit.crema.global.auth.service;
 
 import coffeandcommit.crema.domain.member.enums.MemberRole;
+import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.provider.GoogleOAuth2UserInfo;
 import coffeandcommit.crema.global.auth.provider.KakaoOAuth2UserInfo;
 import coffeandcommit.crema.global.auth.provider.OAuth2UserInfo;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
+    private final MemberService memberService; // MemberService 주입 추가
 
     @Override
     @Transactional
@@ -92,8 +94,11 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
+        // MemberService의 generateId() 메서드 사용
+        String memberId = memberService.generateId();
+
         Member member = Member.builder()
-                .id(UUID.randomUUID().toString())
+                .id(memberId) // 8글자 고유 ID 사용
                 .nickname(uniqueNickname)
                 .role(MemberRole.ROOKIE)
                 .point(0) // 초기 포인트
@@ -102,8 +107,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
                 .providerId(userInfo.getId())
                 .build();
 
-        log.info("Creating new member with provider: {}, providerId: {}, nickname: {}",
-                provider, userInfo.getId(), uniqueNickname);
+        log.info("Creating new member with provider: {}, providerId: {}, memberId: {}, nickname: {}",
+                provider, userInfo.getId(), memberId, uniqueNickname);
 
         return memberRepository.save(member);
     }

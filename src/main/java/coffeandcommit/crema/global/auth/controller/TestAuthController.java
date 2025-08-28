@@ -3,6 +3,7 @@ package coffeandcommit.crema.global.auth.controller;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
+import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.jwt.JwtTokenProvider;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -30,6 +31,7 @@ public class TestAuthController {
 
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberService memberService; // MemberService 주입 추가
 
     @Operation(summary = "루키 테스트 계정 생성", description = "로컬 개발용 루키 테스트 계정을 생성합니다.")
     @PostMapping("/create-rookie")
@@ -124,8 +126,11 @@ public class TestAuthController {
 
     private Member createTestMember(String nickname, MemberRole role) {
         try {
+            // MemberService의 generateId() 메서드 사용
+            String memberId = memberService.generateId();
+
             Member member = Member.builder()
-                    .id(UUID.randomUUID().toString())
+                    .id(memberId) // 8글자 고유 ID 사용
                     .nickname(nickname)
                     .role(role)
                     .point(0)
@@ -139,8 +144,11 @@ public class TestAuthController {
             log.warn("테스트 계정 생성 실패, 닉네임 재생성 후 재시도: {}", nickname);
             String newNickname = generateNickname(role == MemberRole.ROOKIE ? "rookie" : "guide");
 
+            // 재시도 시에도 MemberService의 generateId() 사용
+            String memberId = memberService.generateId();
+
             Member member = Member.builder()
-                    .id(UUID.randomUUID().toString())
+                    .id(memberId) // 8글자 고유 ID 사용
                     .nickname(newNickname)
                     .role(role)
                     .point(0)

@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -22,6 +24,28 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final MemberMapper memberMapper;
     private final MemberProfileService memberProfileService;
+
+    /**
+     * 8글자 UUID 생성 (중복 체크 포함)
+     */
+    public String generateId() {
+        String id;
+        int attempts = 0;
+        final int maxAttempts = 10; // 무한 루프 방지
+
+        do {
+            id = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toLowerCase();
+            attempts++;
+
+            if (attempts >= maxAttempts) {
+                log.error("Failed to generate unique member ID after {} attempts", maxAttempts);
+                throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+        } while (memberRepository.existsById(id));
+
+        log.debug("Generated unique member ID: {} (attempts: {})", id, attempts);
+        return id;
+    }
 
     /**
      * ID로 회원 조회 - 본인용 (모든 정보 포함)
