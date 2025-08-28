@@ -28,7 +28,7 @@ import java.util.UUID;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
-    private final MemberService memberService; // MemberService 주입 추가
+    private final MemberService memberService;
 
     @Override
     @Transactional
@@ -94,23 +94,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
-        // MemberService의 generateId() 메서드 사용
-        String memberId = memberService.generateId();
-
-        Member member = Member.builder()
-                .id(memberId) // 8글자 고유 ID 사용
-                .nickname(uniqueNickname)
-                .role(MemberRole.ROOKIE)
-                .point(0) // 초기 포인트
-                .profileImageUrl(null) // 프로필 이미지는 항상 null로 시작
-                .provider(provider)
-                .providerId(userInfo.getId())
-                .build();
+        // saveWithRetry를 사용하여 저장 시점 ID 충돌 처리
+        Member member = memberService.saveWithRetry(() ->
+                Member.builder()
+                        .id(memberService.generateId()) // 매번 새로운 ID 생성
+                        .nickname(uniqueNickname)
+                        .role(MemberRole.ROOKIE)
+                        .point(0)
+                        .profileImageUrl(null)
+                        .provider(provider)
+                        .providerId(userInfo.getId())
+                        .build()
+        );
 
         log.info("Creating new member with provider: {}, providerId: {}, memberId: {}, nickname: {}",
-                provider, userInfo.getId(), memberId, uniqueNickname);
+                provider, userInfo.getId(), member.getId(), uniqueNickname);
 
-        return memberRepository.save(member);
+        return member;
     }
 
     private String generateUniqueNickname(String baseName) {

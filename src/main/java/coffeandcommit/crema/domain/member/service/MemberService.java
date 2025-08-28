@@ -10,10 +10,12 @@ import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -45,6 +47,40 @@ public class MemberService {
 
         log.debug("Generated unique member ID: {} (attempts: {})", id, attempts);
         return id;
+    }
+
+    /**
+     * Member 저장 시 ID 충돌을 자동으로 재시도하는 안전한 저장 메서드
+     * @param memberSupplier Member 객체를 생성하는 Supplier (ID 포함)
+     * @return 저장된 Member
+     */
+    @Transactional
+    public Member saveWithRetry(Supplier<Member> memberSupplier) {
+        int attempts = 0;
+        final int maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+            attempts++;
+
+            try {
+                Member member = memberSupplier.get(); // Member 객체 생성 (ID 포함)
+                Member savedMember = memberRepository.save(member);
+
+                log.debug("Member saved successfully: {} (attempts: {})", member.getId(), attempts);
+                return savedMember;
+
+            } catch (DataIntegrityViolationException e) {
+                log.debug("ID collision detected during save (attempt {}/{})", attempts, maxAttempts);
+
+                if (attempts >= maxAttempts) {
+                    log.error("Failed to save member after {} attempts due to ID collisions", maxAttempts);
+                    throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+                }
+                // 다시 시도 (memberSupplier가 새로운 ID로 Member 생성)
+            }
+        }
+
+        throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
     }
 
     /**
