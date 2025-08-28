@@ -26,7 +26,7 @@ pipeline {
                         env.IMAGE_NAME = 'crema-backend'
                         env.MANIFEST_PATH = 'apps/backend/prod/deployment.yaml'
                     }
-                    else if (env.BRANCH_NAME == 'dev') {
+                    else if (env.BRANCH_NAME == 'dev' || env.BRANCH_NAME == null) {
                         env.IMAGE_NAME = 'crema-backend-dev'
                         env.MANIFEST_PATH = 'apps/backend/dev/deployment.yaml'
                     }
