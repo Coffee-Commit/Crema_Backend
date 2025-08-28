@@ -46,8 +46,8 @@ pipeline {
         stage('Build & Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_ACCESS_KEY')
-                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY_ID')
+                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY_ID'),
                     string(credentialsId: 'S3Bucket', variable: 'CLOUD_AWS_S3_BUCKET')
                 ]) {
                     sh 'chmod +x ./gradlew'
