@@ -1,6 +1,7 @@
 package coffeandcommit.crema.global.auth.service;
 
 import coffeandcommit.crema.domain.member.enums.MemberRole;
+import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.provider.GoogleOAuth2UserInfo;
 import coffeandcommit.crema.global.auth.provider.KakaoOAuth2UserInfo;
 import coffeandcommit.crema.global.auth.provider.OAuth2UserInfo;
@@ -27,6 +28,7 @@ import java.util.UUID;
 public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
     private final MemberRepository memberRepository;
+    private final MemberService memberService;
 
     @Override
     @Transactional
@@ -92,20 +94,23 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
 
         String uniqueNickname = generateUniqueNickname(userInfo.getName());
 
-        Member member = Member.builder()
-                .id(UUID.randomUUID().toString())
-                .nickname(uniqueNickname)
-                .role(MemberRole.ROOKIE)
-                .point(0) // 초기 포인트
-                .profileImageUrl(null) // 프로필 이미지는 항상 null로 시작
-                .provider(provider)
-                .providerId(userInfo.getId())
-                .build();
+        // saveWithRetry를 사용하여 저장 시점 ID 충돌 처리
+        Member member = memberService.saveWithRetry(() ->
+                Member.builder()
+                        .id(memberService.generateId()) // 매번 새로운 ID 생성
+                        .nickname(uniqueNickname)
+                        .role(MemberRole.ROOKIE)
+                        .point(0)
+                        .profileImageUrl(null)
+                        .provider(provider)
+                        .providerId(userInfo.getId())
+                        .build()
+        );
 
-        log.info("Creating new member with provider: {}, providerId: {}, nickname: {}",
-                provider, userInfo.getId(), uniqueNickname);
+        log.info("Creating new member with provider: {}, providerId: {}, memberId: {}, nickname: {}",
+                provider, userInfo.getId(), member.getId(), uniqueNickname);
 
-        return memberRepository.save(member);
+        return member;
     }
 
     private String generateUniqueNickname(String baseName) {

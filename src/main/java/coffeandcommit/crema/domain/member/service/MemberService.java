@@ -10,8 +10,12 @@ import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+import java.util.function.Supplier;
 
 @Slf4j
 @Service
@@ -22,6 +26,62 @@ public class MemberService {
     private final MemberRepository memberRepository;
     private final MemberMapper memberMapper;
     private final MemberProfileService memberProfileService;
+
+    /**
+     * 8글자 UUID 생성 (중복 체크 포함)
+     */
+    public String generateId() {
+        String id;
+        int attempts = 0;
+        final int maxAttempts = 10; // 무한 루프 방지
+
+        do {
+            id = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toLowerCase();
+            attempts++;
+
+            if (attempts >= maxAttempts) {
+                log.error("Failed to generate unique member ID after {} attempts", maxAttempts);
+                throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            }
+        } while (memberRepository.existsById(id));
+
+        log.debug("Generated unique member ID: {} (attempts: {})", id, attempts);
+        return id;
+    }
+
+    /**
+     * Member 저장 시 ID 충돌을 자동으로 재시도하는 안전한 저장 메서드
+     * @param memberSupplier Member 객체를 생성하는 Supplier (ID 포함)
+     * @return 저장된 Member
+     */
+    @Transactional
+    public Member saveWithRetry(Supplier<Member> memberSupplier) {
+        int attempts = 0;
+        final int maxAttempts = 10;
+
+        while (attempts < maxAttempts) {
+            attempts++;
+
+            try {
+                Member member = memberSupplier.get(); // Member 객체 생성 (ID 포함)
+                Member savedMember = memberRepository.saveAndFlush(member); // 즉시 DB 반영하여 제약조건 검증
+
+                log.debug("Member saved successfully: {} (attempts: {})", member.getId(), attempts);
+                return savedMember;
+
+            } catch (DataIntegrityViolationException e) {
+                log.debug("ID collision detected during save (attempt {}/{})", attempts, maxAttempts);
+
+                if (attempts >= maxAttempts) {
+                    log.error("Failed to save member after {} attempts due to ID collisions", maxAttempts);
+                    throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+                }
+                // 다시 시도 (memberSupplier가 새로운 ID로 Member 생성)
+            }
+        }
+
+        throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+    }
 
     /**
      * ID로 회원 조회 - 본인용 (모든 정보 포함)
