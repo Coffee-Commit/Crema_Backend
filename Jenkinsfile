@@ -6,10 +6,6 @@ pipeline {
         GCP_REGION = 'asia-northeast3'
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
-
-        AWS_SECRET_ACCESS_KEY           = credentials('S3SecretKey')
-        AWS_ACCESS_KEY_ID               = credentials('S3AccessKey')
-        CLOUD_AWS_S3_BUCKET             = credentials('S3Bucket')
     }
 
     tools {
@@ -49,8 +45,20 @@ pipeline {
         }
         stage('Build & Test') {
             steps {
-                sh 'chmod +x ./gradlew'
-                sh './gradlew clean build'
+                withCredentials([
+                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_ACCESS_KEY'),
+                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY_ID'),
+                    string(credentialsId: 'S3Bucket', variable: 'CLOUD_AWS_S3_BUCKET')
+                ]) {
+                    sh 'chmod +x ./gradlew'
+
+                    sh """
+                    ./gradlew clean build \
+                        -Dcloud.aws.credentials.access-key=${AWS_ACCESS_KEY_ID_SECURE} \
+                        -Dcloud.aws.credentials.secret-key=${AWS_SECRET_ACCESS_KEY_SECURE} \
+                        -Dcloud.aws.s3.bucket=${CLOUD_AWS_S3_BUCKET_SECURE}
+                    """
+                }
             }
         }
 
