@@ -34,7 +34,7 @@ public class ImageService {
     // 허용되는 폴더명 (보안 강화)
     private static final Set<String> ALLOWED_FOLDERS = Set.of(
             "profile-images",
-            "chat-images",
+            "study-diary-images",
             "guide-posts",
             "test-images"
     );
@@ -63,9 +63,9 @@ public class ImageService {
 
             log.info("Image uploaded successfully: {} -> {}", file.getOriginalFilename(), imageKey);
 
-            // 마크다운 이미지 링크 생성
-            String markdownImageLink = String.format("![%s](%s)",
-                    file.getOriginalFilename(), imageUrl);
+            // 마크다운 이미지 링크 생성 (Alt 텍스트 이스케이프 처리)
+            String safeAlt = escapeMarkdownAltText(file.getOriginalFilename());
+            String markdownImageLink = String.format("![%s](%s)", safeAlt, imageUrl);
 
             return ImageUploadResponse.builder()
                     .imageKey(imageKey)
@@ -143,6 +143,24 @@ public class ImageService {
             log.error("Failed to generate presigned URL for image: {} - {}", imageKey, e.getMessage());
             throw new RuntimeException("이미지 URL 생성 중 오류가 발생했습니다: " + e.getMessage());
         }
+    }
+
+    /**
+     * 마크다운 Alt 텍스트 이스케이프 처리 (보안 강화)
+     */
+    private String escapeMarkdownAltText(String input) {
+        if (input == null || input.trim().isEmpty()) {
+            return "";
+        }
+
+        String escaped = input.replace("\\", "\\\\")
+                .replace("[", "\\[")
+                .replace("]", "\\]")
+                .replace("(", "\\(")
+                .replace(")", "\\)");
+
+        // 길이 제한 추가 (마크다운 Alt 텍스트 길이 제한)
+        return escaped.length() > 100 ? escaped.substring(0, 100) + "..." : escaped;
     }
 
     /**
