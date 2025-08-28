@@ -45,7 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/status",
                                 "/api/auth/refresh",
-                                "/api/member/check/**", // 닉네임 중복 체크만 남김
+                                "/api/member/check/**",
+                                "/api/test/auth/**",
                                 "/oauth2/**",
                                 "/login/oauth2/**",
                                 // Swagger UI
