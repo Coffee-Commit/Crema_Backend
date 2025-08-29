@@ -5,7 +5,6 @@ import jakarta.persistence.EntityManager;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import javax.swing.text.html.parser.Entity;
 
 @Configuration
 public class QueryDslConfig {
