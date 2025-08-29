@@ -18,7 +18,7 @@ public class ExperienceDetail extends BaseEntity{
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "guide_id", nullable = false)
+    @JoinColumn(name = "guide_id", nullable = false, unique = true)
     private Guide guideId; // FK, 가이드 ID
 
     @Column(nullable = false)
