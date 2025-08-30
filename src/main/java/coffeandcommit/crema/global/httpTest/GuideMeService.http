@@ -11,12 +11,12 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "guide_dba003c7"
+  "nickname": "rookie_4926예제6f5d"
 }
 
 ### 4. JWT 토큰으로 내 정보 조회 테스트 (3번 에서 받은 accessToken을 Bearer 뒤에 붙여넣기, 다른 도메인에서도 token 사용 가능한지 확인용)
 GET http://localhost:8080/api/member/me
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlM2FjYjcwZCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI5ZjZhMWQ1NS03OWU5LTRlMjEtYWI0ZS0zYTk1NDRkYmQ3NDIiLCJpYXQiOjE3NTY1NjA0NzIsImV4cCI6MTc1NjU2MjI3Mn0.KHAQC3Nv9OfP6u029YEoUK8mOGf4TT62ZdSSmxKF7vbfGZLmqUPsgNSoFDTGI0ZMATG9B2P5HsBcNO7PrvBT0g
+Authorization: Bearer ~~~
 
 ### 5. 테스트 계정 일괄 삭제
 DELETE http://localhost:8080/api/test/auth/cleanup
