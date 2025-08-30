@@ -34,10 +34,10 @@ public class MemberChatTopic extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Member memberId; // FK, 멤버 ID
+    private Member member; // FK, 멤버 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "chat_topic_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private ChatTopic chatTopicId; // FK, 주제 ID
+    private ChatTopic chatTopic; // FK, 주제 ID
 }

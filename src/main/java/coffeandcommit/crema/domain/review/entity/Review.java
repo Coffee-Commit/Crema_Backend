@@ -20,7 +20,7 @@ public class Review extends BaseEntity{
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reservation_id", nullable = false, unique = true)
-    private Reservation reservationId; // FK, 예약 ID
+    private Reservation reservation; // FK, 예약 ID
 
     @Column(nullable = false)
     private float starReview; // 평점

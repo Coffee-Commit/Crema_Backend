@@ -21,11 +21,11 @@ public class Notification extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reservation_id", nullable = false)
-    private Reservation reservationId; // FK, 예약 ID
+    private Reservation reservation; // FK, 예약 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
-    private Member memberId; // FK, 멤버 ID는 String (UUID)
+    private Member member; // FK, 멤버 ID는 String (UUID)
 
     @Column(nullable = false, length = 1000)
     private String message;

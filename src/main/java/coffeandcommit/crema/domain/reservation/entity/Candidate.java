@@ -30,11 +30,11 @@ public class Candidate extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "reservation_id", nullable = false)
-    private Reservation reservationId; // 예약 FK ID
+    private Reservation reservation; // 예약 FK ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "time_id", nullable = false)
-    private TimeSlot timeSlotId; // 시간 FK ID
+    private TimeSlot timeSlot; // 시간 FK ID
 
     @Column(nullable = false)
     private int priority; // 우선순위

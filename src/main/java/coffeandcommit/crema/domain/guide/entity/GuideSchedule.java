@@ -28,9 +28,9 @@ public class GuideSchedule extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "time_id", nullable = false)
-    private TimeSlot timeId; // FK, 시간 ID
+    private TimeSlot time; // FK, 시간 ID
 }

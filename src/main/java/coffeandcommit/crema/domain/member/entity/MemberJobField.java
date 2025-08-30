@@ -33,10 +33,10 @@ public class MemberJobField extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Member memberId; // FK, 멤버 ID
+    private Member member; // FK, 멤버 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_field_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private JobField jobFieldId; // FK, 직무 분야 ID
+    private JobField jobField; // FK, 직무 분야 ID
 }

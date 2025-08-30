@@ -31,7 +31,7 @@ public class TimeUnit extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @Enumerated(EnumType.STRING)
     private TimeType timeType; // 30분, 60분
