@@ -11,6 +11,7 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
@@ -23,6 +24,7 @@ public class GuideMeService {
     private final GuideRepository guideRepository;
     private final GuideJobFieldRepository guideJobFieldRepository;
 
+    @Transactional(readOnly = true)
     public GuideProfileResponseDTO getGuideMeProfile(String memberId) {
 
         // 1. 가이드 기본 정보 조회
@@ -45,6 +47,7 @@ public class GuideMeService {
             return 0; // 시작일이 없으면 0년으로 간주
         }
         LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
-        return Period.between(workingStart, endDate).getYears();
+        int years = Period.between(workingStart, endDate).getYears();
+        return Math.max(0, years); // 음수 방지
     }
 }
