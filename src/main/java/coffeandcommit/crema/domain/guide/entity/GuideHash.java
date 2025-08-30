@@ -18,9 +18,9 @@ public class GuideHash extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "hash_tag_id", nullable = false)
-    private HashTag hashTagId; // 해시태그
+    private HashTag hashTag; // 해시태그
 }

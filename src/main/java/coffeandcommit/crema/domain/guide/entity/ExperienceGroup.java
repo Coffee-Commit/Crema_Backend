@@ -18,7 +18,7 @@ public class ExperienceGroup extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @Column(nullable = false)
     private String experienceTitle; // 경험 대주제

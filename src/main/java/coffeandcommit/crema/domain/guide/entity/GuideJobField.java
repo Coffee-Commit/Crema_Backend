@@ -32,13 +32,13 @@ public class GuideJobField extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "guide_id", nullable = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "guide_id", nullable = false, unique = true)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "job_field_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
-    private JobField jobFieldId; // FK, 직무 분야 ID
+    private JobField jobField; // FK, 직무 분야 ID
 }
