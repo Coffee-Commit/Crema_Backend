@@ -1,7 +1,6 @@
 package coffeandcommit.crema.domain.guide.controller;
 
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.service.GuideService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.response.Response;
