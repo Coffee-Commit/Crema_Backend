@@ -3,6 +3,8 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.globalTag.entity.JobField;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.JobType;
+import coffeandcommit.crema.domain.globalTag.repository.JobFieldRepository;
+import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
@@ -34,6 +36,9 @@ public class GuideMeServiceTest {
 
     @Mock
     private GuideJobFieldRepository guideJobFieldRepository;
+
+    @Mock
+    private JobFieldRepository jobFieldRepository;
 
     @InjectMocks
     private GuideMeService guideMeService;
@@ -106,8 +111,8 @@ public class GuideMeServiceTest {
         // GuideJobFieldResponseDTO 검증
         assertNotNull(result.getGuideJobField());
         assertEquals(guide.getId(), result.getGuideJobField().getGuideId());
-        assertEquals(jobField.getJobType(), result.getGuideJobField().getJobType());
-        assertEquals(jobField.getJobName(), result.getGuideJobField().getJobName());
+        assertEquals(jobField.getJobType(), result.getGuideJobField().getJobFieldDTO().getJobType());
+        assertEquals(jobField.getJobName(), result.getGuideJobField().getJobFieldDTO().getJobName());
 
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id(memberId);
@@ -203,5 +208,130 @@ public class GuideMeServiceTest {
         // Then
         assertNotNull(result);
         assertEquals(0, result.getWorkingPeriodYears()); // 시작일이 없으면 0년
+    }
+
+    @Test
+    @DisplayName("registerGuideJobField 새로운 직무 분야 등록 성공 테스트")
+    void registerGuideJobField_CreateNewJobField_Success() {
+        // Given
+        GuideJobFieldRequestDTO requestDTO = GuideJobFieldRequestDTO.builder()
+                .jobType(JobType.DEV_ENGINEERING)
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(jobFieldRepository.findByJobType(JobType.DEV_ENGINEERING)).thenReturn(Optional.of(jobField));
+        when(guideJobFieldRepository.findByGuide(guide)).thenReturn(Optional.empty());
+        when(guideJobFieldRepository.save(any(GuideJobField.class))).thenAnswer(invocation -> {
+            GuideJobField savedGuideJobField = invocation.getArgument(0);
+            return GuideJobField.builder()
+                    .id(1L)
+                    .guide(savedGuideJobField.getGuide())
+                    .jobField(savedGuideJobField.getJobField())
+                    .build();
+        });
+
+        // When
+        GuideJobFieldResponseDTO result = guideMeService.registerGuideJobField(memberId, requestDTO);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(1L, result.getGuideJobFieldId());
+        assertEquals(jobField.getId(), result.getJobFieldDTO().getId());
+        assertEquals(jobField.getJobType(), result.getJobFieldDTO().getJobType());
+        assertEquals(jobField.getJobName(), result.getJobFieldDTO().getJobName());
+
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(jobFieldRepository).findByJobType(JobType.DEV_ENGINEERING);
+        verify(guideJobFieldRepository).findByGuide(guide);
+        verify(guideJobFieldRepository).save(any(GuideJobField.class));
+    }
+
+    @Test
+    @DisplayName("registerGuideJobField 기존 직무 분야 업데이트 성공 테스트")
+    void registerGuideJobField_UpdateExistingJobField_Success() {
+        // Given
+        GuideJobFieldRequestDTO requestDTO = GuideJobFieldRequestDTO.builder()
+                .jobType(JobType.PLANNING_DESIGN)
+                .build();
+
+        JobField newJobField = JobField.builder()
+                .id(2L)
+                .jobType(JobType.PLANNING_DESIGN)
+                .jobName(JobNameType.UX_UI)
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(jobFieldRepository.findByJobType(JobType.PLANNING_DESIGN)).thenReturn(Optional.of(newJobField));
+        when(guideJobFieldRepository.findByGuide(guide)).thenReturn(Optional.of(guideJobField));
+        when(guideJobFieldRepository.save(any(GuideJobField.class))).thenAnswer(invocation -> {
+            GuideJobField savedGuideJobField = invocation.getArgument(0);
+            return GuideJobField.builder()
+                    .id(1L)
+                    .guide(savedGuideJobField.getGuide())
+                    .jobField(savedGuideJobField.getJobField())
+                    .build();
+        });
+
+        // When
+        GuideJobFieldResponseDTO result = guideMeService.registerGuideJobField(memberId, requestDTO);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(1L, result.getGuideJobFieldId());
+        assertEquals(newJobField.getId(), result.getJobFieldDTO().getId());
+        assertEquals(newJobField.getJobType(), result.getJobFieldDTO().getJobType());
+        assertEquals(newJobField.getJobName(), result.getJobFieldDTO().getJobName());
+
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(jobFieldRepository).findByJobType(JobType.PLANNING_DESIGN);
+        verify(guideJobFieldRepository).findByGuide(guide);
+        verify(guideJobFieldRepository).save(any(GuideJobField.class));
+    }
+
+    @Test
+    @DisplayName("registerGuideJobField 가이드 없음 테스트")
+    void registerGuideJobField_GuideNotFound() {
+        // Given
+        GuideJobFieldRequestDTO requestDTO = GuideJobFieldRequestDTO.builder()
+                .jobType(JobType.DEV_ENGINEERING)
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideMeService.registerGuideJobField(memberId, requestDTO);
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(jobFieldRepository, never()).findByJobType(any());
+        verify(guideJobFieldRepository, never()).findByGuide(any());
+        verify(guideJobFieldRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideJobField 유효하지 않은 직무 분야 테스트")
+    void registerGuideJobField_InvalidJobField() {
+        // Given
+        GuideJobFieldRequestDTO requestDTO = GuideJobFieldRequestDTO.builder()
+                .jobType(JobType.DEV_ENGINEERING)
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(jobFieldRepository.findByJobType(JobType.DEV_ENGINEERING)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideMeService.registerGuideJobField(memberId, requestDTO);
+        });
+
+        assertEquals(ErrorStatus.INVALID_JOB_FIELD, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(jobFieldRepository).findByJobType(JobType.DEV_ENGINEERING);
+        verify(guideJobFieldRepository, never()).findByGuide(any());
+        verify(guideJobFieldRepository, never()).save(any());
     }
 }

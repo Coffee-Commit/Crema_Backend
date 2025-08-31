@@ -1,5 +1,8 @@
 package coffeandcommit.crema.domain.guide.service;
 
+import coffeandcommit.crema.domain.globalTag.entity.JobField;
+import coffeandcommit.crema.domain.globalTag.repository.JobFieldRepository;
+import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
@@ -23,6 +26,7 @@ public class GuideMeService {
 
     private final GuideRepository guideRepository;
     private final GuideJobFieldRepository guideJobFieldRepository;
+    private final JobFieldRepository jobFieldRepository;
 
     @Transactional(readOnly = true)
     public GuideProfileResponseDTO getGuideMeProfile(String memberId) {
@@ -37,7 +41,7 @@ public class GuideMeService {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
 
         // 4. 직무분야 DTO 변환
-        GuideJobFieldResponseDTO guideJobFieldResponseDTO = GuideJobFieldResponseDTO.from(guide, guideJobField);
+        GuideJobFieldResponseDTO guideJobFieldResponseDTO = GuideJobFieldResponseDTO.from(guideJobField);
 
         return GuideProfileResponseDTO.from(guide, workingPeriodYears, guideJobFieldResponseDTO);
 
@@ -50,4 +54,37 @@ public class GuideMeService {
         int years = Period.between(workingStart, endDate).getYears();
         return Math.max(0, years); // 음수 방지
     }
+
+    @Transactional
+    public GuideJobFieldResponseDTO registerGuideJobField(String memberId, GuideJobFieldRequestDTO guideJobFieldRequestDTO) {
+
+        // 1. 가이드 기본 정보 조회
+        Guide guide = guideRepository.findByMember_Id(memberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. JobField 엔티티 조회
+        JobField jobField = jobFieldRepository.findByJobType(guideJobFieldRequestDTO.getJobType())
+                .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_JOB_FIELD));
+
+        // 3. 기존 GuideJobField 조회
+        GuideJobField guideJobField = guideJobFieldRepository.findByGuide(guide)
+                .orElse(null);
+        if (guideJobField != null) {
+            // 기존 GuideJobField가 존재하면 업데이트
+            guideJobField.updateJobField(jobField);
+        } else {
+            guideJobField = GuideJobField.builder()
+                    .guide(guide)
+                    .jobField(jobField)
+                    .build();
+        }
+
+        // 4. GuideJobField 저장
+        GuideJobField savedGuideJobField = guideJobFieldRepository.save(guideJobField);
+
+        // 5. DTO 변환 및 반환
+        return GuideJobFieldResponseDTO.from(savedGuideJobField);
+    }
+
+
 }

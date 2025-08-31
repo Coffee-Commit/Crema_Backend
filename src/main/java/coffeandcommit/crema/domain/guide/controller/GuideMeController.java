@@ -1,8 +1,12 @@
 package coffeandcommit.crema.domain.guide.controller;
 
+import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,6 +31,10 @@ public class GuideMeController {
     public ResponseEntity<Response<GuideProfileResponseDTO>> getGuideMeProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
         GuideProfileResponseDTO result = guideMeService.getGuideMeProfile(userDetails.getMemberId());
 
         Response<GuideProfileResponseDTO> response = Response.<GuideProfileResponseDTO>builder()
@@ -38,6 +46,28 @@ public class GuideMeController {
 
 
     }
+
+    @Operation(summary = "가이드 직무 분야 등록", description = "가이드의 직무 분야를 등록합니다.")
+    @PostMapping("/job-field")
+    public ResponseEntity<Response<GuideJobFieldResponseDTO>> registerJobField(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody GuideJobFieldRequestDTO guideJobFieldRequestDTO) {
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        GuideJobFieldResponseDTO result = guideMeService.registerGuideJobField(userDetails.getMemberId(), guideJobFieldRequestDTO);
+
+        Response<GuideJobFieldResponseDTO> response = Response.<GuideJobFieldResponseDTO>builder()
+                .message("직무 분야 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
+
 
 
 }

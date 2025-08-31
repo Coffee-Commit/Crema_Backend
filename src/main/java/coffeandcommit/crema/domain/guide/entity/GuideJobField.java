@@ -41,4 +41,8 @@ public class GuideJobField extends BaseEntity{
     @JoinColumn(name = "job_field_id", nullable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private JobField jobField; // FK, 직무 분야 ID
+
+    public void updateJobField(JobField jobField) {
+        this.jobField = jobField;
+    }
 }
