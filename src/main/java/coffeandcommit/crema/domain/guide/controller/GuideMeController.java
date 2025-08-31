@@ -5,6 +5,8 @@ import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +31,10 @@ public class GuideMeController {
     public ResponseEntity<Response<GuideProfileResponseDTO>> getGuideMeProfile(
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
         GuideProfileResponseDTO result = guideMeService.getGuideMeProfile(userDetails.getMemberId());
 
         Response<GuideProfileResponseDTO> response = Response.<GuideProfileResponseDTO>builder()
@@ -46,6 +52,10 @@ public class GuideMeController {
     public ResponseEntity<Response<GuideJobFieldResponseDTO>> registerJobField(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestBody GuideJobFieldRequestDTO guideJobFieldRequestDTO) {
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
 
         GuideJobFieldResponseDTO result = guideMeService.registerGuideJobField(userDetails.getMemberId(), guideJobFieldRequestDTO);
 
