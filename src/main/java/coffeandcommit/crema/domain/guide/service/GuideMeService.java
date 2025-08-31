@@ -80,10 +80,10 @@ public class GuideMeService {
         }
 
         // 4. GuideJobField 저장
-        guideJobFieldRepository.save(guideJobField);
+        GuideJobField savedGuideJobField = guideJobFieldRepository.save(guideJobField);
 
         // 5. DTO 변환 및 반환
-        return GuideJobFieldResponseDTO.from(guideJobField);
+        return GuideJobFieldResponseDTO.from(savedGuideJobField);
     }
 
 
