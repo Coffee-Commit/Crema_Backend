@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.guide.controller;
 
+import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
@@ -38,6 +40,24 @@ public class GuideMeController {
 
 
     }
+
+    @Operation(summary = "가이드 직무 분야 등록", description = "가이드의 직무 분야를 등록합니다.")
+    @PostMapping("/job-field")
+    public ResponseEntity<Response<GuideJobFieldResponseDTO>> registerJobField(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody GuideJobFieldRequestDTO guideJobFieldRequestDTO) {
+
+        GuideJobFieldResponseDTO result = guideMeService.registerGuideJobField(userDetails.getMemberId(), guideJobFieldRequestDTO);
+
+        Response<GuideJobFieldResponseDTO> response = Response.<GuideJobFieldResponseDTO>builder()
+                .message("직무 분야 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
+
 
 
 }
