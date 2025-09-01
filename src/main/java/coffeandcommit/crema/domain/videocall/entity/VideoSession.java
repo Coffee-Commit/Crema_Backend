@@ -5,6 +5,8 @@ import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -16,7 +18,7 @@ public class VideoSession extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "session_id")
+    @Column(name = "video_session_id")
     private Long id;
 
     private String sessionName;
@@ -25,6 +27,20 @@ public class VideoSession extends BaseEntity {
 
     private String sessionToken;
 
-    @OneToMany(mappedBy = "member",cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Member> participants;
+    private LocalDateTime endedAt;
+
+    private Boolean isActive;
+
+    @OneToMany(mappedBy = "videoSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private List<Participant> participants = new ArrayList<>();
+
+    public void addParticipant(Participant participant) {
+        this.participants.add(participant);
+        participant.setVideoSession(this);
+    }
+
+    public void endSession() {
+        this.isActive = false;
+        this.endedAt = LocalDateTime.now();
+    }
 }
