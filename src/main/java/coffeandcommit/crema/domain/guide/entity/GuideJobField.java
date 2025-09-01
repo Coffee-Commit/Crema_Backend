@@ -1,12 +1,12 @@
 package coffeandcommit.crema.domain.guide.entity;
 
-import coffeandcommit.crema.domain.globalTag.entity.JobField;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
-import lombok.*;
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
@@ -14,17 +14,14 @@ import org.hibernate.annotations.OnDeleteAction;
 @AllArgsConstructor
 @Builder(toBuilder = true)
 @Table(
-    name = "guide_job_field",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_guide_job_field_pair",
-            columnNames = {"guide_id", "job_field_id"}
-        )
-    },
-    indexes = {
-        @Index(name = "idx_guide_job_field_guide", columnList = "guide_id"),
-        @Index(name = "idx_guide_job_field_job_field", columnList = "job_field_id")
-    }
+        name = "guide_job_field",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"guide_id", "job_name"})
+        },
+        indexes = {
+                @Index(name = "idx_guide_id", columnList = "guide_id"),
+                @Index(name = "idx_guide_job_name", columnList = "job_name")
+        }
 )
 public class GuideJobField extends BaseEntity{
 
@@ -34,15 +31,13 @@ public class GuideJobField extends BaseEntity{
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false, unique = true)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private Guide guide; // FK, 가이드 ID
+    private Guide guide;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "job_field_id", nullable = false)
-    @OnDelete(action = OnDeleteAction.CASCADE)
-    private JobField jobField; // FK, 직무 분야 ID
+    @Enumerated(EnumType.STRING)
+    @Column(name = "job_name", nullable = false)
+    private JobNameType jobName; // 직무 분야 이름
 
-    public void updateJobField(JobField jobField) {
-        this.jobField = jobField;
+    public void updateJobName(JobNameType jobName) {
+        this.jobName = jobName;
     }
 }

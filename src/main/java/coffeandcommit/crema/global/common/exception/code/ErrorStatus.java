@@ -41,7 +41,10 @@ public enum ErrorStatus implements BaseCode {
     // Guide Domain
     GUIDE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드를 찾을 수 없습니다."),
     GUIDE_JOB_FIELD_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드의 직무 분야를 찾을 수 없습니다."),
-    INVALID_JOB_FIELD(HttpStatus.BAD_REQUEST, "잘못된 직무 분야 요청입니다.");
+    INVALID_JOB_FIELD(HttpStatus.BAD_REQUEST, "잘못된 직무 분야 요청입니다."),
+    INVALID_TOPIC(HttpStatus.BAD_REQUEST, "잘못된 주제 요청입니다."),
+    MAX_TOPIC_EXCEEDED(HttpStatus.BAD_REQUEST, "등록 가능한 주제 개수를 초과했습니다."),
+    GUIDE_CHAT_TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 채팅 주제를 찾을 수 없습니다.");
 
     public static final String PREFIX = "[ERROR]";
 

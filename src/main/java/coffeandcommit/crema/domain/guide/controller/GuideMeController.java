@@ -1,6 +1,8 @@
 package coffeandcommit.crema.domain.guide.controller;
 
+import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
@@ -10,12 +12,15 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -69,5 +74,49 @@ public class GuideMeController {
     }
 
 
+    @Operation(summary = "가이드 채팅 주제 등록", description = "가이드의 채팅 주제를 등록합니다.")
+    @PostMapping("/chat-topics")
+    public ResponseEntity<Response<List<GuideChatTopicResponseDTO>>> registerChatTopics(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody GuideChatTopicRequestDTO guideChatTopicRequestDTO){
+
+        if (guideChatTopicRequestDTO == null
+                || guideChatTopicRequestDTO.getTopics() == null
+                || guideChatTopicRequestDTO.getTopics().isEmpty()) {
+            throw new BaseException(ErrorStatus.INVALID_TOPIC);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideChatTopicResponseDTO> result = guideMeService.registerChatTopics(loginMemberId, guideChatTopicRequestDTO);
+
+        Response<List<GuideChatTopicResponseDTO>> response = Response.<List<GuideChatTopicResponseDTO>>builder()
+                .message("채팅 주제 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "가이드 채팅 주제 삭제", description = "가이드의 채팅 주제를 삭제합니다.")
+    @DeleteMapping("/chat-topics/{topicId}")
+    public ResponseEntity<Response<List<GuideChatTopicResponseDTO>>> deleteChatTopic(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable("topicId") Long topicId) {
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideChatTopicResponseDTO> result = guideMeService.deleteChatTopic(loginMemberId, topicId);
+
+        Response<List<GuideChatTopicResponseDTO>> response = Response.<List<GuideChatTopicResponseDTO>>builder()
+                .message("채팅 주제 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 }
