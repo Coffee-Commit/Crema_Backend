@@ -5,3 +5,5 @@ app:
   cookie:
     domain: ${COOKIE_DOMAIN:.coffeechat.kro.kr}  # 프로덕션 도메인 설정
     same-site: ${COOKIE_SAMESITE:None}  # HTTPS 환경에서 None 사용
+    secure: ${COOKIE_SECURE:true}
+    http-only: ${COOKIE_HTTPONLY:true}
