@@ -107,7 +107,8 @@ public class GuideMeService {
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
         // 등록 개수 제한(최대 5개)
-        if (guideChatTopicRequestDTO.getTopics().size() > 5) {
+        long currentCount = guideChatTopicRepository.countByGuide(guide);
+        if (currentCount + guideChatTopicRequestDTO.getTopics().size() > 5) {
             throw new BaseException(ErrorStatus.MAX_TOPIC_EXCEEDED);
         }
 
@@ -118,7 +119,7 @@ public class GuideMeService {
                     .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_TOPIC));
 
             // 이미 등록된 주제인지 확인
-            boolean exists = guideChatTopicRepository.existsByGuideAndChatTopic_TopicName(guide, topicDTO.getTopicName());
+            boolean exists = guideChatTopicRepository.existsByGuideAndChatTopic(guide, chatTopic);
             if (exists) {continue;} // 중복된 주제는 건너뜀
 
             // GuideChatTopic 저장
@@ -131,7 +132,7 @@ public class GuideMeService {
         }
 
         // 저장된 주제들 조회 후 DTO로 변환
-        return guideChatTopicRepository.findAllByGuide(guide).stream()
+        return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
                 .map(GuideChatTopicResponseDTO::from)
                 .collect(Collectors.toList());
 
@@ -157,7 +158,7 @@ public class GuideMeService {
         guideChatTopicRepository.delete(guideChatTopic);
 
         // 삭제 후 남은 주제들 조회 및 DTO 변환
-        return guideChatTopicRepository.findAllByGuide(guide).stream()
+        return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
                 .map(GuideChatTopicResponseDTO::from)
                 .collect(Collectors.toList());
     }

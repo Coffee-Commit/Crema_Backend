@@ -12,6 +12,7 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -77,10 +78,12 @@ public class GuideMeController {
     @PostMapping("/chat-topics")
     public ResponseEntity<Response<List<GuideChatTopicResponseDTO>>> registerChatTopics(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestBody GuideChatTopicRequestDTO guideChatTopicRequestDTO){
+            @Valid @RequestBody GuideChatTopicRequestDTO guideChatTopicRequestDTO){
 
-        if(userDetails == null){
-            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        if (guideChatTopicRequestDTO == null
+                || guideChatTopicRequestDTO.getTopics() == null
+                || guideChatTopicRequestDTO.getTopics().isEmpty()) {
+            throw new BaseException(ErrorStatus.INVALID_TOPIC);
         }
 
         String loginMemberId = userDetails.getMemberId();

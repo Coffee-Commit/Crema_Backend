@@ -36,11 +36,7 @@ public class GuideController {
             @AuthenticationPrincipal CustomUserDetails userDetails
             ) {
 
-        if(userDetails == null){
-            throw new BaseException(ErrorStatus.UNAUTHORIZED);
-        }
-
-        String loginMemberId = userDetails.getMemberId();
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
 
         GuideJobFieldResponseDTO result = guideService.getGuideJobField(guideId, loginMemberId);
 
@@ -58,11 +54,7 @@ public class GuideController {
             @PathVariable Long guideId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {
 
-        if(userDetails == null){
-            throw new BaseException(ErrorStatus.UNAUTHORIZED);
-        }
-
-        String loginMemberId = userDetails.getMemberId();
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
 
         List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(guideId, loginMemberId);
 

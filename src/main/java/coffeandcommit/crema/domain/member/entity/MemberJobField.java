@@ -10,16 +10,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(
-        name = "member_job_field",
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"member_id", "job_name"})
-        },
-        indexes = {
-                @Index(name = "idx_member_id", columnList = "member_id"),
-                @Index(name = "idx_member_job_name", columnList = "job_name")
-        }
-)
+@Table(name = "member_job_field")
 public class MemberJobField extends BaseEntity{
 
     @Id
