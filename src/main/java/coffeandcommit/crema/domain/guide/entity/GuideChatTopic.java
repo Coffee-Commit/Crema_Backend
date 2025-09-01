@@ -16,7 +16,8 @@ import lombok.*;
         @UniqueConstraint(columnNames = {"guide_id", "chat_topic_id"})
     },
     indexes = {
-        @Index(name = "uk_guide_chat_topic", columnList = "guide_id, chat_topic_id", unique = true)
+        @Index(name = "idx_gct_guide", columnList = "guide_id"),
+        @Index(name = "idx_gct_topic", columnList = "chat_topic_id")
     }
 )
 public class GuideChatTopic extends BaseEntity{

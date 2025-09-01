@@ -36,18 +36,10 @@ public class GuideService {
 
 
         // 2. 공개 여부 체크
-        if(!targetGuide.isOpened()){
-            // 비공개 가이드인 경우, 본인 가이드가 아니면 접근 불가
-            if (loginMemberId == null) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-
-            // 1. 로그인한 사용자가 가이드인지 확인
-            Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
-                    .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-            // 본인 가이드가 아니면 접근 불가
-            if (!myGuide.getId().equals(targetGuide.getId())) {
+        if (!targetGuide.isOpened()) {
+            // 비공개 가이드일 경우
+            if (loginMemberId == null ||
+                    !targetGuide.getMember().getId().equals(loginMemberId)) {
                 throw new BaseException(ErrorStatus.FORBIDDEN);
             }
         }
@@ -70,17 +62,10 @@ public class GuideService {
 
 
         // 2. 공개 여부 체크
-        if(!targetGuide.isOpened()){
-            // 비공개 가이드일 경우 로그인 필요
-            if (loginMemberId == null) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-            // 로그인한 사용자가 가이드인지 확인
-            Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
-                    .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-            // 본인 가이드가 아니면 접근 불가
-            if (!myGuide.getId().equals(targetGuide.getId())) {
+        if (!targetGuide.isOpened()) {
+            // 비공개 가이드일 경우 로그인 필요 + 본인만 접근 가능
+            if (loginMemberId == null ||
+                    !targetGuide.getMember().getId().equals(loginMemberId)) {
                 throw new BaseException(ErrorStatus.FORBIDDEN);
             }
         }
