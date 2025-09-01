@@ -137,15 +137,17 @@ public class GuideServiceTest {
     void getGuideJobField_LoggedInGuideNotFound() {
         // Arrange
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2)); // guide2 is private
+        when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "nonexistent");
         });
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("nonexistent");
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -172,15 +174,17 @@ public class GuideServiceTest {
     void getGuideJobField_ForbiddenAccessToPrivateGuide() {
         // Arrange
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "member1");
         });
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member1");
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -214,6 +218,7 @@ public class GuideServiceTest {
                 .build();
 
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideJobFieldRepository.findByGuide(guide2)).thenReturn(Optional.of(privateGuideJobField));
 
         GuideJobFieldResponseDTO result = guideService.getGuideJobField(2L, "member2");
@@ -223,6 +228,7 @@ public class GuideServiceTest {
         assertEquals(JobNameType.MARKETING_PR, result.getJobName());
 
         verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member2");
         verify(guideJobFieldRepository).findByGuide(guide2);
     }
 
@@ -262,16 +268,18 @@ public class GuideServiceTest {
     void getGuideChatTopics_LoggedInGuideNotFound() {
         // Mock 설정
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide2)); // guide2는 비공개 가이드
+        when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideChatTopics(1L, "nonexistent");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
+        verify(guideRepository).findByMember_Id("nonexistent");
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
@@ -299,16 +307,18 @@ public class GuideServiceTest {
     void getGuideChatTopics_ForbiddenAccessToPrivateGuide() {
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideChatTopics(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member1");
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
@@ -324,6 +334,7 @@ public class GuideServiceTest {
 
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideChatTopicRepository.findAllByGuideWithJoin(guide2)).thenReturn(List.of(privateGuideChatTopic));
 
         // 테스트 실행
@@ -339,6 +350,7 @@ public class GuideServiceTest {
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member2");
         verify(guideChatTopicRepository).findAllByGuideWithJoin(guide2);
     }
 
