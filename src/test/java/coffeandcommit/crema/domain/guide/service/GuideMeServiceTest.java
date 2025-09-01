@@ -1,10 +1,19 @@
 package coffeandcommit.crema.domain.guide.service;
 
+import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
+import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
+import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
+import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
+import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
@@ -19,6 +28,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -33,6 +45,12 @@ public class GuideMeServiceTest {
     @Mock
     private GuideJobFieldRepository guideJobFieldRepository;
 
+    @Mock
+    private ChatTopicRepository chatTopicRepository;
+
+    @Mock
+    private GuideChatTopicRepository guideChatTopicRepository;
+
     @InjectMocks
     private GuideMeService guideMeService;
 
@@ -40,6 +58,9 @@ public class GuideMeServiceTest {
     private Member member;
     private Guide guide;
     private GuideJobField guideJobField;
+    private ChatTopic chatTopic1;
+    private ChatTopic chatTopic2;
+    private GuideChatTopic guideChatTopic;
 
     @BeforeEach
     void setUp() {
@@ -68,6 +89,24 @@ public class GuideMeServiceTest {
                 .id(1L)
                 .guide(guide)
                 .jobName(JobNameType.DESIGN)
+                .build();
+
+        chatTopic1 = ChatTopic.builder()
+                .id(1L)
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.CAREER_CHANGE)
+                .build();
+
+        chatTopic2 = ChatTopic.builder()
+                .id(2L)
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.JOB_CHANGE)
+                .build();
+
+        guideChatTopic = GuideChatTopic.builder()
+                .id(1L)
+                .guide(guide)
+                .chatTopic(chatTopic1)
                 .build();
     }
 
@@ -273,5 +312,281 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideJobFieldRepository, never()).findByGuide(any());
         verify(guideJobFieldRepository, never()).save(any());
+    }
+
+    @Test
+    @DisplayName("registerChatTopics 성공 테스트")
+    void registerChatTopics_Success() {
+        // 요청 DTO 생성
+        TopicDTO topicDTO1 = TopicDTO.builder()
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.CAREER_CHANGE)
+                .build();
+
+        TopicDTO topicDTO2 = TopicDTO.builder()
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.JOB_CHANGE)
+                .build();
+
+        List<TopicDTO> topics = Arrays.asList(topicDTO1, topicDTO2);
+
+        GuideChatTopicRequestDTO requestDTO = GuideChatTopicRequestDTO.builder()
+                .topics(topics)
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE))
+                .thenReturn(Optional.of(chatTopic1));
+        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE))
+                .thenReturn(Optional.of(chatTopic2));
+
+        // 첫 번째 주제는 이미 등록되어 있음
+        when(guideChatTopicRepository.existsByGuideAndChatTopic_TopicName(guide, TopicNameType.CAREER_CHANGE))
+                .thenReturn(true);
+
+        // 두 번째 주제는 등록되어 있지 않음
+        when(guideChatTopicRepository.existsByGuideAndChatTopic_TopicName(guide, TopicNameType.JOB_CHANGE))
+                .thenReturn(false);
+
+        // 저장 시 반환할 객체 설정
+        GuideChatTopic savedGuideChatTopic = GuideChatTopic.builder()
+                .id(2L)
+                .guide(guide)
+                .chatTopic(chatTopic2)
+                .build();
+
+        when(guideChatTopicRepository.save(any(GuideChatTopic.class))).thenReturn(savedGuideChatTopic);
+
+        // 저장 후 조회 결과 설정
+        List<GuideChatTopic> guideChatTopics = Arrays.asList(guideChatTopic, savedGuideChatTopic);
+        when(guideChatTopicRepository.findAllByGuide(guide)).thenReturn(guideChatTopics);
+
+        // 테스트 실행
+        List<GuideChatTopicResponseDTO> result = guideMeService.registerChatTopics(memberId, requestDTO);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // 첫 번째 주제 검증
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(guide.getId(), result.get(0).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
+        assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
+
+        // 두 번째 주제 검증
+        assertEquals(2L, result.get(1).getId());
+        assertEquals(guide.getId(), result.get(1).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(1).getTopic().getChatTopic());
+        assertEquals(TopicNameType.JOB_CHANGE, result.get(1).getTopic().getTopicName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
+        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE);
+        verify(guideChatTopicRepository).existsByGuideAndChatTopic_TopicName(guide, TopicNameType.CAREER_CHANGE);
+        verify(guideChatTopicRepository).existsByGuideAndChatTopic_TopicName(guide, TopicNameType.JOB_CHANGE);
+        verify(guideChatTopicRepository).save(any(GuideChatTopic.class));
+        verify(guideChatTopicRepository).findAllByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("registerChatTopics 가이드 없음 테스트")
+    void registerChatTopics_GuideNotFound() {
+        // 요청 DTO 생성
+        TopicDTO topicDTO = TopicDTO.builder()
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.CAREER_CHANGE)
+                .build();
+
+        GuideChatTopicRequestDTO requestDTO = GuideChatTopicRequestDTO.builder()
+                .topics(List.of(topicDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerChatTopics(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).save(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("registerChatTopics 최대 주제 개수 초과 테스트")
+    void registerChatTopics_MaxTopicExceeded() {
+        // 요청 DTO 생성 - 6개의 주제 (최대 5개)
+        List<TopicDTO> topics = new ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            topics.add(TopicDTO.builder()
+                    .chatTopic(ChatTopicType.CAREER)
+                    .topicName(TopicNameType.CAREER_CHANGE)
+                    .build());
+        }
+
+        GuideChatTopicRequestDTO requestDTO = GuideChatTopicRequestDTO.builder()
+                .topics(topics)
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerChatTopics(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.MAX_TOPIC_EXCEEDED, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).save(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("registerChatTopics 유효하지 않은 주제 테스트")
+    void registerChatTopics_InvalidTopic() {
+        // 요청 DTO 생성
+        TopicDTO topicDTO = TopicDTO.builder()
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.CAREER_CHANGE)
+                .build();
+
+        GuideChatTopicRequestDTO requestDTO = GuideChatTopicRequestDTO.builder()
+                .topics(List.of(topicDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE))
+                .thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerChatTopics(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.INVALID_TOPIC, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).save(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteChatTopic 성공 테스트")
+    void deleteChatTopic_Success() {
+        // Mock 설정
+        Long topicId = 1L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(guideChatTopicRepository.findById(topicId)).thenReturn(Optional.of(guideChatTopic));
+
+        // 삭제 후 남은 주제 설정
+        GuideChatTopic remainingTopic = GuideChatTopic.builder()
+                .id(2L)
+                .guide(guide)
+                .chatTopic(chatTopic2)
+                .build();
+
+        when(guideChatTopicRepository.findAllByGuide(guide)).thenReturn(List.of(remainingTopic));
+
+        // 테스트 실행
+        List<GuideChatTopicResponseDTO> result = guideMeService.deleteChatTopic(memberId, topicId);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(guide.getId(), result.get(0).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
+        assertEquals(TopicNameType.JOB_CHANGE, result.get(0).getTopic().getTopicName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository).findById(topicId);
+        verify(guideChatTopicRepository).delete(guideChatTopic);
+        verify(guideChatTopicRepository).findAllByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("deleteChatTopic 가이드 없음 테스트")
+    void deleteChatTopic_GuideNotFound() {
+        // Mock 설정
+        Long topicId = 1L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteChatTopic(memberId, topicId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository, never()).findById(anyLong());
+        verify(guideChatTopicRepository, never()).delete(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteChatTopic 주제 없음 테스트")
+    void deleteChatTopic_TopicNotFound() {
+        // Mock 설정
+        Long topicId = 999L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(guideChatTopicRepository.findById(topicId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteChatTopic(memberId, topicId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_CHAT_TOPIC_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository).findById(topicId);
+        verify(guideChatTopicRepository, never()).delete(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteChatTopic 권한 없음 테스트")
+    void deleteChatTopic_Forbidden() {
+        // Mock 설정
+        Long topicId = 1L;
+
+        // 다른 가이드의 주제
+        Guide otherGuide = Guide.builder()
+                .id(2L)
+                .member(Member.builder().id("other-member-id").build())
+                .build();
+
+        GuideChatTopic otherGuideTopic = GuideChatTopic.builder()
+                .id(1L)
+                .guide(otherGuide)
+                .chatTopic(chatTopic1)
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(guideChatTopicRepository.findById(topicId)).thenReturn(Optional.of(otherGuideTopic));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteChatTopic(memberId, topicId)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository).findById(topicId);
+        verify(guideChatTopicRepository, never()).delete(any());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
     }
 }

@@ -1,9 +1,15 @@
 package coffeandcommit.crema.domain.guide.service;
 
+import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
+import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
+import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
@@ -17,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,11 +42,18 @@ public class GuideServiceTest {
     @Mock
     private GuideJobFieldRepository guideJobFieldRepository;
 
+    @Mock
+    private GuideChatTopicRepository guideChatTopicRepository;
+
     private Member member1;
     private Member member2;
     private Guide guide1;
     private Guide guide2;
     private GuideJobField guideJobField;
+    private ChatTopic chatTopic1;
+    private ChatTopic chatTopic2;
+    private GuideChatTopic guideChatTopic1;
+    private GuideChatTopic guideChatTopic2;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +87,30 @@ public class GuideServiceTest {
                 .id(1L)
                 .guide(guide1)
                 .jobName(JobNameType.DESIGN)
+                .build();
+
+        chatTopic1 = ChatTopic.builder()
+                .id(1L)
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.CAREER_CHANGE)
+                .build();
+
+        chatTopic2 = ChatTopic.builder()
+                .id(2L)
+                .chatTopic(ChatTopicType.CAREER)
+                .topicName(TopicNameType.JOB_CHANGE)
+                .build();
+
+        guideChatTopic1 = GuideChatTopic.builder()
+                .id(1L)
+                .guide(guide1)
+                .chatTopic(chatTopic1)
+                .build();
+
+        guideChatTopic2 = GuideChatTopic.builder()
+                .id(2L)
+                .guide(guide1)
+                .chatTopic(chatTopic2)
                 .build();
     }
 
@@ -192,5 +231,149 @@ public class GuideServiceTest {
         verify(guideRepository).findById(2L);
         verify(guideJobFieldRepository).findByGuide(guide2);
     }
-}
 
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 성공")
+    void getGuideChatTopics_Success() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(guideChatTopicRepository.findAllByGuide(guide1)).thenReturn(Arrays.asList(guideChatTopic1, guideChatTopic2));
+
+        // 테스트 실행
+        List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // 첫 번째 주제 검증
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(guide1.getId(), result.get(0).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
+        assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
+
+        // 두 번째 주제 검증
+        assertEquals(2L, result.get(1).getId());
+        assertEquals(guide1.getId(), result.get(1).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(1).getTopic().getChatTopic());
+        assertEquals(TopicNameType.JOB_CHANGE, result.get(1).getTopic().getTopicName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("member1");
+        verify(guideRepository).findById(1L);
+        verify(guideChatTopicRepository).findAllByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 로그인한 사용자의 가이드를 찾을 수 없음")
+    void getGuideChatTopics_LoggedInGuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideChatTopics(1L, "nonexistent");
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("nonexistent");
+        verify(guideRepository, never()).findById(anyLong());
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 대상 가이드를 찾을 수 없음")
+    void getGuideChatTopics_TargetGuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
+        when(guideRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideChatTopics(999L, "member1");
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("member1");
+        verify(guideRepository).findById(999L);
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 비공개 가이드에 대한 접근 금지")
+    void getGuideChatTopics_ForbiddenAccessToPrivateGuide() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideChatTopics(2L, "member1");
+        });
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("member1");
+        verify(guideRepository).findById(2L);
+        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 소유자는 비공개 가이드에 접근 가능")
+    void getGuideChatTopics_OwnerCanAccessPrivateGuide() {
+        // 비공개 가이드의 채팅 주제 설정
+        GuideChatTopic privateGuideChatTopic = GuideChatTopic.builder()
+                .id(3L)
+                .guide(guide2)
+                .chatTopic(chatTopic1)
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideChatTopicRepository.findAllByGuide(guide2)).thenReturn(List.of(privateGuideChatTopic));
+
+        // 테스트 실행
+        List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(2L, "member2");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(3L, result.get(0).getId());
+        assertEquals(guide2.getId(), result.get(0).getGuideId());
+        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
+        assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("member2");
+        verify(guideRepository).findById(2L);
+        verify(guideChatTopicRepository).findAllByGuide(guide2);
+    }
+
+    @Test
+    @DisplayName("가이드 채팅 주제 조회 - 주제가 없는 경우 빈 리스트 반환")
+    void getGuideChatTopics_EmptyTopics() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(guideChatTopicRepository.findAllByGuide(guide1)).thenReturn(List.of());
+
+        // 테스트 실행
+        List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id("member1");
+        verify(guideRepository).findById(1L);
+        verify(guideChatTopicRepository).findAllByGuide(guide1);
+    }
+}
