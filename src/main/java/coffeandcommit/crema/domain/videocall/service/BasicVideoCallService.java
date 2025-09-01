@@ -105,11 +105,11 @@ public class BasicVideoCallService {
 
             VideoSession videoSession = videoSessionRepository
                     .findBySessionId(sessionId)
-                    .orElseThrow(SessionNotFound::new);
+                    .orElseThrow(SessionNotFoundException::new);
 
             Session openviduSession = openVidu.getActiveSession(sessionId);
             if(openviduSession == null){
-                throw new SessionNotFound();
+                throw new SessionNotFoundException();
             }
             ConnectionProperties connectionProperties = new ConnectionProperties.Builder()
                     .type(ConnectionType.WEBRTC)    //저지연 WebRTC 사용
@@ -151,7 +151,7 @@ public class BasicVideoCallService {
     public void leaveSession(String sessionId, String connectionId){
         try{
             VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
-                    .orElseThrow(SessionNotFound::new);
+                    .orElseThrow(SessionNotFoundException::new);
             videoSession.endSession();
             videoSessionRepository.save(videoSession);
 
@@ -172,11 +172,11 @@ public class BasicVideoCallService {
     public Recording startAudioRecording(String sessionId){
         try{
             VideoSession videoSession = videoSessionRepository.findBySessionIdAndIsActiveTrue(sessionId)
-                    .orElseThrow(SessionNotFound::new);
+                    .orElseThrow(SessionNotFoundException::new);
 
             Session openviduSession = openVidu.getActiveSession(sessionId);
             if(openviduSession == null){
-                throw new SessionNotFound();
+                throw new SessionNotFoundException();
             }
 
             List<Participant> connectedParticipants = participantRepository.findByVideoSessionAndIsConnectedTrue(videoSession);
