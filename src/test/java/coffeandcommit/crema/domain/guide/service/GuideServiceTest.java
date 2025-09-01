@@ -1,8 +1,6 @@
 package coffeandcommit.crema.domain.guide.service;
 
-import coffeandcommit.crema.domain.globalTag.entity.JobField;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
-import coffeandcommit.crema.domain.globalTag.enums.JobType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
@@ -40,7 +38,6 @@ public class GuideServiceTest {
     private Member member2;
     private Guide guide1;
     private Guide guide2;
-    private JobField jobField;
     private GuideJobField guideJobField;
 
     @BeforeEach
@@ -71,40 +68,26 @@ public class GuideServiceTest {
                 .isApproved(true)
                 .build();
 
-        // Create test job field
-        jobField = JobField.builder()
-                .id(1L)
-                .jobType(JobType.DEV_ENGINEERING)
-                .jobName(JobNameType.BACKEND)
-                .build();
-
-        // Create test guide job field
         guideJobField = GuideJobField.builder()
                 .id(1L)
                 .guide(guide1)
-                .jobField(jobField)
+                .jobName(JobNameType.DESIGN)
                 .build();
     }
 
     @Test
     @DisplayName("가이드 직무 분야 조회 - 성공")
     void getGuideJobField_Success() {
-        // Arrange
         when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
         when(guideJobFieldRepository.findByGuide(guide1)).thenReturn(Optional.of(guideJobField));
 
-        // Act
         GuideJobFieldResponseDTO result = guideService.getGuideJobField(1L, "member1");
 
-        // Assert
         assertNotNull(result);
         assertEquals(1L, result.getGuideId());
-        assertEquals(1L, result.getGuideJobFieldId());
-        assertEquals(JobType.DEV_ENGINEERING, result.getJobFieldDTO().getJobType());
-        assertEquals(JobNameType.BACKEND, result.getJobFieldDTO().getJobName());
+        assertEquals(JobNameType.DESIGN, result.getJobName());
 
-        // Verify
         verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(1L);
         verify(guideJobFieldRepository).findByGuide(guide1);
@@ -189,30 +172,25 @@ public class GuideServiceTest {
     @Test
     @DisplayName("가이드 직무 분야 조회 - 소유자는 비공개 가이드에 접근 가능")
     void getGuideJobField_OwnerCanAccessPrivateGuide() {
-        // Arrange
         GuideJobField privateGuideJobField = GuideJobField.builder()
                 .id(2L)
                 .guide(guide2)
-                .jobField(jobField)
+                .jobName(JobNameType.MARKETING_PR)
                 .build();
 
         when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
         when(guideJobFieldRepository.findByGuide(guide2)).thenReturn(Optional.of(privateGuideJobField));
 
-        // Act
         GuideJobFieldResponseDTO result = guideService.getGuideJobField(2L, "member2");
 
-        // Assert
         assertNotNull(result);
         assertEquals(2L, result.getGuideId());
-        assertEquals(2L, result.getGuideJobFieldId());
-        assertEquals(JobType.DEV_ENGINEERING, result.getJobFieldDTO().getJobType());
-        assertEquals(JobNameType.BACKEND, result.getJobFieldDTO().getJobName());
+        assertEquals(JobNameType.MARKETING_PR, result.getJobName());
 
-        // Verify
         verify(guideRepository).findByMember_Id("member2");
         verify(guideRepository).findById(2L);
         verify(guideJobFieldRepository).findByGuide(guide2);
     }
 }
+

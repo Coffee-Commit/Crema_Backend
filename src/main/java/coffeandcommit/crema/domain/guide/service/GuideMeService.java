@@ -1,7 +1,6 @@
 package coffeandcommit.crema.domain.guide.service;
 
-import coffeandcommit.crema.domain.globalTag.entity.JobField;
-import coffeandcommit.crema.domain.globalTag.repository.JobFieldRepository;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
@@ -26,7 +25,6 @@ public class GuideMeService {
 
     private final GuideRepository guideRepository;
     private final GuideJobFieldRepository guideJobFieldRepository;
-    private final JobFieldRepository jobFieldRepository;
 
     @Transactional(readOnly = true)
     public GuideProfileResponseDTO getGuideMeProfile(String memberId) {
@@ -62,20 +60,22 @@ public class GuideMeService {
         Guide guide = guideRepository.findByMember_Id(memberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        // 2. JobField 엔티티 조회
-        JobField jobField = jobFieldRepository.findByJobType(guideJobFieldRequestDTO.getJobType())
-                .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_JOB_FIELD));
+        // 2. 요청 값 유효성 체크
+        JobNameType jobName = guideJobFieldRequestDTO.getJobName();
+        if (jobName == null) {
+            throw new BaseException(ErrorStatus.INVALID_JOB_FIELD);
+        }
 
         // 3. 기존 GuideJobField 조회
         GuideJobField guideJobField = guideJobFieldRepository.findByGuide(guide)
                 .orElse(null);
         if (guideJobField != null) {
             // 기존 GuideJobField가 존재하면 업데이트
-            guideJobField.updateJobField(jobField);
+            guideJobField.updateJobName(jobName);
         } else {
             guideJobField = GuideJobField.builder()
                     .guide(guide)
-                    .jobField(jobField)
+                    .jobName(jobName)
                     .build();
         }
 

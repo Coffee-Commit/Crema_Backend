@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.guide.dto.response;
 
-import coffeandcommit.crema.domain.globalTag.dto.JobFieldDTO;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,14 +15,12 @@ import lombok.NoArgsConstructor;
 public class GuideJobFieldResponseDTO {
 
     private Long guideId;
-    private Long guideJobFieldId;
-    private JobFieldDTO jobFieldDTO;
+    private JobNameType jobName;
 
-    public static GuideJobFieldResponseDTO from(GuideJobField guideJobField){
+    public static GuideJobFieldResponseDTO from(GuideJobField guideJobField) {
         return GuideJobFieldResponseDTO.builder()
                 .guideId(guideJobField.getGuide().getId())
-                .guideJobFieldId(guideJobField.getId())
-                .jobFieldDTO(JobFieldDTO.from(guideJobField.getJobField()))
+                .jobName(guideJobField.getJobName())
                 .build();
     }
 
