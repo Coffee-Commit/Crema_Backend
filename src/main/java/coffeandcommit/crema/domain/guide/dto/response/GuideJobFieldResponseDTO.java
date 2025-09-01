@@ -1,7 +1,6 @@
 package coffeandcommit.crema.domain.guide.dto.response;
 
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
-import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
 import lombok.AllArgsConstructor;
 import lombok.Builder;

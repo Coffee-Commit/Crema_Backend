@@ -1,8 +1,6 @@
 package coffeandcommit.crema.domain.guide.dto.response;
 
 import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
-import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
-import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
