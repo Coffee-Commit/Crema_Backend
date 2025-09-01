@@ -117,7 +117,6 @@ public class GuideServiceTest {
     @Test
     @DisplayName("가이드 직무 분야 조회 - 성공")
     void getGuideJobField_Success() {
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
         when(guideJobFieldRepository.findByGuide(guide1)).thenReturn(Optional.of(guideJobField));
 
@@ -127,26 +126,28 @@ public class GuideServiceTest {
         assertEquals(1L, result.getGuideId());
         assertEquals(JobNameType.DESIGN, result.getJobName());
 
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(1L);
         verify(guideJobFieldRepository).findByGuide(guide1);
+        // Since guide1 is public (isOpened=true), findByMember_Id should not be called
+        verify(guideRepository, never()).findByMember_Id(anyString());
     }
 
     @Test
     @DisplayName("가이드 직무 분야 조회 - 로그인한 사용자의 가이드를 찾을 수 없음")
     void getGuideJobField_LoggedInGuideNotFound() {
         // Arrange
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2)); // guide2 is private
         when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
-            guideService.getGuideJobField(1L, "nonexistent");
+            guideService.getGuideJobField(2L, "nonexistent");
         });
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
+        verify(guideRepository).findById(2L);
         verify(guideRepository).findByMember_Id("nonexistent");
-        verify(guideRepository, never()).findById(anyLong());
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -154,7 +155,6 @@ public class GuideServiceTest {
     @DisplayName("가이드 직무 분야 조회 - 대상 가이드를 찾을 수 없음")
     void getGuideJobField_TargetGuideNotFound() {
         // Arrange
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(999L)).thenReturn(Optional.empty());
 
         // Act & Assert
@@ -164,8 +164,8 @@ public class GuideServiceTest {
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(999L);
+        verify(guideRepository, never()).findByMember_Id(anyString());
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -192,7 +192,6 @@ public class GuideServiceTest {
     @DisplayName("가이드 직무 분야 조회 - 가이드 직무 분야를 찾을 수 없음")
     void getGuideJobField_GuideJobFieldNotFound() {
         // Arrange
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
         when(guideJobFieldRepository.findByGuide(guide1)).thenReturn(Optional.empty());
 
@@ -203,9 +202,10 @@ public class GuideServiceTest {
         assertEquals(ErrorStatus.GUIDE_JOB_FIELD_NOT_FOUND, exception.getErrorCode());
 
         // Verify
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(1L);
         verify(guideJobFieldRepository).findByGuide(guide1);
+        // Since guide1 is public (isOpened=true), findByMember_Id should not be called
+        verify(guideRepository, never()).findByMember_Id(anyString());
     }
 
     @Test
@@ -236,9 +236,8 @@ public class GuideServiceTest {
     @DisplayName("가이드 채팅 주제 조회 - 성공")
     void getGuideChatTopics_Success() {
         // Mock 설정
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
-        when(guideChatTopicRepository.findAllByGuide(guide1)).thenReturn(Arrays.asList(guideChatTopic1, guideChatTopic2));
+        when(guideChatTopicRepository.findAllByGuideWithJoin(guide1)).thenReturn(Arrays.asList(guideChatTopic1, guideChatTopic2));
 
         // 테스트 실행
         List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(1L, "member1");
@@ -260,15 +259,15 @@ public class GuideServiceTest {
         assertEquals(TopicNameType.JOB_CHANGE, result.get(1).getTopic().getTopicName());
 
         // 메서드 호출 검증
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(1L);
-        verify(guideChatTopicRepository).findAllByGuide(guide1);
+        verify(guideChatTopicRepository).findAllByGuideWithJoin(guide1);
     }
 
     @Test
     @DisplayName("가이드 채팅 주제 조회 - 로그인한 사용자의 가이드를 찾을 수 없음")
     void getGuideChatTopics_LoggedInGuideNotFound() {
         // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide2)); // guide2는 비공개 가이드
         when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
@@ -279,16 +278,15 @@ public class GuideServiceTest {
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
         verify(guideRepository).findByMember_Id("nonexistent");
-        verify(guideRepository, never()).findById(anyLong());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
     @DisplayName("가이드 채팅 주제 조회 - 대상 가이드를 찾을 수 없음")
     void getGuideChatTopics_TargetGuideNotFound() {
         // Mock 설정
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(999L)).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
@@ -299,9 +297,9 @@ public class GuideServiceTest {
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(999L);
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideRepository, never()).findByMember_Id(anyString());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -321,7 +319,7 @@ public class GuideServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id("member1");
         verify(guideRepository).findById(2L);
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -337,7 +335,7 @@ public class GuideServiceTest {
         // Mock 설정
         when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideChatTopicRepository.findAllByGuide(guide2)).thenReturn(List.of(privateGuideChatTopic));
+        when(guideChatTopicRepository.findAllByGuideWithJoin(guide2)).thenReturn(List.of(privateGuideChatTopic));
 
         // 테스트 실행
         List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(2L, "member2");
@@ -353,16 +351,15 @@ public class GuideServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id("member2");
         verify(guideRepository).findById(2L);
-        verify(guideChatTopicRepository).findAllByGuide(guide2);
+        verify(guideChatTopicRepository).findAllByGuideWithJoin(guide2);
     }
 
     @Test
     @DisplayName("가이드 채팅 주제 조회 - 주제가 없는 경우 빈 리스트 반환")
     void getGuideChatTopics_EmptyTopics() {
         // Mock 설정
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.of(guide1));
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
-        when(guideChatTopicRepository.findAllByGuide(guide1)).thenReturn(List.of());
+        when(guideChatTopicRepository.findAllByGuideWithJoin(guide1)).thenReturn(List.of());
 
         // 테스트 실행
         List<GuideChatTopicResponseDTO> result = guideService.getGuideChatTopics(1L, "member1");
@@ -372,8 +369,8 @@ public class GuideServiceTest {
         assertTrue(result.isEmpty());
 
         // 메서드 호출 검증
-        verify(guideRepository).findByMember_Id("member1");
+        verify(guideRepository, never()).findByMember_Id(anyString());
         verify(guideRepository).findById(1L);
-        verify(guideChatTopicRepository).findAllByGuide(guide1);
+        verify(guideChatTopicRepository).findAllByGuideWithJoin(guide1);
     }
 }

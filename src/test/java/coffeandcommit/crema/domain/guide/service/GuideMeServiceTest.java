@@ -341,12 +341,15 @@ public class GuideMeServiceTest {
         when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE))
                 .thenReturn(Optional.of(chatTopic2));
 
+        // 현재 주제 개수 설정
+        when(guideChatTopicRepository.countByGuide(guide)).thenReturn(0L);
+
         // 첫 번째 주제는 이미 등록되어 있음
-        when(guideChatTopicRepository.existsByGuideAndChatTopic_TopicName(guide, TopicNameType.CAREER_CHANGE))
+        when(guideChatTopicRepository.existsByGuideAndChatTopic(guide, chatTopic1))
                 .thenReturn(true);
 
         // 두 번째 주제는 등록되어 있지 않음
-        when(guideChatTopicRepository.existsByGuideAndChatTopic_TopicName(guide, TopicNameType.JOB_CHANGE))
+        when(guideChatTopicRepository.existsByGuideAndChatTopic(guide, chatTopic2))
                 .thenReturn(false);
 
         // 저장 시 반환할 객체 설정
@@ -360,7 +363,7 @@ public class GuideMeServiceTest {
 
         // 저장 후 조회 결과 설정
         List<GuideChatTopic> guideChatTopics = Arrays.asList(guideChatTopic, savedGuideChatTopic);
-        when(guideChatTopicRepository.findAllByGuide(guide)).thenReturn(guideChatTopics);
+        when(guideChatTopicRepository.findAllByGuideWithJoin(guide)).thenReturn(guideChatTopics);
 
         // 테스트 실행
         List<GuideChatTopicResponseDTO> result = guideMeService.registerChatTopics(memberId, requestDTO);
@@ -385,10 +388,10 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
         verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE);
-        verify(guideChatTopicRepository).existsByGuideAndChatTopic_TopicName(guide, TopicNameType.CAREER_CHANGE);
-        verify(guideChatTopicRepository).existsByGuideAndChatTopic_TopicName(guide, TopicNameType.JOB_CHANGE);
+        verify(guideChatTopicRepository).existsByGuideAndChatTopic(guide, chatTopic1);
+        verify(guideChatTopicRepository).existsByGuideAndChatTopic(guide, chatTopic2);
         verify(guideChatTopicRepository).save(any(GuideChatTopic.class));
-        verify(guideChatTopicRepository).findAllByGuide(guide);
+        verify(guideChatTopicRepository).findAllByGuideWithJoin(guide);
     }
 
     @Test
@@ -415,9 +418,9 @@ public class GuideMeServiceTest {
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
         verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
-        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -438,6 +441,7 @@ public class GuideMeServiceTest {
 
         // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(guideChatTopicRepository.countByGuide(guide)).thenReturn(0L);
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () ->
@@ -446,10 +450,11 @@ public class GuideMeServiceTest {
 
         assertEquals(ErrorStatus.MAX_TOPIC_EXCEEDED, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository).countByGuide(guide);
         verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
-        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -467,6 +472,7 @@ public class GuideMeServiceTest {
 
         // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(guideChatTopicRepository.countByGuide(guide)).thenReturn(0L);
         when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE))
                 .thenReturn(Optional.empty());
 
@@ -477,10 +483,11 @@ public class GuideMeServiceTest {
 
         assertEquals(ErrorStatus.INVALID_TOPIC, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
+        verify(guideChatTopicRepository).countByGuide(guide);
         verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
-        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic_TopicName(any(), any());
+        verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -498,7 +505,7 @@ public class GuideMeServiceTest {
                 .chatTopic(chatTopic2)
                 .build();
 
-        when(guideChatTopicRepository.findAllByGuide(guide)).thenReturn(List.of(remainingTopic));
+        when(guideChatTopicRepository.findAllByGuideWithJoin(guide)).thenReturn(List.of(remainingTopic));
 
         // 테스트 실행
         List<GuideChatTopicResponseDTO> result = guideMeService.deleteChatTopic(memberId, topicId);
@@ -515,7 +522,7 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).findById(topicId);
         verify(guideChatTopicRepository).delete(guideChatTopic);
-        verify(guideChatTopicRepository).findAllByGuide(guide);
+        verify(guideChatTopicRepository).findAllByGuideWithJoin(guide);
     }
 
     @Test
@@ -534,7 +541,7 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository, never()).findById(anyLong());
         verify(guideChatTopicRepository, never()).delete(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -554,7 +561,7 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).findById(topicId);
         verify(guideChatTopicRepository, never()).delete(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
     @Test
@@ -587,6 +594,6 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).findById(topicId);
         verify(guideChatTopicRepository, never()).delete(any());
-        verify(guideChatTopicRepository, never()).findAllByGuide(any());
+        verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 }
