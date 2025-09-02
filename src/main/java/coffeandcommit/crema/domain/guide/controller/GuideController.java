@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.guide.controller;
 
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
@@ -58,6 +59,24 @@ public class GuideController {
 
         Response<List<GuideChatTopicResponseDTO>> response = Response.<List<GuideChatTopicResponseDTO>>builder()
                 .message("가이드 챗 주제 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 해시태그 조회", description = "특정 가이드의 해시태그를 조회합니다. 비공개 가이드인 경우 본인 가이드만 조회할 수 있습니다.")
+    @GetMapping("/{guideId}/hashtags")
+    public ResponseEntity<Response<List<GuideHashTagResponseDTO>>> getGuideHashTags(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
+
+        List<GuideHashTagResponseDTO> result = guideService.getGuideHashTags(guideId, loginMemberId);
+
+        Response<List<GuideHashTagResponseDTO>> response = Response.<List<GuideHashTagResponseDTO>>builder()
+                .message("가이드 해시태그 조회 성공")
                 .data(result)
                 .build();
 

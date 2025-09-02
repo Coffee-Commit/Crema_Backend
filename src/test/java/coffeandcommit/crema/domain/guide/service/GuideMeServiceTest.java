@@ -7,15 +7,19 @@ import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -51,6 +55,9 @@ public class GuideMeServiceTest {
     @Mock
     private GuideChatTopicRepository guideChatTopicRepository;
 
+    @Mock
+    private HashTagRepository hashTagRepository;
+
     @InjectMocks
     private GuideMeService guideMeService;
 
@@ -76,7 +83,7 @@ public class GuideMeServiceTest {
                 .id(1L)
                 .member(member)
                 .isApproved(true)
-                .description("Test description")
+                .chatDescription("description")
                 .isOpened(true)
                 .title("Test Guide")
                 .companyName("Test Company")
@@ -595,5 +602,254 @@ public class GuideMeServiceTest {
         verify(guideChatTopicRepository).findById(topicId);
         verify(guideChatTopicRepository, never()).delete(any());
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideHashTags 성공 테스트")
+    void registerGuideHashTags_Success() {
+        // 요청 DTO 생성
+        GuideHashTagRequestDTO hashTagRequestDTO1 = GuideHashTagRequestDTO.builder()
+                .hashTagName("Java")
+                .build();
+
+        GuideHashTagRequestDTO hashTagRequestDTO2 = GuideHashTagRequestDTO.builder()
+                .hashTagName("Spring")
+                .build();
+
+        List<GuideHashTagRequestDTO> requestDTOs = Arrays.asList(hashTagRequestDTO1, hashTagRequestDTO2);
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.countByGuide(guide)).thenReturn(0L);
+        when(hashTagRepository.existsByGuideAndHashTagName(guide, "Java")).thenReturn(false);
+        when(hashTagRepository.existsByGuideAndHashTagName(guide, "Spring")).thenReturn(false);
+
+        // 저장 시 반환할 객체 설정
+        HashTag savedHashTag1 = HashTag.builder()
+                .id(1L)
+                .guide(guide)
+                .hashTagName("Java")
+                .build();
+
+        HashTag savedHashTag2 = HashTag.builder()
+                .id(2L)
+                .guide(guide)
+                .hashTagName("Spring")
+                .build();
+
+        when(hashTagRepository.saveAll(anyList())).thenReturn(Arrays.asList(savedHashTag1, savedHashTag2));
+
+        // 테스트 실행
+        List<GuideHashTagResponseDTO> result = guideMeService.registerGuideHashTags(memberId, requestDTOs);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // 첫 번째 해시태그 검증
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(guide.getId(), result.get(0).getGuideId());
+        assertEquals("Java", result.get(0).getHashTagName());
+
+        // 두 번째 해시태그 검증
+        assertEquals(2L, result.get(1).getId());
+        assertEquals(guide.getId(), result.get(1).getGuideId());
+        assertEquals("Spring", result.get(1).getHashTagName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).countByGuide(guide);
+        verify(hashTagRepository).existsByGuideAndHashTagName(guide, "Java");
+        verify(hashTagRepository).existsByGuideAndHashTagName(guide, "Spring");
+        verify(hashTagRepository).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("registerGuideHashTags 가이드 없음 테스트")
+    void registerGuideHashTags_GuideNotFound() {
+        // 요청 DTO 생성
+        GuideHashTagRequestDTO hashTagRequestDTO = GuideHashTagRequestDTO.builder()
+                .hashTagName("Java")
+                .build();
+
+        List<GuideHashTagRequestDTO> requestDTOs = List.of(hashTagRequestDTO);
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideHashTags(memberId, requestDTOs)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository, never()).countByGuide(any());
+        verify(hashTagRepository, never()).existsByGuideAndHashTagName(any(), anyString());
+        verify(hashTagRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("registerGuideHashTags 최대 해시태그 개수 초과 테스트")
+    void registerGuideHashTags_MaxHashTagExceeded() {
+        // 요청 DTO 생성
+        List<GuideHashTagRequestDTO> requestDTOs = new ArrayList<>();
+        for (int i = 0; i < 3; i++) {
+            requestDTOs.add(GuideHashTagRequestDTO.builder()
+                    .hashTagName("Tag" + i)
+                    .build());
+        }
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.countByGuide(guide)).thenReturn(3L); // 이미 3개의 해시태그가 있음
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideHashTags(memberId, requestDTOs)
+        );
+
+        assertEquals(ErrorStatus.MAX_HASHTAG_EXCEEDED, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).countByGuide(guide);
+        verify(hashTagRepository, never()).existsByGuideAndHashTagName(any(), anyString());
+        verify(hashTagRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("registerGuideHashTags 중복 해시태그 테스트")
+    void registerGuideHashTags_DuplicateHashTag() {
+        // 요청 DTO 생성
+        GuideHashTagRequestDTO hashTagRequestDTO = GuideHashTagRequestDTO.builder()
+                .hashTagName("Java")
+                .build();
+
+        List<GuideHashTagRequestDTO> requestDTOs = List.of(hashTagRequestDTO);
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.countByGuide(guide)).thenReturn(0L);
+        when(hashTagRepository.existsByGuideAndHashTagName(guide, "Java")).thenReturn(true); // 이미 존재하는 해시태그
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideHashTags(memberId, requestDTOs)
+        );
+
+        assertEquals(ErrorStatus.DUPLICATE_HASHTAG, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).countByGuide(guide);
+        verify(hashTagRepository).existsByGuideAndHashTagName(guide, "Java");
+        verify(hashTagRepository, never()).saveAll(anyList());
+    }
+
+    @Test
+    @DisplayName("deleteGuideHashTag 성공 테스트")
+    void deleteGuideHashTag_Success() {
+        // Mock 설정
+        Long hashTagId = 1L;
+        HashTag hashTag = HashTag.builder()
+                .id(hashTagId)
+                .guide(guide)
+                .hashTagName("Java")
+                .build();
+
+        HashTag remainingHashTag = HashTag.builder()
+                .id(2L)
+                .guide(guide)
+                .hashTagName("Spring")
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.findById(hashTagId)).thenReturn(Optional.of(hashTag));
+        when(hashTagRepository.findByGuide(guide)).thenReturn(List.of(remainingHashTag));
+
+        // 테스트 실행
+        List<GuideHashTagResponseDTO> result = guideMeService.deleteGuideHashTag(memberId, hashTagId);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(2L, result.get(0).getId());
+        assertEquals(guide.getId(), result.get(0).getGuideId());
+        assertEquals("Spring", result.get(0).getHashTagName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).findById(hashTagId);
+        verify(hashTagRepository).delete(hashTag);
+        verify(hashTagRepository).findByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("deleteGuideHashTag 가이드 없음 테스트")
+    void deleteGuideHashTag_GuideNotFound() {
+        // Mock 설정
+        Long hashTagId = 1L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideHashTag(memberId, hashTagId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository, never()).findById(anyLong());
+        verify(hashTagRepository, never()).delete(any());
+        verify(hashTagRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteGuideHashTag 해시태그 없음 테스트")
+    void deleteGuideHashTag_HashTagNotFound() {
+        // Mock 설정
+        Long hashTagId = 999L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.findById(hashTagId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideHashTag(memberId, hashTagId)
+        );
+
+        assertEquals(ErrorStatus.HASHTAG_NOT_FOUND, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).findById(hashTagId);
+        verify(hashTagRepository, never()).delete(any());
+        verify(hashTagRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteGuideHashTag 권한 없음 테스트")
+    void deleteGuideHashTag_Forbidden() {
+        // Mock 설정
+        Long hashTagId = 1L;
+
+        // 다른 가이드의 해시태그
+        Guide otherGuide = Guide.builder()
+                .id(2L)
+                .member(Member.builder().id("other-member-id").build())
+                .build();
+
+        HashTag otherGuideHashTag = HashTag.builder()
+                .id(hashTagId)
+                .guide(otherGuide)
+                .hashTagName("Java")
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(hashTagRepository.findById(hashTagId)).thenReturn(Optional.of(otherGuideHashTag));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideHashTag(memberId, hashTagId)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).findById(hashTagId);
+        verify(hashTagRepository, never()).delete(any());
+        verify(hashTagRepository, never()).findByGuide(any());
     }
 }

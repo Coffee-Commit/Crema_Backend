@@ -5,13 +5,16 @@ import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -45,6 +48,9 @@ public class GuideServiceTest {
     @Mock
     private GuideChatTopicRepository guideChatTopicRepository;
 
+    @Mock
+    private HashTagRepository hashTagRepository;
+
     private Member member1;
     private Member member2;
     private Guide guide1;
@@ -54,6 +60,8 @@ public class GuideServiceTest {
     private ChatTopic chatTopic2;
     private GuideChatTopic guideChatTopic1;
     private GuideChatTopic guideChatTopic2;
+    private HashTag hashTag1;
+    private HashTag hashTag2;
 
     @BeforeEach
     void setUp() {
@@ -111,6 +119,19 @@ public class GuideServiceTest {
                 .id(2L)
                 .guide(guide1)
                 .chatTopic(chatTopic2)
+                .build();
+
+        // Create test hash tags
+        hashTag1 = HashTag.builder()
+                .id(1L)
+                .guide(guide1)
+                .hashTagName("Java")
+                .build();
+
+        hashTag2 = HashTag.builder()
+                .id(2L)
+                .guide(guide1)
+                .hashTagName("Spring")
                 .build();
     }
 
@@ -372,5 +393,123 @@ public class GuideServiceTest {
         verify(guideRepository, never()).findByMember_Id(anyString());
         verify(guideRepository).findById(1L);
         verify(guideChatTopicRepository).findAllByGuideWithJoin(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 해시태그 조회 - 성공")
+    void getGuideHashTags_Success() {
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(hashTagRepository.findByGuide(guide1)).thenReturn(Arrays.asList(hashTag1, hashTag2));
+
+        // 테스트 실행
+        List<GuideHashTagResponseDTO> result = guideService.getGuideHashTags(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        // 첫 번째 해시태그 검증
+        assertEquals(1L, result.get(0).getId());
+        assertEquals(guide1.getId(), result.get(0).getGuideId());
+        assertEquals("Java", result.get(0).getHashTagName());
+
+        // 두 번째 해시태그 검증
+        assertEquals(2L, result.get(1).getId());
+        assertEquals(guide1.getId(), result.get(1).getGuideId());
+        assertEquals("Spring", result.get(1).getHashTagName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(hashTagRepository).findByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 해시태그 조회 - 대상 가이드를 찾을 수 없음")
+    void getGuideHashTags_TargetGuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideHashTags(999L, "member1");
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(999L);
+        verify(guideRepository, never()).findByMember_Id(anyString());
+        verify(hashTagRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 해시태그 조회 - 비공개 가이드에 대한 접근 금지")
+    void getGuideHashTags_ForbiddenAccessToPrivateGuide() {
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideHashTags(2L, "member1");
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member1");
+        verify(hashTagRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 해시태그 조회 - 소유자는 비공개 가이드에 접근 가능")
+    void getGuideHashTags_OwnerCanAccessPrivateGuide() {
+        // 비공개 가이드의 해시태그 설정
+        HashTag privateHashTag = HashTag.builder()
+                .id(3L)
+                .guide(guide2)
+                .hashTagName("Private")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
+        when(hashTagRepository.findByGuide(guide2)).thenReturn(List.of(privateHashTag));
+
+        // 테스트 실행
+        List<GuideHashTagResponseDTO> result = guideService.getGuideHashTags(2L, "member2");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(3L, result.get(0).getId());
+        assertEquals(guide2.getId(), result.get(0).getGuideId());
+        assertEquals("Private", result.get(0).getHashTagName());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(guideRepository).findByMember_Id("member2");
+        verify(hashTagRepository).findByGuide(guide2);
+    }
+
+    @Test
+    @DisplayName("가이드 해시태그 조회 - 빈 목록")
+    void getGuideHashTags_EmptyTags() {
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(hashTagRepository.findByGuide(guide1)).thenReturn(List.of());
+
+        // 테스트 실행
+        List<GuideHashTagResponseDTO> result = guideService.getGuideHashTags(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(hashTagRepository).findByGuide(guide1);
     }
 }
