@@ -200,7 +200,7 @@ public class GuideMeService {
         List<HashTag> savedHashTags = hashTagRepository.saveAll(hashTags);
 
         return savedHashTags.stream()
-                .map(GuideHashTagResponseDTO::from)
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
                 .collect(Collectors.toList());
     }
 
@@ -221,7 +221,7 @@ public class GuideMeService {
         hashTagRepository.delete(hashTag);
 
         return hashTagRepository.findByGuide(guide).stream()
-                .map(GuideHashTagResponseDTO::from)
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
                 .collect(Collectors.toList());
     }
 }
