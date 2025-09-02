@@ -4,6 +4,7 @@ import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.survey.entity.Survey;
+import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,4 +43,8 @@ public class Reservation extends BaseEntity{
     private String reason;
 
     private LocalDateTime reservedAt;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_session_id")
+    private VideoSession videoSession;
 }

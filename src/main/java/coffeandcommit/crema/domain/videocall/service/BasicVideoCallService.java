@@ -14,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import io.openvidu.java.client.*;
 
 import java.util.List;
@@ -24,11 +25,12 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional
 public class BasicVideoCallService {
 
-    /** OpenVidu 서버 URL (내부 통신용) */
-    @Value("${openvidu.url}")
-    private String openviduUrl;
+    /** OpenVidu 서버 도메인 */
+    @Value("${openvidu.domain}")
+    private String openviduDomain;
 
     /** OpenVidu 인증 비밀키 */
     @Value("${openvidu.secret}")
@@ -46,17 +48,13 @@ public class BasicVideoCallService {
 
     private final MemberRepository memberRepository;
 
-    /** 활성 녹화 세션 관리 (sessionId -> Recording) */
-    private final Map<String, Recording> activeRecordings = new ConcurrentHashMap<>();
-
-    /** 화면공유 상태 추적 (sessionId -> connectionId) */
-    private final Map<String, String> activeScreenShares = new ConcurrentHashMap<>();
 
     //세션 연결
     @PostConstruct
     private void init() {
+        String openviduUrl = "https://" + openviduDomain;
         this.openVidu = new OpenVidu(openviduUrl, openviduSecret);
-        log.info("Openvidu server connected");
+        log.info("Openvidu server connected to: {}", openviduUrl);
     }
 
     /**
@@ -152,15 +150,25 @@ public class BasicVideoCallService {
         try{
             VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
                     .orElseThrow(SessionNotFoundException::new);
-            videoSession.endSession();
-            videoSessionRepository.save(videoSession);
 
-            List<Participant> connectedParticipants = participantRepository.findByVideoSessionAndIsConnectedTrue(videoSession);
-            connectedParticipants.forEach(Participant::leaveSession);
+            // 특정 참가자만 세션에서 나가기
+            Participant participant = participantRepository.findByConnectionId(connectionId)
+                    .orElseThrow(ParticipantNotFound::new);
+            participant.leaveSession();
+            participantRepository.save(participant);
 
-            Session openviduSession = openVidu.getActiveSession(sessionId);
-            if(openviduSession != null){
-                openviduSession.close();
+            // 모든 참가자가 나갔는지 확인
+            List<Participant> remainingParticipants = participantRepository.findByVideoSessionAndIsConnectedTrue(videoSession);
+            
+            // 마지막 참가자가 나간 경우에만 세션 종료
+            if(remainingParticipants.isEmpty()) {
+                videoSession.endSession();
+                videoSessionRepository.save(videoSession);
+
+                Session openviduSession = openVidu.getActiveSession(sessionId);
+                if(openviduSession != null){
+                    openviduSession.close();
+                }
             }
 
         }catch (Exception e){
@@ -184,7 +192,12 @@ public class BasicVideoCallService {
                 throw new ParticipantNotFound();
             }
 
-            if(activeRecordings.containsKey(sessionId)){
+            List<Recording> activeRecordings = openVidu.listRecordings().stream()
+                    .filter(recording -> recording.getSessionId().equals(sessionId) && 
+                            recording.getStatus() == Recording.Status.started)
+                    .toList();
+            
+            if(!activeRecordings.isEmpty()){
                 throw new RecordingAlreadyStartedException();
             }
 
@@ -197,7 +210,6 @@ public class BasicVideoCallService {
 
             try{
                 Recording recording = openVidu.startRecording(sessionId, recordingProperties);
-                activeRecordings.put(sessionId, recording);
                 return recording;
             }catch (Exception e){
                 log.error("[OPENVIDU] session {} / recording failed {}",sessionId,  e.getMessage());
@@ -206,6 +218,249 @@ public class BasicVideoCallService {
         }catch (Exception e){
             log.error("[OPENVIDU] session {} / recording failed in outside {}",sessionId,  e.getMessage());
             throw new RecordingFailedException();
+        }
+    }
+
+    public void endSession(String sessionId) {
+        try {
+            VideoSession videoSession = videoSessionRepository
+                    .findBySessionId(sessionId)
+                    .orElseThrow(SessionNotFoundException::new);
+
+            videoSession.endSession();
+            videoSessionRepository.save(videoSession);
+
+            List<Participant> participants = participantRepository
+                    .findByVideoSessionAndIsConnectedTrue(videoSession);
+            
+            participants.forEach(Participant::leaveSession);
+            participantRepository.saveAll(participants);
+
+            Session openviduSession = openVidu.getActiveSession(sessionId);
+            if (openviduSession != null) {
+                openviduSession.close();
+            }
+
+        } catch (Exception e) {
+            log.error("세션 종료 실패: {}", e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public VideoSession getSession(String sessionId) {
+        return videoSessionRepository
+                .findBySessionId(sessionId)
+                .orElseThrow(SessionNotFoundException::new);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Participant> getActiveParticipants(String sessionId) {
+        VideoSession videoSession = getSession(sessionId);
+        return participantRepository.findByVideoSessionAndIsConnectedTrue(videoSession);
+    }
+
+    public Recording stopRecording(String sessionId) {
+        try {
+            List<Recording> activeRecordings = openVidu.listRecordings().stream()
+                    .filter(recording -> recording.getSessionId().equals(sessionId) && 
+                            recording.getStatus() == Recording.Status.started)
+                    .toList();
+            
+            if (activeRecordings.isEmpty()) {
+                throw new IllegalStateException("진행 중인 녹화가 없습니다.");
+            }
+
+            Recording activeRecording = activeRecordings.get(0);
+            Recording stoppedRecording = openVidu.stopRecording(activeRecording.getId());
+            
+            log.info("녹화 중단 완료: sessionId={}, recordingId={}", sessionId, stoppedRecording.getId());
+            
+            return stoppedRecording;
+            
+        } catch (Exception e) {
+            log.error("녹화 중단 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            throw new RecordingFailedException();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Recording> getRecordings(String sessionId) {
+        try {
+            return openVidu.listRecordings().stream()
+                    .filter(recording -> recording.getSessionId().equals(sessionId))
+                    .toList();
+        } catch (Exception e) {
+            log.error("녹화 목록 조회 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            throw new RecordingFailedException();
+        }
+    }
+
+    public Recording getRecording(String recordingId) {
+        try {
+            return openVidu.getRecording(recordingId);
+        } catch (Exception e) {
+            log.error("녹화 정보 조회 실패: recordingId={}, error={}", recordingId, e.getMessage());
+            throw new RecordingFailedException();
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public Recording getActiveRecording(String sessionId) {
+        try {
+            return openVidu.listRecordings().stream()
+                    .filter(recording -> recording.getSessionId().equals(sessionId) && 
+                            recording.getStatus() == Recording.Status.started)
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("활성 녹화 조회 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            return null;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isRecording(String sessionId) {
+        try {
+            return openVidu.listRecordings().stream()
+                    .anyMatch(recording -> recording.getSessionId().equals(sessionId) && 
+                            recording.getStatus() == Recording.Status.started);
+        } catch (Exception e) {
+            log.error("녹화 상태 확인 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            return false;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<Session> getOpenViduActiveSessions() {
+        try {
+            return openVidu.getActiveSessions();
+        } catch (Exception e) {
+            log.error("활성 세션 목록 조회 실패: {}", e.getMessage());
+            throw new RuntimeException("OpenVidu 서버 연결 실패: " + e.getMessage());
+        }
+    }
+
+    public void startScreenShare(String sessionId, String connectionId) {
+        try {
+            VideoSession videoSession = videoSessionRepository
+                    .findBySessionIdAndIsActiveTrue(sessionId)
+                    .orElseThrow(SessionNotFoundException::new);
+
+            Session openviduSession = openVidu.getActiveSession(sessionId);
+            if (openviduSession == null) {
+                throw new SessionNotFoundException();
+            }
+
+            boolean isAlreadySharing = openviduSession.getActiveConnections().stream()
+                    .anyMatch(connection -> {
+                        try {
+                            String data = connection.getClientData();
+                            return data != null && data.contains("\"screenSharing\":true");
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    });
+
+            if (isAlreadySharing) {
+                throw new IllegalStateException("다른 참가자가 이미 화면공유 중입니다.");
+            }
+
+            Participant participant = participantRepository
+                    .findByConnectionId(connectionId)
+                    .orElseThrow(ParticipantNotFound::new);
+
+            if (!participant.getIsConnected()) {
+                throw new IllegalStateException("연결되지 않은 참가자는 화면공유를 시작할 수 없습니다.");
+            }
+            
+            log.info("화면공유 시작 성공: sessionId={}, connectionId={}", sessionId, connectionId);
+
+        } catch (Exception e) {
+            log.error("화면공유 시작 실패: sessionId={}, connectionId={}, error={}", 
+                     sessionId, connectionId, e.getMessage());
+            throw new RuntimeException("화면공유 시작에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    public void stopScreenShare(String sessionId, String connectionId) {
+        try {
+            Session openviduSession = openVidu.getActiveSession(sessionId);
+            if (openviduSession == null) {
+                log.warn("진행 중인 세션이 없습니다: sessionId={}", sessionId);
+                return;
+            }
+
+            boolean isConnectionSharing = openviduSession.getActiveConnections().stream()
+                    .anyMatch(connection -> {
+                        try {
+                            return connection.getConnectionId().equals(connectionId) &&
+                                   connection.getClientData() != null &&
+                                   connection.getClientData().contains("\"screenSharing\":true");
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    });
+
+            if (!isConnectionSharing) {
+                log.warn("해당 참가자가 화면공유 중이 아닙니다: sessionId={}, connectionId={}", sessionId, connectionId);
+                return;
+            }
+            
+            log.info("화면공유 중지 성공: sessionId={}, connectionId={}", sessionId, connectionId);
+
+        } catch (Exception e) {
+            log.error("화면공유 중지 실패: sessionId={}, connectionId={}, error={}", 
+                     sessionId, connectionId, e.getMessage());
+            throw new RuntimeException("화면공유 중지에 실패했습니다: " + e.getMessage());
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isScreenSharing(String sessionId) {
+        try {
+            Session openviduSession = openVidu.getActiveSession(sessionId);
+            if (openviduSession == null) {
+                return false;
+            }
+
+            return openviduSession.getActiveConnections().stream()
+                    .anyMatch(connection -> {
+                        try {
+                            String data = connection.getClientData();
+                            return data != null && data.contains("\"screenSharing\":true");
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    });
+        } catch (Exception e) {
+            log.error("화면공유 상태 확인 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            return false;
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public String getCurrentScreenSharingConnectionId(String sessionId) {
+        try {
+            Session openviduSession = openVidu.getActiveSession(sessionId);
+            if (openviduSession == null) {
+                return null;
+            }
+
+            return openviduSession.getActiveConnections().stream()
+                    .filter(connection -> {
+                        try {
+                            String data = connection.getClientData();
+                            return data != null && data.contains("\"screenSharing\":true");
+                        } catch (Exception e) {
+                            return false;
+                        }
+                    })
+                    .map(Connection::getConnectionId)
+                    .findFirst()
+                    .orElse(null);
+        } catch (Exception e) {
+            log.error("화면공유 참가자 조회 실패: sessionId={}, error={}", sessionId, e.getMessage());
+            return null;
         }
     }
 

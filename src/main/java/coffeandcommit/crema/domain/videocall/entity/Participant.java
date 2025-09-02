@@ -2,16 +2,15 @@ package coffeandcommit.crema.domain.videocall.entity;
 
 import coffeandcommit.crema.domain.member.entity.Member;
 import jakarta.persistence.*;
-import lombok.AccessLevel;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "participants")
 @Getter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Participant {
 
@@ -44,17 +43,6 @@ public class Participant {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "member_id")
     private Member member;
-
-    @Builder
-    public Participant(String connectionId, String token, String username, VideoSession videoSession, Member member) {
-        this.connectionId = connectionId;
-        this.token = token;
-        this.username = username;
-        this.videoSession = videoSession;
-        this.joinedAt = LocalDateTime.now();
-        this.member = member;
-        this.isConnected = true;
-    }
 
     public void leaveSession() {
         this.isConnected = false;

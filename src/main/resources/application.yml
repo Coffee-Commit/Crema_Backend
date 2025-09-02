@@ -95,3 +95,7 @@ cloud:
       bucket: ${AWS_S3_BUCKET}
     region:
       static: ${AWS_REGION}
+
+openvidu:
+  domain: ${OPENVIDU_DOMAIN}
+  secret: ${OPENVIDU_SECRET}

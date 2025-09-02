@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.videocall.entity;
 
 import coffeandcommit.crema.domain.member.entity.Member;
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,10 +30,14 @@ public class VideoSession extends BaseEntity {
 
     private LocalDateTime endedAt;
 
-    private Boolean isActive;
+    private Boolean isActive = true;
 
     @OneToMany(mappedBy = "videoSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Participant> participants = new ArrayList<>();
+
+    @OneToOne
+    @JoinColumn(name = "reservation_id")
+    private Reservation reservation;
 
     public void addParticipant(Participant participant) {
         this.participants.add(participant);
