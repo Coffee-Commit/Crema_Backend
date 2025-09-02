@@ -127,6 +127,7 @@ public class GuideMeController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "가이드 해시태그 등록", description = "가이드의 해시태그를 등록합니다. 최대 5개까지 등록할 수 있습니다.")
     @PostMapping("/hashtags")
     public ResponseEntity<Response<List<GuideHashTagResponseDTO>>> registerGuideHashTags(
             @Valid @NotEmpty
@@ -147,6 +148,29 @@ public class GuideMeController {
                 .build();
 
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 해시태그 삭제", description = "가이드의 해시태그를 삭제합니다.")
+    @DeleteMapping("/hashtags/{hashTagId}")
+    public ResponseEntity<Response<List<GuideHashTagResponseDTO>>> deleteGuideHashTag(
+            @PathVariable Long hashTagId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideHashTagResponseDTO> result = guideMeService.deleteGuideHashTag(loginMemberId, hashTagId);
+
+        Response<List<GuideHashTagResponseDTO>> response = Response.<List<GuideHashTagResponseDTO>>builder()
+                .message("가이드 해시태그 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
 
     }
 

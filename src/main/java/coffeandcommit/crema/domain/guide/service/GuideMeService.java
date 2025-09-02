@@ -202,4 +202,24 @@ public class GuideMeService {
                 .map(GuideHashTagResponseDTO::from)
                 .collect(Collectors.toList());
     }
+
+    /* 가이드 해시태그 삭제 */
+    public List<GuideHashTagResponseDTO> deleteGuideHashTag(String loginMemberId, Long hashTagId) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        HashTag hashTag = hashTagRepository.findById(hashTagId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.HASHTAG_NOT_FOUND));
+
+        if (!hashTag.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        hashTagRepository.delete(hashTag);
+
+        return hashTagRepository.findByGuide(guide).stream()
+                .map(GuideHashTagResponseDTO::from)
+                .collect(Collectors.toList());
+    }
 }
