@@ -7,13 +7,18 @@ import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
 import coffeandcommit.crema.domain.guide.entity.HashTag;
+import coffeandcommit.crema.domain.guide.entity.TimeSlot;
+import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -26,6 +31,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -51,6 +57,9 @@ public class GuideServiceTest {
     @Mock
     private HashTagRepository hashTagRepository;
 
+    @Mock
+    private GuideScheduleRepository guideScheduleRepository;
+
     private Member member1;
     private Member member2;
     private Guide guide1;
@@ -62,6 +71,10 @@ public class GuideServiceTest {
     private GuideChatTopic guideChatTopic2;
     private HashTag hashTag1;
     private HashTag hashTag2;
+    private GuideSchedule guideSchedule1;
+    private GuideSchedule guideSchedule2;
+    private TimeSlot timeSlot1;
+    private TimeSlot timeSlot2;
 
     @BeforeEach
     void setUp() {
@@ -133,6 +146,40 @@ public class GuideServiceTest {
                 .guide(guide1)
                 .hashTagName("Spring")
                 .build();
+
+        // Create test guide schedules
+        guideSchedule1 = GuideSchedule.builder()
+                .id(1L)
+                .guide(guide1)
+                .day(DayType.MONDAY)
+                .timeSlots(new ArrayList<>())
+                .build();
+
+        guideSchedule2 = GuideSchedule.builder()
+                .id(2L)
+                .guide(guide1)
+                .day(DayType.WEDNESDAY)
+                .timeSlots(new ArrayList<>())
+                .build();
+
+        // Create test time slots
+        timeSlot1 = TimeSlot.builder()
+                .id(1L)
+                .schedule(guideSchedule1)
+                .startTimeOption(java.time.LocalTime.of(9, 0))
+                .endTimeOption(java.time.LocalTime.of(10, 0))
+                .build();
+
+        timeSlot2 = TimeSlot.builder()
+                .id(2L)
+                .schedule(guideSchedule2)
+                .startTimeOption(java.time.LocalTime.of(14, 0))
+                .endTimeOption(java.time.LocalTime.of(15, 0))
+                .build();
+
+        // Set up the relationship between GuideSchedule and TimeSlot
+        guideSchedule1.getTimeSlots().add(timeSlot1);
+        guideSchedule2.getTimeSlots().add(timeSlot2);
     }
 
     @Test
@@ -158,17 +205,15 @@ public class GuideServiceTest {
     void getGuideJobField_LoggedInGuideNotFound() {
         // Arrange
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2)); // guide2 is private
-        when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "nonexistent");
         });
-        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("nonexistent");
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -195,17 +240,15 @@ public class GuideServiceTest {
     void getGuideJobField_ForbiddenAccessToPrivateGuide() {
         // Arrange
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
 
         // Act & Assert
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "member1");
         });
-        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideJobFieldRepository, never()).findByGuide(any());
     }
 
@@ -239,7 +282,6 @@ public class GuideServiceTest {
                 .build();
 
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideJobFieldRepository.findByGuide(guide2)).thenReturn(Optional.of(privateGuideJobField));
 
         GuideJobFieldResponseDTO result = guideService.getGuideJobField(2L, "member2");
@@ -249,7 +291,6 @@ public class GuideServiceTest {
         assertEquals(JobNameType.MARKETING_PR, result.getJobName());
 
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member2");
         verify(guideJobFieldRepository).findByGuide(guide2);
     }
 
@@ -289,18 +330,16 @@ public class GuideServiceTest {
     void getGuideChatTopics_LoggedInGuideNotFound() {
         // Mock 설정
         when(guideRepository.findById(1L)).thenReturn(Optional.of(guide2)); // guide2는 비공개 가이드
-        when(guideRepository.findByMember_Id("nonexistent")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideChatTopics(1L, "nonexistent");
         });
 
-        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
-        verify(guideRepository).findByMember_Id("nonexistent");
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
@@ -328,18 +367,16 @@ public class GuideServiceTest {
     void getGuideChatTopics_ForbiddenAccessToPrivateGuide() {
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideChatTopics(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member1");
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
     }
 
@@ -355,7 +392,6 @@ public class GuideServiceTest {
 
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(guideChatTopicRepository.findAllByGuideWithJoin(guide2)).thenReturn(List.of(privateGuideChatTopic));
 
         // 테스트 실행
@@ -371,7 +407,6 @@ public class GuideServiceTest {
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member2");
         verify(guideChatTopicRepository).findAllByGuideWithJoin(guide2);
     }
 
@@ -448,18 +483,16 @@ public class GuideServiceTest {
     void getGuideHashTags_ForbiddenAccessToPrivateGuide() {
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member1")).thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideHashTags(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member1");
         verify(hashTagRepository, never()).findByGuide(any());
     }
 
@@ -475,7 +508,6 @@ public class GuideServiceTest {
 
         // Mock 설정
         when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
-        when(guideRepository.findByMember_Id("member2")).thenReturn(Optional.of(guide2));
         when(hashTagRepository.findByGuide(guide2)).thenReturn(List.of(privateHashTag));
 
         // 테스트 실행
@@ -490,7 +522,6 @@ public class GuideServiceTest {
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
-        verify(guideRepository).findByMember_Id("member2");
         verify(hashTagRepository).findByGuide(guide2);
     }
 
@@ -511,5 +542,134 @@ public class GuideServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
         verify(hashTagRepository).findByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 스케줄 조회 - 성공")
+    void getGuideSchedules_Success() {
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(guideScheduleRepository.findByGuide(guide1)).thenReturn(Arrays.asList(guideSchedule1, guideSchedule2));
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideService.getGuideSchedules(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide1.getId(), result.getGuideId());
+        assertEquals(2, result.getSchedules().size());
+
+        // 첫 번째 스케줄 검증
+        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDay());
+        assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
+        assertEquals("09:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
+        assertEquals("10:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
+
+        // 두 번째 스케줄 검증
+        assertEquals(DayType.WEDNESDAY, result.getSchedules().get(1).getDay());
+        assertEquals(1, result.getSchedules().get(1).getTimeSlots().size());
+        assertEquals("14:00", result.getSchedules().get(1).getTimeSlots().get(0).getStartTime());
+        assertEquals("15:00", result.getSchedules().get(1).getTimeSlots().get(0).getEndTime());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(guideScheduleRepository).findByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 스케줄 조회 - 대상 가이드를 찾을 수 없음")
+    void getGuideSchedules_TargetGuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideSchedules(999L, "member1");
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(999L);
+        verify(guideRepository, never()).findByMember_Id(anyString());
+        verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 스케줄 조회 - 비공개 가이드에 대한 접근 금지")
+    void getGuideSchedules_ForbiddenAccessToPrivateGuide() {
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            guideService.getGuideSchedules(2L, "member1");
+        });
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 스케줄 조회 - 소유자는 비공개 가이드에 접근 가능")
+    void getGuideSchedules_OwnerCanAccessPrivateGuide() {
+        // 비공개 가이드의 스케줄 설정
+        GuideSchedule privateGuideSchedule = GuideSchedule.builder()
+                .id(3L)
+                .guide(guide2)
+                .day(DayType.FRIDAY)
+                .build();
+
+        TimeSlot privateTimeSlot = TimeSlot.builder()
+                .id(3L)
+                .schedule(privateGuideSchedule)
+                .startTimeOption(java.time.LocalTime.of(16, 0))
+                .endTimeOption(java.time.LocalTime.of(17, 0))
+                .build();
+
+        privateGuideSchedule.getTimeSlots().add(privateTimeSlot);
+
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(guideScheduleRepository.findByGuide(guide2)).thenReturn(List.of(privateGuideSchedule));
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideService.getGuideSchedules(2L, "member2");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide2.getId(), result.getGuideId());
+        assertEquals(1, result.getSchedules().size());
+        assertEquals(DayType.FRIDAY, result.getSchedules().get(0).getDay());
+        assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
+        assertEquals("16:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
+        assertEquals("17:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(guideScheduleRepository).findByGuide(guide2);
+    }
+
+    @Test
+    @DisplayName("가이드 스케줄 조회 - 빈 목록")
+    void getGuideSchedules_EmptySchedules() {
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(guideScheduleRepository.findByGuide(guide1)).thenReturn(List.of());
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideService.getGuideSchedules(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide1.getId(), result.getGuideId());
+        assertTrue(result.getSchedules().isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(guideScheduleRepository).findByGuide(guide1);
     }
 }

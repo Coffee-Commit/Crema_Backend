@@ -9,17 +9,26 @@ import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.ScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.TimeSlotRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
 import coffeandcommit.crema.domain.guide.entity.HashTag;
+import coffeandcommit.crema.domain.guide.entity.TimeSlot;
+import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
+import coffeandcommit.crema.domain.guide.repository.TimeSlotRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -58,6 +67,12 @@ public class GuideMeServiceTest {
     @Mock
     private HashTagRepository hashTagRepository;
 
+    @Mock
+    private GuideScheduleRepository guideScheduleRepository;
+
+    @Mock
+    private TimeSlotRepository timeSlotRepository;
+
     @InjectMocks
     private GuideMeService guideMeService;
 
@@ -68,6 +83,8 @@ public class GuideMeServiceTest {
     private ChatTopic chatTopic1;
     private ChatTopic chatTopic2;
     private GuideChatTopic guideChatTopic;
+    private GuideSchedule guideSchedule;
+    private TimeSlot timeSlot;
 
     @BeforeEach
     void setUp() {
@@ -115,6 +132,24 @@ public class GuideMeServiceTest {
                 .guide(guide)
                 .chatTopic(chatTopic1)
                 .build();
+
+        // Create test guide schedule and time slot
+        guideSchedule = GuideSchedule.builder()
+                .id(1L)
+                .guide(guide)
+                .day(DayType.MONDAY)
+                .timeSlots(new ArrayList<>())  // Initialize timeSlots list
+                .build();
+
+        timeSlot = TimeSlot.builder()
+                .id(1L)
+                .schedule(guideSchedule)
+                .startTimeOption(java.time.LocalTime.of(9, 0))
+                .endTimeOption(java.time.LocalTime.of(10, 0))
+                .build();
+
+        // Set up the relationship between GuideSchedule and TimeSlot
+        guideSchedule.addTimeSlot(timeSlot);  // Use the helper method instead of direct access
     }
 
     @Test
@@ -851,5 +886,338 @@ public class GuideMeServiceTest {
         verify(hashTagRepository).findById(hashTagId);
         verify(hashTagRepository, never()).delete(any());
         verify(hashTagRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteGuideSchedule 성공 테스트 - 시간대만 삭제")
+    void deleteGuideSchedule_Success_DeleteTimeSlotOnly() {
+        // Mock 설정
+        Long timeSlotId = 1L;
+
+        // 두 개의 시간대가 있는 스케줄 생성
+        TimeSlot secondTimeSlot = TimeSlot.builder()
+                .id(2L)
+                .schedule(guideSchedule)
+                .startTimeOption(java.time.LocalTime.of(11, 0))
+                .endTimeOption(java.time.LocalTime.of(12, 0))
+                .build();
+
+        guideSchedule.getTimeSlots().add(secondTimeSlot);
+
+        List<GuideSchedule> remainingSchedules = new ArrayList<>();
+        remainingSchedules.add(guideSchedule);
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(timeSlotRepository.findById(timeSlotId)).thenReturn(Optional.of(timeSlot));
+        when(guideScheduleRepository.findByGuide(guide)).thenReturn(remainingSchedules);
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideMeService.deleteGuideSchedule(memberId, timeSlotId);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(1, result.getSchedules().size());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(timeSlotRepository).findById(timeSlotId);
+        verify(timeSlotRepository).delete(timeSlot);
+        verify(guideScheduleRepository, never()).delete(any());
+        verify(guideScheduleRepository).findByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("deleteGuideSchedule 성공 테스트 - 스케줄 전체 삭제")
+    void deleteGuideSchedule_Success_DeleteEntireSchedule() {
+        // Mock 설정
+        Long timeSlotId = 1L;
+
+        // 시간대가 하나뿐인 스케줄
+        guideSchedule.getTimeSlots().clear();
+        guideSchedule.getTimeSlots().add(timeSlot);
+
+        List<GuideSchedule> remainingSchedules = new ArrayList<>();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(timeSlotRepository.findById(timeSlotId)).thenReturn(Optional.of(timeSlot));
+        when(guideScheduleRepository.findByGuide(guide)).thenReturn(remainingSchedules);
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideMeService.deleteGuideSchedule(memberId, timeSlotId);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide.getId(), result.getGuideId());
+        assertTrue(result.getSchedules().isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(timeSlotRepository).findById(timeSlotId);
+        verify(guideScheduleRepository).delete(guideSchedule);
+        verify(timeSlotRepository, never()).delete(any());
+        verify(guideScheduleRepository).findByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("deleteGuideSchedule 가이드 없음 테스트")
+    void deleteGuideSchedule_GuideNotFound() {
+        // Mock 설정
+        Long timeSlotId = 1L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideSchedule(memberId, timeSlotId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(timeSlotRepository, never()).findById(anyLong());
+        verify(guideScheduleRepository, never()).delete(any());
+        verify(timeSlotRepository, never()).delete(any());
+        verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteGuideSchedule 시간대 없음 테스트")
+    void deleteGuideSchedule_TimeSlotNotFound() {
+        // Mock 설정
+        Long timeSlotId = 999L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(timeSlotRepository.findById(timeSlotId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideSchedule(memberId, timeSlotId)
+        );
+
+        assertEquals(ErrorStatus.TIME_SLOT_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(timeSlotRepository).findById(timeSlotId);
+        verify(guideScheduleRepository, never()).delete(any());
+        verify(timeSlotRepository, never()).delete(any());
+        verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("deleteGuideSchedule 권한 없음 테스트")
+    void deleteGuideSchedule_Forbidden() {
+        // Mock 설정
+        Long timeSlotId = 1L;
+
+        // 다른 가이드의 스케줄과 시간대
+        Guide otherGuide = Guide.builder()
+                .id(2L)
+                .member(Member.builder().id("other-member-id").build())
+                .build();
+
+        GuideSchedule otherGuideSchedule = GuideSchedule.builder()
+                .id(2L)
+                .guide(otherGuide)
+                .day(DayType.TUESDAY)
+                .timeSlots(new ArrayList<>())
+                .build();
+
+        TimeSlot otherTimeSlot = TimeSlot.builder()
+                .id(timeSlotId)
+                .schedule(otherGuideSchedule)
+                .startTimeOption(java.time.LocalTime.of(13, 0))
+                .endTimeOption(java.time.LocalTime.of(14, 0))
+                .build();
+
+        otherGuideSchedule.getTimeSlots().add(otherTimeSlot);
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(timeSlotRepository.findById(timeSlotId)).thenReturn(Optional.of(otherTimeSlot));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideSchedule(memberId, timeSlotId)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(timeSlotRepository).findById(timeSlotId);
+        verify(guideScheduleRepository, never()).delete(any());
+        verify(timeSlotRepository, never()).delete(any());
+        verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideSchedules 성공 테스트")
+    void registerGuideSchedules_Success() {
+        // 테스트 데이터 준비
+        TimeSlotRequestDTO timeSlotRequestDTO1 = TimeSlotRequestDTO.builder()
+                .startTime("09:00")
+                .endTime("10:00")
+                .build();
+
+        TimeSlotRequestDTO timeSlotRequestDTO2 = TimeSlotRequestDTO.builder()
+                .startTime("14:00")
+                .endTime("15:00")
+                .build();
+
+        ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
+                .day(DayType.MONDAY)
+                .timeSlots(List.of(timeSlotRequestDTO1, timeSlotRequestDTO2))
+                .build();
+
+        GuideScheduleRequestDTO requestDTO = GuideScheduleRequestDTO.builder()
+                .schedules(List.of(scheduleRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        // 저장된 스케줄 생성
+        // Create GuideSchedule with initialized timeSlots list
+        List<TimeSlot> timeSlotList = new ArrayList<>();
+
+        GuideSchedule savedSchedule = GuideSchedule.builder()
+                .id(2L)
+                .guide(guide)
+                .day(DayType.MONDAY)
+                .timeSlots(timeSlotList)  // Initialize with the list we created
+                .build();
+
+        TimeSlot savedTimeSlot1 = TimeSlot.builder()
+                .id(2L)
+                .schedule(savedSchedule)
+                .startTimeOption(java.time.LocalTime.of(9, 0))
+                .endTimeOption(java.time.LocalTime.of(10, 0))
+                .build();
+
+        TimeSlot savedTimeSlot2 = TimeSlot.builder()
+                .id(3L)
+                .schedule(savedSchedule)
+                .startTimeOption(java.time.LocalTime.of(14, 0))
+                .endTimeOption(java.time.LocalTime.of(15, 0))
+                .build();
+
+        // Add time slots to the list
+        timeSlotList.add(savedTimeSlot1);
+        timeSlotList.add(savedTimeSlot2);
+
+        when(guideScheduleRepository.saveAll(any())).thenReturn(List.of(savedSchedule));
+
+        // 테스트 실행
+        GuideScheduleResponseDTO result = guideMeService.registerGuideSchedules(memberId, requestDTO);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(1, result.getSchedules().size());
+        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDay());
+        assertEquals(2, result.getSchedules().get(0).getTimeSlots().size());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideScheduleRepository).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideSchedules 가이드 없음 테스트")
+    void registerGuideSchedules_GuideNotFound() {
+        // 테스트 데이터 준비
+        TimeSlotRequestDTO timeSlotRequestDTO = TimeSlotRequestDTO.builder()
+                .startTime("09:00")
+                .endTime("10:00")
+                .build();
+
+        ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
+                .day(DayType.MONDAY)
+                .timeSlots(List.of(timeSlotRequestDTO))
+                .build();
+
+        GuideScheduleRequestDTO requestDTO = GuideScheduleRequestDTO.builder()
+                .schedules(List.of(scheduleRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideSchedules(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideSchedules 유효하지 않은 시간 범위 테스트")
+    void registerGuideSchedules_InvalidTimeRange() {
+        // 테스트 데이터 준비 - 시작 시간이 종료 시간보다 늦은 경우
+        TimeSlotRequestDTO invalidTimeSlotRequestDTO = TimeSlotRequestDTO.builder()
+                .startTime("10:00")
+                .endTime("09:00")
+                .build();
+
+        ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
+                .day(DayType.MONDAY)
+                .timeSlots(List.of(invalidTimeSlotRequestDTO))
+                .build();
+
+        GuideScheduleRequestDTO requestDTO = GuideScheduleRequestDTO.builder()
+                .schedules(List.of(scheduleRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideSchedules(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.INVALID_TIME_RANGE, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideSchedules 동일한 시작/종료 시간 테스트")
+    void registerGuideSchedules_SameStartEndTime() {
+        // 테스트 데이터 준비 - 시작 시간과 종료 시간이 같은 경우
+        TimeSlotRequestDTO sameTimeSlotRequestDTO = TimeSlotRequestDTO.builder()
+                .startTime("09:00")
+                .endTime("09:00")
+                .build();
+
+        ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
+                .day(DayType.MONDAY)
+                .timeSlots(List.of(sameTimeSlotRequestDTO))
+                .build();
+
+        GuideScheduleRequestDTO requestDTO = GuideScheduleRequestDTO.builder()
+                .schedules(List.of(scheduleRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideSchedules(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.INVALID_TIME_RANGE, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(guideScheduleRepository, never()).saveAll(any());
     }
 }

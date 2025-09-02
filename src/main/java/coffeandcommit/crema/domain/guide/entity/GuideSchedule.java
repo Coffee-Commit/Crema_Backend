@@ -36,6 +36,7 @@ public class GuideSchedule extends BaseEntity{
     private DayType day;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<TimeSlot> timeSlots = new ArrayList<>();
 
     // 연관관계 메서드
