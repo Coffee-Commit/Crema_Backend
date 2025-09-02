@@ -17,6 +17,10 @@ public class HashTag extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "guide_id", nullable = false)
+    private Guide guide;
+
+    @Column(name = "hash_tag_name", length = 24)
     private String hashTagName; // 해시태그 이름
 }

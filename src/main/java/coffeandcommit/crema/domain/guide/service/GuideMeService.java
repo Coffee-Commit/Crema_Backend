@@ -5,18 +5,24 @@ import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -36,6 +42,7 @@ public class GuideMeService {
     private final GuideJobFieldRepository guideJobFieldRepository;
     private final ChatTopicRepository chatTopicRepository;
     private final GuideChatTopicRepository guideChatTopicRepository;
+    private final HashTagRepository hashTagRepository;
 
     /* 가이드 본인 프로필 조회 */
     @Transactional(readOnly = true)
@@ -160,6 +167,39 @@ public class GuideMeService {
         // 삭제 후 남은 주제들 조회 및 DTO 변환
         return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
                 .map(GuideChatTopicResponseDTO::from)
+                .collect(Collectors.toList());
+    }
+
+    /* 가이드 해시태그 등록 */
+    public List<GuideHashTagResponseDTO> registerGuideHashTags(
+            String loginMemberId, @Valid @NotEmpty List<GuideHashTagRequestDTO> guideHashTagRequestDTOs) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        long currentCount = hashTagRepository.countByGuide(guide);
+        if (currentCount + guideHashTagRequestDTOs.size() > 5) {
+            throw new BaseException(ErrorStatus.MAX_HASHTAG_EXCEEDED);
+        }
+
+        List<HashTag> hashTags = guideHashTagRequestDTOs.stream()
+            .map(dto -> {
+                boolean exists = hashTagRepository.existsByGuideAndHashTagName(guide, dto.getHashTagName());
+                if (exists) {
+                    throw new BaseException(ErrorStatus.DUPLICATE_HASHTAG);
+                }
+
+                return HashTag.builder()
+                        .guide(guide)
+                        .hashTagName(dto.getHashTagName())
+                        .build();
+            })
+            .collect(Collectors.toList());
+
+        List<HashTag> savedHashTags = hashTagRepository.saveAll(hashTags);
+
+        return savedHashTags.stream()
+                .map(GuideHashTagResponseDTO::from)
                 .collect(Collectors.toList());
     }
 }

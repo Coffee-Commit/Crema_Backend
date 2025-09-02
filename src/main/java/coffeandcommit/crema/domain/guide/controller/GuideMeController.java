@@ -1,8 +1,10 @@
 package coffeandcommit.crema.domain.guide.controller;
 
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
@@ -13,8 +15,10 @@ import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.aspectj.weaver.ast.Literal;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -80,6 +84,10 @@ public class GuideMeController {
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @Valid @RequestBody GuideChatTopicRequestDTO guideChatTopicRequestDTO){
 
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
         if (guideChatTopicRequestDTO == null
                 || guideChatTopicRequestDTO.getTopics() == null
                 || guideChatTopicRequestDTO.getTopics().isEmpty()) {
@@ -118,5 +126,29 @@ public class GuideMeController {
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
+
+    @PostMapping("/hashtags")
+    public ResponseEntity<Response<List<GuideHashTagResponseDTO>>> registerGuideHashTags(
+            @Valid @NotEmpty
+            @RequestBody List<GuideHashTagRequestDTO> guideHashTagRequestDTOs,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideHashTagResponseDTO> result = guideMeService.registerGuideHashTags(loginMemberId, guideHashTagRequestDTOs);
+
+        Response<List<GuideHashTagResponseDTO>> response = Response.<List<GuideHashTagResponseDTO>>builder()
+                .message("가이드 해시태그 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
 
 }

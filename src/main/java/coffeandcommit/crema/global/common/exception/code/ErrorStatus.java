@@ -44,7 +44,9 @@ public enum ErrorStatus implements BaseCode {
     INVALID_JOB_FIELD(HttpStatus.BAD_REQUEST, "잘못된 직무 분야 요청입니다."),
     INVALID_TOPIC(HttpStatus.BAD_REQUEST, "잘못된 주제 요청입니다."),
     MAX_TOPIC_EXCEEDED(HttpStatus.BAD_REQUEST, "등록 가능한 주제 개수를 초과했습니다."),
-    GUIDE_CHAT_TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 채팅 주제를 찾을 수 없습니다.");
+    GUIDE_CHAT_TOPIC_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 채팅 주제를 찾을 수 없습니다."),
+    MAX_HASHTAG_EXCEEDED(HttpStatus.BAD_REQUEST, "해시태그는 최대 5개까지 등록할 수 있습니다."),
+    DUPLICATE_HASHTAG(HttpStatus.BAD_REQUEST, "이미 등록된 해시태그입니다.");
 
     public static final String PREFIX = "[ERROR]";
 
