@@ -76,7 +76,7 @@ public class GuideMeServiceTest {
                 .id(1L)
                 .member(member)
                 .isApproved(true)
-                .description("Test description")
+                .chatDescription("description")
                 .isOpened(true)
                 .title("Test Guide")
                 .companyName("Test Company")

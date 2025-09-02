@@ -18,6 +18,7 @@ public class GuideProfileResponseDTO {
     private String nickname;           // member.nickname
     private String profileImageUrl;    // member.profile_image_url
     private String companyName;        // guide.company_name
+    private String jobPosition;           // guide.job_position
     private LocalDate workingStart;  // 근무 시작일
     private LocalDate workingEnd;    // 근무 종료일 (null이면 현재 재직 중)
     private int workingPeriodYears;      // 연차
@@ -31,6 +32,7 @@ public class GuideProfileResponseDTO {
                 .nickname(guide.getMember().getNickname())
                 .profileImageUrl(guide.getMember().getProfileImageUrl())
                 .companyName(guide.getCompanyName())
+                .jobPosition(guide.getJobPosition())
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriodYears(workingPeriodYears)
