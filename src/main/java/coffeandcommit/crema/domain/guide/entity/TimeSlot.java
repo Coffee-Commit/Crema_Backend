@@ -1,6 +1,5 @@
 package coffeandcommit.crema.domain.guide.entity;
 
-import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;

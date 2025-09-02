@@ -2,8 +2,6 @@ package coffeandcommit.crema.domain.guide.dto.response;
 
 import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
 import coffeandcommit.crema.domain.guide.enums.DayType;
-import jakarta.validation.constraints.NotEmpty;
-import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;

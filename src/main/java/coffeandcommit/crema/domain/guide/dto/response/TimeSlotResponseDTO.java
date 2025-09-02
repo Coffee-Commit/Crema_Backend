@@ -1,8 +1,6 @@
 package coffeandcommit.crema.domain.guide.dto.response;
 
 import coffeandcommit.crema.domain.guide.entity.TimeSlot;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
