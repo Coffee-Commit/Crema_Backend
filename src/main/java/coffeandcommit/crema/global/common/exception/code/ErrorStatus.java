@@ -42,8 +42,16 @@ public enum ErrorStatus implements BaseCode {
     SESSION_CREATE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR , "openvidu session 생성에 실패했습니다."),
     RECORDING_ALREADY_STARTED(HttpStatus.INTERNAL_SERVER_ERROR , "이미 녹음이 진행 중 입니다."),
     RECORDING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR , "녹음이 실패했습니다."),
+    SESSION_CONNECT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR , "세션 연결에 실패했습니다."),
     SESSION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR , "존재하지 않는 openvidu session 입니다."),
-    PARTICIPANT_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR , "존재하지 않는 participant 입니다.");
+    PARTICIPANT_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR , "존재하지 않는 participant 입니다."),
+    TOKEN_REFRESH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "토큰 갱신에 실패했습니다."),
+    AUTO_RECONNECT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "자동 재연결에 실패했습니다."),
+    OPENVIDU_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OpenVidu 서버에 연결할 수 없습니다."),
+
+    // Chat
+    CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 기록을 찾을 수 없습니다."),
+    CHAT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채팅 기록 저장에 실패했습니다.");
 
     public static final String PREFIX = "[ERROR]";
 
