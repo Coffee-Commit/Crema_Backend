@@ -27,7 +27,7 @@ public class Guide extends BaseEntity {
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved;
 
-    @Column(length = 1000)
+    @Column(name = "chat_description", length = 1000)
     private String chatDescription;
 
     @Column(nullable = false)

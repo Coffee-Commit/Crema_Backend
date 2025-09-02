@@ -16,10 +16,10 @@ public class GuideHashTagResponseDTO {
     private Long guideId;
     private String hashTagName;
 
-    public static GuideHashTagResponseDTO from(HashTag hashTag) {
+    public static GuideHashTagResponseDTO from(HashTag hashTag, Long guideId) {
         return GuideHashTagResponseDTO.builder()
                 .id(hashTag.getId())
-                .guideId(hashTag.getGuide().getId())
+                .guideId(guideId)
                 .hashTagName(hashTag.getHashTagName())
                 .build();
     }

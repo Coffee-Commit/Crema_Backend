@@ -10,7 +10,16 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "hash_tag")
+@Table(
+    name = "hash_tag",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"guide_id", "hash_tag_name"})
+    },
+        indexes = {
+            @Index(name = "idx_hash_tag_guide", columnList = "guide_id"),
+            @Index(name = "idx_hash_tag_name", columnList = "hash_tag_name")
+    }
+)
 public class HashTag extends BaseEntity{
 
     @Id

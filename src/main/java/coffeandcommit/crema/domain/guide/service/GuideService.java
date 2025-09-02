@@ -96,6 +96,7 @@ public class GuideService {
     }
 
     /* 가이드 해시태그 조회 */
+    @Transactional(readOnly = true)
     public List<GuideHashTagResponseDTO> getGuideHashTags(Long guideId, String loginMemberId) {
 
         // 1. 조회 대상 가이드 조회
@@ -120,7 +121,7 @@ public class GuideService {
 
         // 3. 해당 가이드의 해시태그 조회
         return hashTagRepository.findByGuide(targetGuide).stream()
-                .map(GuideHashTagResponseDTO::from)
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guideId))
                 .collect(Collectors.toList());
     }
 }

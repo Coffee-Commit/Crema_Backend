@@ -171,6 +171,7 @@ public class GuideMeService {
     }
 
     /* 가이드 해시태그 등록 */
+    @Transactional
     public List<GuideHashTagResponseDTO> registerGuideHashTags(
             String loginMemberId, @Valid @NotEmpty List<GuideHashTagRequestDTO> guideHashTagRequestDTOs) {
 
@@ -204,6 +205,7 @@ public class GuideMeService {
     }
 
     /* 가이드 해시태그 삭제 */
+    @Transactional
     public List<GuideHashTagResponseDTO> deleteGuideHashTag(String loginMemberId, Long hashTagId) {
 
         Guide guide = guideRepository.findByMember_Id(loginMemberId)
