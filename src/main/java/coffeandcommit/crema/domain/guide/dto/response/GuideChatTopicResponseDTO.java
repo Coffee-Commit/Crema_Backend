@@ -17,7 +17,7 @@ public class GuideChatTopicResponseDTO {
     private Long guideId;
     private TopicDTO topic;
 
-    public static GuideChatTopicResponseDTO from(GuideChatTopic guideChatTopic, Long guideId) {
+    public static GuideChatTopicResponseDTO from(GuideChatTopic guideChatTopic) {
         TopicDTO topic = TopicDTO.builder()
                 .chatTopic(guideChatTopic.getChatTopic().getChatTopic())
                 .topicName(guideChatTopic.getChatTopic().getTopicName())
@@ -25,7 +25,7 @@ public class GuideChatTopicResponseDTO {
 
         return GuideChatTopicResponseDTO.builder()
                 .id(guideChatTopic.getId())
-                .guideId(guideId)
+                .guideId(guideChatTopic.getGuide().getId())
                 .topic(topic)
                 .build();
     }
