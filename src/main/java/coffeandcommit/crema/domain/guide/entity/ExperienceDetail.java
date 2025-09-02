@@ -17,9 +17,9 @@ public class ExperienceDetail extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "experience_group_id", nullable = false)
-    private ExperienceGroup groupId; // FK, 가이드 ID
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "guide_id", nullable = false, unique = true)
+    private Guide guide; // FK, 가이드 ID
 
     @Column(nullable = false)
     private String who;

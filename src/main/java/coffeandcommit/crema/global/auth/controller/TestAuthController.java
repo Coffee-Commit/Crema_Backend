@@ -3,6 +3,7 @@ package coffeandcommit.crema.global.auth.controller;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
+import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.jwt.JwtTokenProvider;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -30,6 +31,7 @@ public class TestAuthController {
 
     private final MemberRepository memberRepository;
     private final JwtTokenProvider jwtTokenProvider;
+    private final MemberService memberService;
 
     @Operation(summary = "루키 테스트 계정 생성", description = "로컬 개발용 루키 테스트 계정을 생성합니다.")
     @PostMapping("/create-rookie")
@@ -123,33 +125,17 @@ public class TestAuthController {
     }
 
     private Member createTestMember(String nickname, MemberRole role) {
-        try {
-            Member member = Member.builder()
-                    .id(UUID.randomUUID().toString())
-                    .nickname(nickname)
-                    .role(role)
-                    .point(0)
-                    .provider("test")
-                    .providerId(nickname)
-                    .build();
-
-            return memberRepository.saveAndFlush(member);
-
-        } catch (Exception e) {
-            log.warn("테스트 계정 생성 실패, 닉네임 재생성 후 재시도: {}", nickname);
-            String newNickname = generateNickname(role == MemberRole.ROOKIE ? "rookie" : "guide");
-
-            Member member = Member.builder()
-                    .id(UUID.randomUUID().toString())
-                    .nickname(newNickname)
-                    .role(role)
-                    .point(0)
-                    .provider("test")
-                    .providerId(newNickname)
-                    .build();
-
-            return memberRepository.save(member);
-        }
+        // saveWithRetry를 사용하여 저장 시점 ID 충돌 처리
+        return memberService.saveWithRetry(() ->
+                Member.builder()
+                        .id(memberService.generateId()) // 매번 새로운 ID 생성
+                        .nickname(nickname)
+                        .role(role)
+                        .point(0)
+                        .provider("test")
+                        .providerId(nickname)
+                        .build()
+        );
     }
 
     private boolean isTestAccount(String nickname) {

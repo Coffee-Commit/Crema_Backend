@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.member.entity;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
@@ -58,6 +59,9 @@ public class Member extends BaseEntity {
     @Column(nullable = false)
     @Builder.Default
     private Boolean isDeleted = false;
+
+    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    private Guide guide;
 
     // 프로필 업데이트 (이메일 추가)
     public void updateProfile(String nickname, String description, String profileImageUrl, String email) {

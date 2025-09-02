@@ -25,15 +25,15 @@ public class Reservation extends BaseEntity{
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guideId; // FK, 가이드 ID
+    private Guide guide; // FK, 가이드 ID
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
-    private Member memberId; // FK, 멤버 ID는 String (UUID)
+    private Member member; // FK, 멤버 ID는 String (UUID)
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "survey_id", nullable = false, unique = true)
-    private Survey surveyId; // FK, 설문 ID
+    private Survey survey; // FK, 설문 ID
 
     private LocalDateTime matchingTime;
 
