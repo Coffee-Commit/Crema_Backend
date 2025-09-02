@@ -6,6 +6,7 @@ import coffeandcommit.crema.global.auth.jwt.JwtAuthenticationEntryPoint;
 import coffeandcommit.crema.global.auth.jwt.JwtAuthenticationFilter;
 import coffeandcommit.crema.global.auth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,6 +42,8 @@ public class SecurityConfig {
                 .securityContext(context -> context.requireExplicitSave(false)) // 보안 컨텍스트 자동 저장 비활성화
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        // Prometheus Actuator Endpoint
+                        .requestMatchers(EndpointRequest.to("prometheus")).permitAll()
                         // Public endpoints (인증 불필요)
                         .requestMatchers(
                                 "/api/auth/status",
