@@ -15,13 +15,13 @@ import java.time.LocalTime;
 @Table(
     name = "time_slot",
     uniqueConstraints = {
-        @UniqueConstraint(
-            name = "uk_time_slot__day_start_end",
-            columnNames = {"day", "start_time_option", "end_time_option"}
+            @UniqueConstraint(
+                name = "uk_time_slot__schedule_start_end",
+                columnNames = {"schedule_id", "start_time_option", "end_time_option"}
         )
     },
     indexes = {
-        @Index(name = "idx_time_slot__day", columnList = "day")
+        @Index(name = "idx_time_slot__schedule", columnList = "schedule_id")
     }
 )
 public class TimeSlot extends BaseEntity{
@@ -30,13 +30,18 @@ public class TimeSlot extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "schedule_id", nullable = false)
+    private GuideSchedule schedule; // FK, 가이드 스케줄 ID
+
     @Column(name = "start_time_option", nullable = false)
     private LocalTime startTimeOption; // 시작 시간
 
     @Column(name = "end_time_option", nullable = false)
     private LocalTime endTimeOption; // 종료 시간
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "day", nullable = false)
-    private DayType day;
+    public void setSchedule(GuideSchedule schedule) {
+        this.schedule = schedule;
+    }
+
 }
