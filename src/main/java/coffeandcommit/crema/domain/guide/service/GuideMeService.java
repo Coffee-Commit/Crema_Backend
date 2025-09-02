@@ -58,7 +58,7 @@ public class GuideMeService {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
 
         // 4. 직무분야 DTO 변환
-        GuideJobFieldResponseDTO guideJobFieldResponseDTO = GuideJobFieldResponseDTO.from(guideJobField);
+        GuideJobFieldResponseDTO guideJobFieldResponseDTO = GuideJobFieldResponseDTO.from(guideJobField, guide.getId());
 
         return GuideProfileResponseDTO.from(guide, workingPeriodYears, guideJobFieldResponseDTO);
 
@@ -103,7 +103,7 @@ public class GuideMeService {
         GuideJobField savedGuideJobField = guideJobFieldRepository.save(guideJobField);
 
         // 5. DTO 변환 및 반환
-        return GuideJobFieldResponseDTO.from(savedGuideJobField);
+        return GuideJobFieldResponseDTO.from(savedGuideJobField, guide.getId());
     }
 
     /* 가이드 채팅 주제 등록 */
@@ -140,7 +140,7 @@ public class GuideMeService {
 
         // 저장된 주제들 조회 후 DTO로 변환
         return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
-                .map(GuideChatTopicResponseDTO::from)
+                .map(gct -> GuideChatTopicResponseDTO.from(gct, guide.getId()))
                 .collect(Collectors.toList());
 
     }
@@ -166,7 +166,7 @@ public class GuideMeService {
 
         // 삭제 후 남은 주제들 조회 및 DTO 변환
         return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
-                .map(GuideChatTopicResponseDTO::from)
+                .map(gct -> GuideChatTopicResponseDTO.from(gct, guide.getId()))
                 .collect(Collectors.toList());
     }
 

@@ -30,6 +30,6 @@ public class HashTag extends BaseEntity{
     @JoinColumn(name = "guide_id", nullable = false)
     private Guide guide;
 
-    @Column(name = "hash_tag_name", length = 24)
+    @Column(name = "hash_tag_name", length = 24, nullable = false)
     private String hashTagName; // 해시태그 이름
 }

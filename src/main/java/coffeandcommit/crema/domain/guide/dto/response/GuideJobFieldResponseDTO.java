@@ -16,9 +16,9 @@ public class GuideJobFieldResponseDTO {
     private Long guideId;
     private JobNameType jobName;
 
-    public static GuideJobFieldResponseDTO from(GuideJobField guideJobField) {
+    public static GuideJobFieldResponseDTO from(GuideJobField guideJobField, Long guideId) {
         return GuideJobFieldResponseDTO.builder()
-                .guideId(guideJobField.getGuide().getId())
+                .guideId(guideId)
                 .jobName(guideJobField.getJobName())
                 .build();
     }

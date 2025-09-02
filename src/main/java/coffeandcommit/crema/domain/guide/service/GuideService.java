@@ -60,7 +60,7 @@ public class GuideService {
         GuideJobField guideJobField = guideJobFieldRepository.findByGuide(targetGuide)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_JOB_FIELD_NOT_FOUND));
 
-        return GuideJobFieldResponseDTO.from(guideJobField);
+        return GuideJobFieldResponseDTO.from(guideJobField, targetGuide.getId());
 
     }
 
@@ -91,7 +91,7 @@ public class GuideService {
 
         // 3. 해당 가이드의 채팅 주제 조회
         return guideChatTopicRepository.findAllByGuideWithJoin(targetGuide).stream()
-                .map(GuideChatTopicResponseDTO::from)
+                .map(gct -> GuideChatTopicResponseDTO.from(gct, targetGuide.getId()))
                 .collect(Collectors.toList());
     }
 
