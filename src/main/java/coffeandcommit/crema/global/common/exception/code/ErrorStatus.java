@@ -58,7 +58,13 @@ public enum ErrorStatus implements BaseCode {
     EXPERIENCE_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 경험 소주제를 찾을 수 없습니다."),
     EXPERIENCE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "경험 대주제는 최대 6개까지만 등록할 수 있습니다."),
     INVALID_GUIDE_CHAT_TOPIC(HttpStatus.BAD_REQUEST, "잘못된 가이드 커피챗 주제 요청입니다."),
-    EXPERIENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 경험 대주제를 찾을 수 없습니다.");
+    EXPERIENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 경험 대주제를 찾을 수 없습니다."),
+
+    // Review Domain
+    RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."),
+    DUPLICATE_REVIEW(HttpStatus.CONFLICT, "이미 해당 예약에 대한 리뷰가 존재합니다."),
+    REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 리뷰를 찾을 수 없습니다.");
+
 
 
     public static final String PREFIX = "[ERROR]";
