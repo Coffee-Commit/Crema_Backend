@@ -137,7 +137,7 @@ public class GuideMeServiceTest {
         guideSchedule = GuideSchedule.builder()
                 .id(1L)
                 .guide(guide)
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(new ArrayList<>())  // Initialize timeSlots list
                 .build();
 
@@ -1019,7 +1019,7 @@ public class GuideMeServiceTest {
         GuideSchedule otherGuideSchedule = GuideSchedule.builder()
                 .id(2L)
                 .guide(otherGuide)
-                .day(DayType.TUESDAY)
+                .dayOfWeek(DayType.TUESDAY)
                 .timeSlots(new ArrayList<>())
                 .build();
 
@@ -1065,7 +1065,7 @@ public class GuideMeServiceTest {
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(List.of(timeSlotRequestDTO1, timeSlotRequestDTO2))
                 .build();
 
@@ -1082,7 +1082,7 @@ public class GuideMeServiceTest {
         GuideSchedule savedSchedule = GuideSchedule.builder()
                 .id(2L)
                 .guide(guide)
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(timeSlotList)  // Initialize with the list we created
                 .build();
 
@@ -1113,7 +1113,7 @@ public class GuideMeServiceTest {
         assertNotNull(result);
         assertEquals(guide.getId(), result.getGuideId());
         assertEquals(1, result.getSchedules().size());
-        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDay());
+        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDayOfWeek());
         assertEquals(2, result.getSchedules().get(0).getTimeSlots().size());
 
         // 메서드 호출 검증
@@ -1131,7 +1131,7 @@ public class GuideMeServiceTest {
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(List.of(timeSlotRequestDTO))
                 .build();
 
@@ -1164,7 +1164,7 @@ public class GuideMeServiceTest {
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(List.of(invalidTimeSlotRequestDTO))
                 .build();
 
@@ -1197,7 +1197,7 @@ public class GuideMeServiceTest {
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(List.of(sameTimeSlotRequestDTO))
                 .build();
 

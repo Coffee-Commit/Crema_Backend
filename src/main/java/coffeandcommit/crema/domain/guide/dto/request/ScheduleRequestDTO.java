@@ -17,7 +17,7 @@ import java.util.List;
 public class ScheduleRequestDTO {
 
     @NotNull(message = "요일은 필수 값입니다.")
-    private DayType day;
+    private DayType dayOfWeek;
 
     @NotEmpty(message = "시간 구간은 최소 1개 이상이어야 합니다.")
     private List<TimeSlotRequestDTO> timeSlots;

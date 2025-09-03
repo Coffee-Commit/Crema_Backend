@@ -15,12 +15,12 @@ import java.util.List;
 @Builder
 public class ScheduleResponseDTO {
 
-    private DayType day;
+    private DayType dayOfWeek;
     private List<TimeSlotResponseDTO> timeSlots;
 
     public static ScheduleResponseDTO from(GuideSchedule guideSchedule) {
         return ScheduleResponseDTO.builder()
-                .day(guideSchedule.getDay())
+                .dayOfWeek(guideSchedule.getDayOfWeek())
                 .timeSlots(guideSchedule.getTimeSlots().stream()
                         .map(TimeSlotResponseDTO::from)
                         .toList())

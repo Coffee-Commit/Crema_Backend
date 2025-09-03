@@ -18,7 +18,7 @@ import java.util.List;
     name = "guide_schedule",
     indexes = {
         @Index(name = "idx_guide_schedule__guide", columnList = "guide_id"),
-        @Index(name = "idx_guide_schedule__day", columnList = "day")
+        @Index(name = "idx_guide_schedule__day_of_week", columnList = "day_of_week")
     }
 )
 public class GuideSchedule extends BaseEntity{
@@ -32,11 +32,12 @@ public class GuideSchedule extends BaseEntity{
     private Guide guide; // FK, 가이드 ID
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "day", nullable = false, length = 20)
-    private DayType day;
+    @Column(name = "day_of_week", nullable = false, length = 20)
+    private DayType dayOfWeek;
 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
+    @OrderBy("startTimeOption ASC")
     private List<TimeSlot> timeSlots = new ArrayList<>();
 
     // 연관관계 메서드

@@ -23,7 +23,7 @@ public class GuideScheduleResponseDTO {
         return GuideScheduleResponseDTO.builder()
                 .guideId(guide.getId())
                 .schedules(guideSchedules.stream()
-                        .sorted(Comparator.comparing(guideSchedule -> guideSchedule.getDay().ordinal()))
+                        .sorted(Comparator.comparing(guideSchedule -> guideSchedule.getDayOfWeek().ordinal()))
                         .map(ScheduleResponseDTO::from)
                         .toList())
                 .build();

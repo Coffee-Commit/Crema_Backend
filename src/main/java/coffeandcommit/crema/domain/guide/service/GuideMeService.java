@@ -232,7 +232,7 @@ public class GuideMeService {
                 .map(scheduleRequestDTO -> {
                         GuideSchedule schedule = GuideSchedule.builder()
                                 .guide(guide)
-                                .day(scheduleRequestDTO.getDay())
+                                .dayOfWeek(scheduleRequestDTO.getDayOfWeek())
                                 .build();
 
                     // TimeSlot 변환 및 연관관계 설정
