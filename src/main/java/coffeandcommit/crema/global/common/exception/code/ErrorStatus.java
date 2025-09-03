@@ -54,7 +54,11 @@ public enum ErrorStatus implements BaseCode {
     HASHTAG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 해시태그를 찾을 수 없습니다."),
     INVALID_TIME_RANGE(HttpStatus.UNPROCESSABLE_ENTITY, "시작 시간이 종료 시간보다 같거나 늦을 수 없습니다."),
     TIME_SLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 시간 구간을 찾을 수 없습니다."),
-    DUPLICATE_TIME_SLOT(HttpStatus.CONFLICT, "해당 요일에 겹치는 시간대가 이미 존재합니다.");
+    DUPLICATE_TIME_SLOT(HttpStatus.CONFLICT, "해당 요일에 겹치는 시간대가 이미 존재합니다."),
+    EXPERIENCE_DETAIL_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 경험 소주제를 찾을 수 없습니다."),
+    EXPERIENCE_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "경험 대주제는 최대 6개까지만 등록할 수 있습니다."),
+    INVALID_GUIDE_CHAT_TOPIC(HttpStatus.BAD_REQUEST, "잘못된 가이드 커피챗 주제 요청입니다."),
+    EXPERIENCE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드 경험 대주제를 찾을 수 없습니다.");
 
 
     public static final String PREFIX = "[ERROR]";

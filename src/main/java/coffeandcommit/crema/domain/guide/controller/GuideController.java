@@ -1,9 +1,6 @@
 package coffeandcommit.crema.domain.guide.controller;
 
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.response.Response;
@@ -102,5 +99,40 @@ public class GuideController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "가이드 경험 소주제 조회", description = "특정 가이드의 경험 소주제를 조회합니다. 비공개 가이드인 경우 본인 가이드만 조회할 수 있습니다.")
+    @GetMapping("/{guideId}/experiences/details")
+    public ResponseEntity<Response<GuideExperienceDetailResponseDTO>> getGuideExperiencesDetails(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
+
+        GuideExperienceDetailResponseDTO result = guideService.getGuideExperienceDetails(guideId, loginMemberId);
+
+        Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
+                .message("가이드 경험 소주제 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 경험 목록 조회", description = "특정 가이드의 경험 목록을 조회합니다. 비공개 가이드인 경우 본인 가이드만 조회할 수 있습니다.")
+    @GetMapping("/{guideId}/experiences")
+    public ResponseEntity<Response<GuideExperienceResponseDTO>> getGuideExperiences(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
+
+        GuideExperienceResponseDTO result = guideService.getGuideExperiences(guideId, loginMemberId);
+
+        Response<GuideExperienceResponseDTO> response = Response.<GuideExperienceResponseDTO>builder()
+                .message("가이드 경험 목록 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
 
 }

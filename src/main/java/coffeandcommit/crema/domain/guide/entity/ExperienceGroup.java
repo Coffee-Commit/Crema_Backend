@@ -20,6 +20,10 @@ public class ExperienceGroup extends BaseEntity{
     @JoinColumn(name = "guide_id", nullable = false)
     private Guide guide; // FK, 가이드 ID
 
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "guide_chat_topic_id", nullable = false, unique = true)
+    private GuideChatTopic guideChatTopic;
+
     @Column(nullable = false)
     private String experienceTitle; // 경험 대주제
 

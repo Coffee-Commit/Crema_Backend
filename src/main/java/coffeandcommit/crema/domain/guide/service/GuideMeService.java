@@ -4,10 +4,7 @@ import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
-import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
 import coffeandcommit.crema.domain.guide.repository.*;
@@ -19,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -38,6 +36,8 @@ public class GuideMeService {
     private final HashTagRepository hashTagRepository;
     private final GuideScheduleRepository guideScheduleRepository;
     private final TimeSlotRepository timeSlotRepository;
+    private final ExperienceDetailRepository experienceDetailRepository;
+    private final ExperienceGroupRepository experienceGroupRepository;
 
     /* 가이드 본인 프로필 조회 */
     @Transactional(readOnly = true)
@@ -117,7 +117,7 @@ public class GuideMeService {
         // 요청된 주제들 저장
         for (TopicDTO topicDTO : guideChatTopicRequestDTO.getTopics()) {
             // 주제가 유효한지 확인
-            ChatTopic chatTopic = chatTopicRepository.findByChatTopicAndTopicName(topicDTO.getChatTopic(), topicDTO.getTopicName())
+            ChatTopic chatTopic = chatTopicRepository.findByTopicName(topicDTO.getTopicName())
                     .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_TOPIC));
 
             // 이미 등록된 주제인지 확인
@@ -305,5 +305,131 @@ public class GuideMeService {
         List<GuideSchedule> remainingSchedules = guideScheduleRepository.findByGuide(guide);
 
         return GuideScheduleResponseDTO.from(guide, remainingSchedules);
+    }
+
+    /* 가이드 경험 소주제 등록 */
+    @Transactional
+    public GuideExperienceDetailResponseDTO registerExperienceDetail(String loginMemberId, @Valid GuideExperienceDetailRequestDTO guideExperienceDetailRequestDTO) {
+
+        // 1. 로그인한 사용자의 Guide 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        String safeWho = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getWho(), "UTF-8");
+        String safeSolution = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getSolution(), "UTF-8");
+        String safeHow = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getHow(), "UTF-8");
+
+        // 2. 기존 소주제 조회 (있으면 업데이트, 없으면 새로 생성)
+        ExperienceDetail experienceDetail = experienceDetailRepository.findByGuide(guide)
+                .orElseGet(() ->
+                        // 없으면 새로 생성
+                        ExperienceDetail.builder()
+                                .guide(guide)
+                                .build()
+                );
+
+        // 3. 필드 덮어쓰기
+        experienceDetail = experienceDetail.toBuilder()
+                .who(safeWho)
+                .solution(safeSolution)
+                .how(safeHow)
+                .build();
+
+        // 4. 저장
+        ExperienceDetail savedDetail = experienceDetailRepository.save(experienceDetail);
+
+        // 5. DTO 변환 및 반환
+        return GuideExperienceDetailResponseDTO.from(savedDetail);
+
+    }
+
+    /* 가이드 경험 소주제 삭제 */
+    @Transactional
+    public GuideExperienceDetailResponseDTO deleteExperienceDetail(String loginMemberId, Long experienceDetailId) {
+
+        // 1. 로그인한 사용자의 Guide 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 삭제할 ExperienceDetail 조회
+        ExperienceDetail experienceDetail = experienceDetailRepository.findById(experienceDetailId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.EXPERIENCE_DETAIL_NOT_FOUND));
+
+        // 3. 소유자 검증
+        if (!experienceDetail.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 4. 삭제 처리
+        experienceDetailRepository.delete(experienceDetail);
+
+        // 5. 삭제된 경험 소주제 정보 반환 (필요시)
+        return GuideExperienceDetailResponseDTO.from(experienceDetail);
+    }
+
+    /* 가이드 경험 목록 등록 */
+    @Transactional
+    public GuideExperienceResponseDTO registerGuideExperience(String loginMemberId, @Valid GuideExperienceRequestDTO guideExperienceRequestDTO) {
+
+        // 1. 로그인한 사용자의 Guide 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 등록 개수 제한 체크
+        long currentCount = experienceGroupRepository.countByGuide(guide);
+        if (currentCount + guideExperienceRequestDTO.getGroups().size() > 6) {
+            throw new BaseException(ErrorStatus.EXPERIENCE_LIMIT_EXCEEDED);
+        }
+
+
+        // 3. ExperienceGroup 생성
+        List<ExperienceGroup> experienceGroups = guideExperienceRequestDTO.getGroups().stream()
+                .map(groupReq  -> {
+                    GuideChatTopic guideChatTopic = guideChatTopicRepository.findById(groupReq.getGuideChatTopicId())
+                        .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC));
+
+                    if (!guideChatTopic.getGuide().getId().equals(guide.getId())) {
+                        throw new BaseException(ErrorStatus.FORBIDDEN);
+                    }
+
+                    return ExperienceGroup.builder()
+                            .guide(guide)
+                            .guideChatTopic(guideChatTopic)
+                            .experienceTitle(groupReq.getExperienceTitle())
+                            .experienceContent(groupReq.getExperienceContent())
+                            .build();
+                }).toList();
+
+        // 4. 저장
+        List<ExperienceGroup> savedGroups = experienceGroupRepository.saveAll(experienceGroups);
+
+        // 5. Response 변환
+        return GuideExperienceResponseDTO.from(savedGroups);
+    }
+
+    /* 가이드 경험 목록 삭제 */
+    @Transactional
+    public GuideExperienceResponseDTO deleteGuideExperience(String loginMemberId, Long experienceId) {
+
+        // 1. 로그인한 사용자의 Guide 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 삭제할 ExperienceGroup 조회
+        ExperienceGroup experienceGroup = experienceGroupRepository.findById(experienceId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.EXPERIENCE_NOT_FOUND));
+
+        // 3. 소유자 검증
+        if (!experienceGroup.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 4. 삭제 처리
+        experienceGroupRepository.delete(experienceGroup);
+
+        // 5. 남은 경험 목록 조회 및 응답 변환
+        List<ExperienceGroup> remainingGroups = experienceGroupRepository.findByGuide(guide);
+
+        return GuideExperienceResponseDTO.from(remainingGroups);
     }
 }
