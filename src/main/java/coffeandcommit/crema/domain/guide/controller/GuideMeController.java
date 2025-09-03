@@ -1,9 +1,6 @@
 package coffeandcommit.crema.domain.guide.controller;
 
-import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
@@ -214,6 +211,52 @@ public class GuideMeController {
                 .build();
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "가이드 경험 소주제 등록", description = "가이드의 경험 소주제를 등록합니다.")
+    @PostMapping("/experiences/details")
+    public ResponseEntity<Response<GuideExperienceDetailResponseDTO>> registerExperienceDetail(
+            @Valid @RequestBody GuideExperienceDetailRequestDTO guideExperienceDetailRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceDetailResponseDTO result = guideMeService.registerExperienceDetail(loginMemberId, guideExperienceDetailRequestDTO);
+
+        Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
+                .message("가이드 경험 소주제 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 소주제 삭제", description = "가이드의 경험 소주제를 삭제합니다.")
+    @DeleteMapping("/experiences/details/{experienceDetailId}")
+    public ResponseEntity<Response<GuideExperienceDetailResponseDTO>> deleteExperienceDetail(
+            @PathVariable Long experienceDetailId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceDetailResponseDTO deletedDetail = guideMeService.deleteExperienceDetail(loginMemberId, experienceDetailId);
+
+        Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
+                .message("가이드 경험 소주제 삭제 완료")
+                .data(deletedDetail)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
     }
 
 

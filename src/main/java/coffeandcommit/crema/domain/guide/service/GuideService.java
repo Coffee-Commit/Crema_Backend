@@ -1,9 +1,7 @@
 package coffeandcommit.crema.domain.guide.service;
 
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
+import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
 import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
@@ -29,6 +27,7 @@ public class GuideService {
     private final GuideChatTopicRepository guideChatTopicRepository;
     private final HashTagRepository hashTagRepository;
     private final GuideScheduleRepository guideScheduleRepository;
+    private final ExperienceDetailRepository experienceDetailRepository;
 
     private void validateAccess(Guide targetGuide, String loginMemberId) {
         if (!targetGuide.isOpened()) {
@@ -105,5 +104,23 @@ public class GuideService {
 
         // 4. DTO 변환
         return GuideScheduleResponseDTO.from(targetGuide, schedules);
+    }
+
+    /* 가이드 경험 소주제 조회 */
+    @Transactional(readOnly = true)
+    public GuideExperienceDetailResponseDTO getGuideExperienceDetails(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 3. 가이드 경험 소주제 조회
+        ExperienceDetail experienceDetail = experienceDetailRepository.findByGuide(targetGuide)
+                .orElseThrow(() -> new BaseException(ErrorStatus.EXPERIENCE_DETAIL_NOT_FOUND));
+
+        return GuideExperienceDetailResponseDTO.from(experienceDetail);
+
     }
 }
