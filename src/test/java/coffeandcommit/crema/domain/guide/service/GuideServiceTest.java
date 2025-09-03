@@ -151,14 +151,14 @@ public class GuideServiceTest {
         guideSchedule1 = GuideSchedule.builder()
                 .id(1L)
                 .guide(guide1)
-                .day(DayType.MONDAY)
+                .dayOfWeek(DayType.MONDAY)
                 .timeSlots(new ArrayList<>())
                 .build();
 
         guideSchedule2 = GuideSchedule.builder()
                 .id(2L)
                 .guide(guide1)
-                .day(DayType.WEDNESDAY)
+                .dayOfWeek(DayType.WEDNESDAY)
                 .timeSlots(new ArrayList<>())
                 .build();
 
@@ -560,13 +560,13 @@ public class GuideServiceTest {
         assertEquals(2, result.getSchedules().size());
 
         // 첫 번째 스케줄 검증
-        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDay());
+        assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
         assertEquals("09:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
         assertEquals("10:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
 
         // 두 번째 스케줄 검증
-        assertEquals(DayType.WEDNESDAY, result.getSchedules().get(1).getDay());
+        assertEquals(DayType.WEDNESDAY, result.getSchedules().get(1).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(1).getTimeSlots().size());
         assertEquals("14:00", result.getSchedules().get(1).getTimeSlots().get(0).getStartTime());
         assertEquals("15:00", result.getSchedules().get(1).getTimeSlots().get(0).getEndTime());
@@ -620,7 +620,7 @@ public class GuideServiceTest {
         GuideSchedule privateGuideSchedule = GuideSchedule.builder()
                 .id(3L)
                 .guide(guide2)
-                .day(DayType.FRIDAY)
+                .dayOfWeek(DayType.FRIDAY)
                 .build();
 
         TimeSlot privateTimeSlot = TimeSlot.builder()
@@ -643,7 +643,7 @@ public class GuideServiceTest {
         assertNotNull(result);
         assertEquals(guide2.getId(), result.getGuideId());
         assertEquals(1, result.getSchedules().size());
-        assertEquals(DayType.FRIDAY, result.getSchedules().get(0).getDay());
+        assertEquals(DayType.FRIDAY, result.getSchedules().get(0).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
         assertEquals("16:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
         assertEquals("17:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
