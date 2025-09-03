@@ -9,12 +9,9 @@ import lombok.ToString;
 @ToString
 public enum ChatTopicType {
 
-    DOCUMENTS("서류 준비"),
-    INTERVIEW("면접 대비"),
-    PRACTICAL_SKILL("실무 스킬"),
+    DOCUMENTS_AND_INTERVIEW("서류 및 면접"),
     COMPANY_LIFE("회사 생활"),
-    MENTOR_STORY("멘토 이야기"),
-    CAREER_DIRECTION("커리어 방향성");
+    CAREER("커리어");
 
     private final String description;
 }

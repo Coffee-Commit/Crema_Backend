@@ -27,8 +27,8 @@ public class Guide extends BaseEntity {
     @Column(name = "is_approved", nullable = false)
     private boolean isApproved;
 
-    @Column(length = 1000)
-    private String description;
+    @Column(name = "chat_description", length = 1000)
+    private String chatDescription;
 
     @Column(nullable = false)
     private boolean isOpened;
@@ -50,6 +50,9 @@ public class Guide extends BaseEntity {
 
     @Column(name = "company_name")
     private String companyName;
+
+    @Column(name = "job_position")
+    private String jobPosition;
 
     @Column(name = "is_current")
     private boolean isCurrent;

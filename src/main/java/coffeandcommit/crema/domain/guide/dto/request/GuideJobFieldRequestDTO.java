@@ -1,6 +1,6 @@
 package coffeandcommit.crema.domain.guide.dto.request;
 
-import coffeandcommit.crema.domain.globalTag.enums.JobType;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -12,5 +12,5 @@ import lombok.NoArgsConstructor;
 @Builder
 public class GuideJobFieldRequestDTO {
 
-    private JobType jobType;
+    private JobNameType jobName;
 }

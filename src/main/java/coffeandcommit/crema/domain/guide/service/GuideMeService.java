@@ -1,16 +1,28 @@
 package coffeandcommit.crema.domain.guide.service;
 
-import coffeandcommit.crema.domain.globalTag.entity.JobField;
-import coffeandcommit.crema.domain.globalTag.repository.JobFieldRepository;
+import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
+import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
+import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
+import coffeandcommit.crema.domain.guide.entity.HashTag;
+import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,8 +40,11 @@ public class GuideMeService {
 
     private final GuideRepository guideRepository;
     private final GuideJobFieldRepository guideJobFieldRepository;
-    private final JobFieldRepository jobFieldRepository;
+    private final ChatTopicRepository chatTopicRepository;
+    private final GuideChatTopicRepository guideChatTopicRepository;
+    private final HashTagRepository hashTagRepository;
 
+    /* 가이드 본인 프로필 조회 */
     @Transactional(readOnly = true)
     public GuideProfileResponseDTO getGuideMeProfile(String memberId) {
 
@@ -55,6 +72,7 @@ public class GuideMeService {
         return Math.max(0, years); // 음수 방지
     }
 
+    /* 가이드 직무 분야 등록 */
     @Transactional
     public GuideJobFieldResponseDTO registerGuideJobField(String memberId, GuideJobFieldRequestDTO guideJobFieldRequestDTO) {
 
@@ -62,20 +80,22 @@ public class GuideMeService {
         Guide guide = guideRepository.findByMember_Id(memberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        // 2. JobField 엔티티 조회
-        JobField jobField = jobFieldRepository.findByJobType(guideJobFieldRequestDTO.getJobType())
-                .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_JOB_FIELD));
+        // 2. 요청 값 유효성 체크
+        JobNameType jobName = guideJobFieldRequestDTO.getJobName();
+        if (jobName == null) {
+            throw new BaseException(ErrorStatus.INVALID_JOB_FIELD);
+        }
 
         // 3. 기존 GuideJobField 조회
         GuideJobField guideJobField = guideJobFieldRepository.findByGuide(guide)
                 .orElse(null);
         if (guideJobField != null) {
             // 기존 GuideJobField가 존재하면 업데이트
-            guideJobField.updateJobField(jobField);
+            guideJobField.updateJobName(jobName);
         } else {
             guideJobField = GuideJobField.builder()
                     .guide(guide)
-                    .jobField(jobField)
+                    .jobName(jobName)
                     .build();
         }
 
@@ -86,5 +106,122 @@ public class GuideMeService {
         return GuideJobFieldResponseDTO.from(savedGuideJobField);
     }
 
+    /* 가이드 채팅 주제 등록 */
+    @Transactional
+    public List<GuideChatTopicResponseDTO> registerChatTopics(String loginMemberId, GuideChatTopicRequestDTO guideChatTopicRequestDTO) {
 
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 등록 개수 제한(최대 5개)
+        long currentCount = guideChatTopicRepository.countByGuide(guide);
+        if (currentCount + guideChatTopicRequestDTO.getTopics().size() > 5) {
+            throw new BaseException(ErrorStatus.MAX_TOPIC_EXCEEDED);
+        }
+
+        // 요청된 주제들 저장
+        for (TopicDTO topicDTO : guideChatTopicRequestDTO.getTopics()) {
+            // 주제가 유효한지 확인
+            ChatTopic chatTopic = chatTopicRepository.findByChatTopicAndTopicName(topicDTO.getChatTopic(), topicDTO.getTopicName())
+                    .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_TOPIC));
+
+            // 이미 등록된 주제인지 확인
+            boolean exists = guideChatTopicRepository.existsByGuideAndChatTopic(guide, chatTopic);
+            if (exists) {continue;} // 중복된 주제는 건너뜀
+
+            // GuideChatTopic 저장
+            GuideChatTopic guideChatTopic = GuideChatTopic.builder()
+                    .guide(guide)
+                    .chatTopic(chatTopic)
+                    .build();
+
+            guideChatTopicRepository.save(guideChatTopic);
+        }
+
+        // 저장된 주제들 조회 후 DTO로 변환
+        return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
+                .map(GuideChatTopicResponseDTO::from)
+                .collect(Collectors.toList());
+
+    }
+
+    /* 가이드 채팅 주제 삭제 */
+    @Transactional
+    public List<GuideChatTopicResponseDTO> deleteChatTopic(String loginMemberId, Long id) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 삭제할 GuideChatTopic 조회
+        GuideChatTopic guideChatTopic = guideChatTopicRepository.findById(id)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_CHAT_TOPIC_NOT_FOUND));
+
+        // 해당 GuideChatTopic이 로그인한 가이드의 것인지 확인
+        if (!guideChatTopic.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 삭제
+        guideChatTopicRepository.delete(guideChatTopic);
+
+        // 삭제 후 남은 주제들 조회 및 DTO 변환
+        return guideChatTopicRepository.findAllByGuideWithJoin(guide).stream()
+                .map(GuideChatTopicResponseDTO::from)
+                .collect(Collectors.toList());
+    }
+
+    /* 가이드 해시태그 등록 */
+    @Transactional
+    public List<GuideHashTagResponseDTO> registerGuideHashTags(
+            String loginMemberId, @Valid @NotEmpty List<GuideHashTagRequestDTO> guideHashTagRequestDTOs) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        long currentCount = hashTagRepository.countByGuide(guide);
+        if (currentCount + guideHashTagRequestDTOs.size() > 5) {
+            throw new BaseException(ErrorStatus.MAX_HASHTAG_EXCEEDED);
+        }
+
+        List<HashTag> hashTags = guideHashTagRequestDTOs.stream()
+            .map(dto -> {
+                boolean exists = hashTagRepository.existsByGuideAndHashTagName(guide, dto.getHashTagName());
+                if (exists) {
+                    throw new BaseException(ErrorStatus.DUPLICATE_HASHTAG);
+                }
+
+                return HashTag.builder()
+                        .guide(guide)
+                        .hashTagName(dto.getHashTagName())
+                        .build();
+            })
+            .collect(Collectors.toList());
+
+        List<HashTag> savedHashTags = hashTagRepository.saveAll(hashTags);
+
+        return savedHashTags.stream()
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
+                .collect(Collectors.toList());
+    }
+
+    /* 가이드 해시태그 삭제 */
+    @Transactional
+    public List<GuideHashTagResponseDTO> deleteGuideHashTag(String loginMemberId, Long hashTagId) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        HashTag hashTag = hashTagRepository.findById(hashTagId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.HASHTAG_NOT_FOUND));
+
+        if (!hashTag.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        hashTagRepository.delete(hashTag);
+
+        return hashTagRepository.findByGuide(guide).stream()
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
+                .collect(Collectors.toList());
+    }
 }

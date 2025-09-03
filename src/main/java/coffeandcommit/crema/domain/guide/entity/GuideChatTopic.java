@@ -10,7 +10,16 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "guide_chat_topic")
+@Table(
+    name = "guide_chat_topic",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"guide_id", "chat_topic_id"})
+    },
+    indexes = {
+        @Index(name = "idx_gct_guide", columnList = "guide_id"),
+        @Index(name = "idx_gct_topic", columnList = "chat_topic_id")
+    }
+)
 public class GuideChatTopic extends BaseEntity{
 
     @Id
