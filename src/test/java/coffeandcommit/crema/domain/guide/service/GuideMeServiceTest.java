@@ -7,17 +7,21 @@ import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceDetailRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GroupRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.ScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.TimeSlotRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
+import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
@@ -26,6 +30,7 @@ import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.entity.TimeSlot;
 import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.domain.guide.repository.ExperienceDetailRepository;
+import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
@@ -79,6 +84,9 @@ public class GuideMeServiceTest {
 
     @Mock
     private ExperienceDetailRepository experienceDetailRepository;
+
+    @Mock
+    private ExperienceGroupRepository experienceGroupRepository;
 
     @InjectMocks
     private GuideMeService guideMeService;
@@ -1431,5 +1439,291 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(memberId);
         verify(experienceDetailRepository).findById(2L);
         verify(experienceDetailRepository, never()).delete(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("deleteGuideExperience 성공 테스트")
+    void deleteGuideExperience_Success() {
+        // 테스트 데이터 준비
+        Long experienceId = 1L;
+        ExperienceGroup experienceGroup = ExperienceGroup.builder()
+                .id(experienceId)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("경험 제목")
+                .experienceContent("경험 내용")
+                .build();
+
+        List<ExperienceGroup> remainingGroups = new ArrayList<>();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.findById(experienceId)).thenReturn(Optional.of(experienceGroup));
+        when(experienceGroupRepository.findByGuide(guide)).thenReturn(remainingGroups);
+
+        // 테스트 실행
+        GuideExperienceResponseDTO result = guideMeService.deleteGuideExperience(memberId, experienceId);
+
+        // 검증
+        assertNotNull(result);
+        assertTrue(result.getGroups().isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).findById(experienceId);
+        verify(experienceGroupRepository).delete(experienceGroup);
+        verify(experienceGroupRepository).findByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("deleteGuideExperience 가이드 없음 테스트")
+    void deleteGuideExperience_GuideNotFound() {
+        // Mock 설정
+        Long experienceId = 1L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideExperience(memberId, experienceId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository, never()).findById(anyLong());
+        verify(experienceGroupRepository, never()).delete(any(ExperienceGroup.class));
+        verify(experienceGroupRepository, never()).findByGuide(any(Guide.class));
+    }
+
+    @Test
+    @DisplayName("deleteGuideExperience 경험 없음 테스트")
+    void deleteGuideExperience_ExperienceNotFound() {
+        // Mock 설정
+        Long experienceId = 999L;
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.findById(experienceId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideExperience(memberId, experienceId)
+        );
+
+        assertEquals(ErrorStatus.EXPERIENCE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).findById(experienceId);
+        verify(experienceGroupRepository, never()).delete(any(ExperienceGroup.class));
+        verify(experienceGroupRepository, never()).findByGuide(any(Guide.class));
+    }
+
+    @Test
+    @DisplayName("deleteGuideExperience 접근 권한 없음 테스트")
+    void deleteGuideExperience_Forbidden() {
+        // 다른 가이드의 경험 생성
+        Guide otherGuide = Guide.builder()
+                .id(2L)
+                .member(Member.builder().id("other-member-id").build())
+                .isOpened(true)
+                .build();
+
+        Long experienceId = 1L;
+        ExperienceGroup otherExperienceGroup = ExperienceGroup.builder()
+                .id(experienceId)
+                .guide(otherGuide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("다른 가이드의 경험")
+                .experienceContent("다른 가이드의 경험 내용")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.findById(experienceId)).thenReturn(Optional.of(otherExperienceGroup));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteGuideExperience(memberId, experienceId)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).findById(experienceId);
+        verify(experienceGroupRepository, never()).delete(any(ExperienceGroup.class));
+        verify(experienceGroupRepository, never()).findByGuide(any(Guide.class));
+    }
+
+    @Test
+    @DisplayName("registerGuideExperience 성공 테스트")
+    void registerGuideExperience_Success() {
+        // 테스트 데이터 준비
+        GroupRequestDTO groupRequestDTO1 = GroupRequestDTO.builder()
+                .guideChatTopicId(guideChatTopic.getId())
+                .experienceTitle("첫 번째 경험")
+                .experienceContent("첫 번째 경험 내용")
+                .build();
+
+        GroupRequestDTO groupRequestDTO2 = GroupRequestDTO.builder()
+                .guideChatTopicId(guideChatTopic.getId())
+                .experienceTitle("두 번째 경험")
+                .experienceContent("두 번째 경험 내용")
+                .build();
+
+        List<GroupRequestDTO> groupRequestDTOs = Arrays.asList(groupRequestDTO1, groupRequestDTO2);
+
+        GuideExperienceRequestDTO requestDTO = GuideExperienceRequestDTO.builder()
+                .groups(groupRequestDTOs)
+                .build();
+
+        // 저장될 ExperienceGroup 객체들
+        ExperienceGroup savedGroup1 = ExperienceGroup.builder()
+                .id(1L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle(groupRequestDTO1.getExperienceTitle())
+                .experienceContent(groupRequestDTO1.getExperienceContent())
+                .build();
+
+        ExperienceGroup savedGroup2 = ExperienceGroup.builder()
+                .id(2L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle(groupRequestDTO2.getExperienceTitle())
+                .experienceContent(groupRequestDTO2.getExperienceContent())
+                .build();
+
+        List<ExperienceGroup> savedGroups = Arrays.asList(savedGroup1, savedGroup2);
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.countByGuide(guide)).thenReturn(0L);
+        when(guideChatTopicRepository.findById(guideChatTopic.getId())).thenReturn(Optional.of(guideChatTopic));
+        when(experienceGroupRepository.saveAll(any())).thenReturn(savedGroups);
+
+        // 테스트 실행
+        GuideExperienceResponseDTO result = guideMeService.registerGuideExperience(memberId, requestDTO);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.getGroups().size());
+
+        // 첫 번째 그룹 검증
+        assertEquals(1L, result.getGroups().get(0).getId());
+        assertEquals(guideChatTopic.getId(), result.getGroups().get(0).getGuideChatTopicId());
+        assertEquals("첫 번째 경험", result.getGroups().get(0).getExperienceTitle());
+        assertEquals("첫 번째 경험 내용", result.getGroups().get(0).getExperienceContent());
+
+        // 두 번째 그룹 검증
+        assertEquals(2L, result.getGroups().get(1).getId());
+        assertEquals(guideChatTopic.getId(), result.getGroups().get(1).getGuideChatTopicId());
+        assertEquals("두 번째 경험", result.getGroups().get(1).getExperienceTitle());
+        assertEquals("두 번째 경험 내용", result.getGroups().get(1).getExperienceContent());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).countByGuide(guide);
+        verify(guideChatTopicRepository, times(2)).findById(guideChatTopic.getId());
+        verify(experienceGroupRepository).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideExperience 가이드 없음 테스트")
+    void registerGuideExperience_GuideNotFound() {
+        // 테스트 데이터 준비
+        GroupRequestDTO groupRequestDTO = GroupRequestDTO.builder()
+                .guideChatTopicId(1L)
+                .experienceTitle("경험 제목")
+                .experienceContent("경험 내용")
+                .build();
+
+        GuideExperienceRequestDTO requestDTO = GuideExperienceRequestDTO.builder()
+                .groups(List.of(groupRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideExperience(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository, never()).countByGuide(any());
+        verify(guideChatTopicRepository, never()).findById(anyLong());
+        verify(experienceGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideExperience 경험 개수 초과 테스트")
+    void registerGuideExperience_ExperienceLimitExceeded() {
+        // 테스트 데이터 준비 - 7개의 경험 그룹 (최대 6개)
+        List<GroupRequestDTO> groupRequestDTOs = new ArrayList<>();
+        for (int i = 0; i < 7; i++) {
+            groupRequestDTOs.add(GroupRequestDTO.builder()
+                    .guideChatTopicId(1L)
+                    .experienceTitle("경험 제목 " + i)
+                    .experienceContent("경험 내용 " + i)
+                    .build());
+        }
+
+        GuideExperienceRequestDTO requestDTO = GuideExperienceRequestDTO.builder()
+                .groups(groupRequestDTOs)
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.countByGuide(guide)).thenReturn(0L);
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideExperience(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.EXPERIENCE_LIMIT_EXCEEDED, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).countByGuide(guide);
+        verify(guideChatTopicRepository, never()).findById(anyLong());
+        verify(experienceGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideExperience 유효하지 않은 가이드 채팅 주제 테스트")
+    void registerGuideExperience_InvalidGuideChatTopic() {
+        // 테스트 데이터 준비
+        GroupRequestDTO groupRequestDTO = GroupRequestDTO.builder()
+                .guideChatTopicId(999L) // 존재하지 않는 ID
+                .experienceTitle("경험 제목")
+                .experienceContent("경험 내용")
+                .build();
+
+        GuideExperienceRequestDTO requestDTO = GuideExperienceRequestDTO.builder()
+                .groups(List.of(groupRequestDTO))
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceGroupRepository.countByGuide(guide)).thenReturn(0L);
+        when(guideChatTopicRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerGuideExperience(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).countByGuide(guide);
+        verify(guideChatTopicRepository).findById(999L);
+        verify(experienceGroupRepository, never()).saveAll(any());
     }
 }

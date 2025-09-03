@@ -5,10 +5,12 @@ import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
+import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
@@ -17,6 +19,7 @@ import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.entity.TimeSlot;
 import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.domain.guide.repository.ExperienceDetailRepository;
+import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
@@ -64,6 +67,9 @@ public class GuideServiceTest {
 
     @Mock
     private ExperienceDetailRepository experienceDetailRepository;
+
+    @Mock
+    private ExperienceGroupRepository experienceGroupRepository;
 
     private Member member1;
     private Member member2;
@@ -782,5 +788,142 @@ public class GuideServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
         verify(experienceDetailRepository).findByGuide(privateGuide);
+    }
+
+    @Test
+    @DisplayName("가이드 경험 목록 조회 - 성공")
+    void getGuideExperiences_Success() {
+        // 테스트 데이터 준비
+        ExperienceGroup experienceGroup1 = ExperienceGroup.builder()
+                .id(1L)
+                .guide(guide1)
+                .guideChatTopic(guideChatTopic1)
+                .experienceTitle("첫 번째 경험")
+                .experienceContent("첫 번째 경험 내용")
+                .build();
+
+        ExperienceGroup experienceGroup2 = ExperienceGroup.builder()
+                .id(2L)
+                .guide(guide1)
+                .guideChatTopic(guideChatTopic2)
+                .experienceTitle("두 번째 경험")
+                .experienceContent("두 번째 경험 내용")
+                .build();
+
+        List<ExperienceGroup> experienceGroups = Arrays.asList(experienceGroup1, experienceGroup2);
+
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(experienceGroupRepository.findByGuide(guide1)).thenReturn(experienceGroups);
+
+        // 테스트 실행
+        GuideExperienceResponseDTO result = guideService.getGuideExperiences(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.getGroups().size());
+
+        // 첫 번째 경험 검증
+        assertEquals(1L, result.getGroups().get(0).getId());
+        assertEquals(guideChatTopic1.getId(), result.getGroups().get(0).getGuideChatTopicId());
+        assertEquals("첫 번째 경험", result.getGroups().get(0).getExperienceTitle());
+        assertEquals("첫 번째 경험 내용", result.getGroups().get(0).getExperienceContent());
+
+        // 두 번째 경험 검증
+        assertEquals(2L, result.getGroups().get(1).getId());
+        assertEquals(guideChatTopic2.getId(), result.getGroups().get(1).getGuideChatTopicId());
+        assertEquals("두 번째 경험", result.getGroups().get(1).getExperienceTitle());
+        assertEquals("두 번째 경험 내용", result.getGroups().get(1).getExperienceContent());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(experienceGroupRepository).findByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 경험 목록 조회 - 가이드 없음")
+    void getGuideExperiences_GuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideService.getGuideExperiences(999L, "member1")
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(999L);
+        verify(experienceGroupRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 경험 목록 조회 - 비공개 가이드 접근 금지")
+    void getGuideExperiences_ForbiddenAccessToPrivateGuide() {
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2)); // guide2는 비공개 가이드
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideService.getGuideExperiences(2L, "member1")
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(experienceGroupRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("가이드 경험 목록 조회 - 소유자는 비공개 가이드 접근 가능")
+    void getGuideExperiences_OwnerCanAccessPrivateGuide() {
+        // 테스트 데이터 준비
+        ExperienceGroup privateExperienceGroup = ExperienceGroup.builder()
+                .id(3L)
+                .guide(guide2)
+                .guideChatTopic(guideChatTopic1)
+                .experienceTitle("비공개 경험")
+                .experienceContent("비공개 경험 내용")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findById(2L)).thenReturn(Optional.of(guide2));
+        when(experienceGroupRepository.findByGuide(guide2)).thenReturn(List.of(privateExperienceGroup));
+
+        // 테스트 실행
+        GuideExperienceResponseDTO result = guideService.getGuideExperiences(2L, "member2");
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.getGroups().size());
+        assertEquals(3L, result.getGroups().get(0).getId());
+        assertEquals(guideChatTopic1.getId(), result.getGroups().get(0).getGuideChatTopicId());
+        assertEquals("비공개 경험", result.getGroups().get(0).getExperienceTitle());
+        assertEquals("비공개 경험 내용", result.getGroups().get(0).getExperienceContent());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(2L);
+        verify(experienceGroupRepository).findByGuide(guide2);
+    }
+
+    @Test
+    @DisplayName("가이드 경험 목록 조회 - 빈 목록")
+    void getGuideExperiences_EmptyList() {
+        // Mock 설정
+        when(guideRepository.findById(1L)).thenReturn(Optional.of(guide1));
+        when(experienceGroupRepository.findByGuide(guide1)).thenReturn(List.of());
+
+        // 테스트 실행
+        GuideExperienceResponseDTO result = guideService.getGuideExperiences(1L, "member1");
+
+        // 검증
+        assertNotNull(result);
+        assertTrue(result.getGroups().isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findById(1L);
+        verify(experienceGroupRepository).findByGuide(guide1);
     }
 }
