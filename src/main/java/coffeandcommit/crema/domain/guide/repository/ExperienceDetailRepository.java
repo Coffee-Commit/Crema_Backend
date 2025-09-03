@@ -8,7 +8,6 @@ import java.util.Optional;
 
 @Repository
 public interface ExperienceDetailRepository extends JpaRepository<ExperienceDetail, Long> {
-    boolean existsByGuide(Guide guide);
 
     Optional<ExperienceDetail> findByGuide(Guide guide);
 }
