@@ -32,6 +32,10 @@ public enum ErrorStatus implements BaseCode {
     OAUTH2_AUTHENTICATION_FAILED(HttpStatus.UNAUTHORIZED, "OAuth2 인증에 실패했습니다."),
     UNSUPPORTED_OAUTH2_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth2 제공자입니다."),
 
+    // Database Initialization - 테이블 초기화 관련
+    TABLE_DATA_NOT_INITIALIZED(HttpStatus.PRECONDITION_FAILED, "테이블에 기본 데이터가 설정되지 않았습니다."),
+    REFERENCE_DATA_MISSING(HttpStatus.PRECONDITION_FAILED, "필요한 기준 데이터가 누락되었습니다."),
+
     // File Upload - 프로필 이미지 전용 에러 추가
     FILE_UPLOAD_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다."),
     INVALID_FILE_FORMAT(HttpStatus.BAD_REQUEST, "유효하지 않은 이미지 파일입니다. 실제 JPG, JPEG, PNG 파일만 업로드 가능합니다."),
