@@ -210,7 +210,7 @@ public class GuideServiceTest {
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "nonexistent");
         });
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
@@ -245,7 +245,7 @@ public class GuideServiceTest {
         BaseException exception = assertThrows(BaseException.class, () -> {
             guideService.getGuideJobField(2L, "member1");
         });
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
         verify(guideRepository).findById(2L);
@@ -336,7 +336,7 @@ public class GuideServiceTest {
             guideService.getGuideChatTopics(1L, "nonexistent");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
@@ -373,7 +373,7 @@ public class GuideServiceTest {
             guideService.getGuideChatTopics(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
@@ -489,7 +489,7 @@ public class GuideServiceTest {
             guideService.getGuideHashTags(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);
@@ -606,7 +606,7 @@ public class GuideServiceTest {
             guideService.getGuideSchedules(2L, "member1");
         });
 
-        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);

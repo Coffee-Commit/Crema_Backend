@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Comparator;
 import java.util.List;
 
 @Getter
@@ -22,6 +23,7 @@ public class GuideScheduleResponseDTO {
         return GuideScheduleResponseDTO.builder()
                 .guideId(guide.getId())
                 .schedules(guideSchedules.stream()
+                        .sorted(Comparator.comparing(guideSchedule -> guideSchedule.getDay().ordinal()))
                         .map(ScheduleResponseDTO::from)
                         .toList())
                 .build();

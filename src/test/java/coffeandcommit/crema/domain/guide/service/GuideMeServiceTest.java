@@ -41,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -133,7 +134,6 @@ public class GuideMeServiceTest {
                 .chatTopic(chatTopic1)
                 .build();
 
-        // Create test guide schedule and time slot
         guideSchedule = GuideSchedule.builder()
                 .id(1L)
                 .guide(guide)
@@ -1055,13 +1055,13 @@ public class GuideMeServiceTest {
     void registerGuideSchedules_Success() {
         // 테스트 데이터 준비
         TimeSlotRequestDTO timeSlotRequestDTO1 = TimeSlotRequestDTO.builder()
-                .startTime("09:00")
-                .endTime("10:00")
+                .startTime(LocalTime.of(9, 0))
+                .endTime(LocalTime.of(10, 0))
                 .build();
 
         TimeSlotRequestDTO timeSlotRequestDTO2 = TimeSlotRequestDTO.builder()
-                .startTime("14:00")
-                .endTime("15:00")
+                .startTime(LocalTime.of(14, 0))
+                .endTime(LocalTime.of(15, 0))
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
@@ -1077,7 +1077,6 @@ public class GuideMeServiceTest {
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
 
         // 저장된 스케줄 생성
-        // Create GuideSchedule with initialized timeSlots list
         List<TimeSlot> timeSlotList = new ArrayList<>();
 
         GuideSchedule savedSchedule = GuideSchedule.builder()
@@ -1127,8 +1126,8 @@ public class GuideMeServiceTest {
     void registerGuideSchedules_GuideNotFound() {
         // 테스트 데이터 준비
         TimeSlotRequestDTO timeSlotRequestDTO = TimeSlotRequestDTO.builder()
-                .startTime("09:00")
-                .endTime("10:00")
+                .startTime(LocalTime.of(9, 0))
+                .endTime(LocalTime.of(10, 0))
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
@@ -1160,8 +1159,8 @@ public class GuideMeServiceTest {
     void registerGuideSchedules_InvalidTimeRange() {
         // 테스트 데이터 준비 - 시작 시간이 종료 시간보다 늦은 경우
         TimeSlotRequestDTO invalidTimeSlotRequestDTO = TimeSlotRequestDTO.builder()
-                .startTime("10:00")
-                .endTime("09:00")
+                .startTime(LocalTime.of(10, 0))
+                .endTime(LocalTime.of(9, 0))
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()
@@ -1193,8 +1192,8 @@ public class GuideMeServiceTest {
     void registerGuideSchedules_SameStartEndTime() {
         // 테스트 데이터 준비 - 시작 시간과 종료 시간이 같은 경우
         TimeSlotRequestDTO sameTimeSlotRequestDTO = TimeSlotRequestDTO.builder()
-                .startTime("09:00")
-                .endTime("09:00")
+                .startTime(LocalTime.of(9, 0))
+                .endTime(LocalTime.of(9, 0))
                 .build();
 
         ScheduleRequestDTO scheduleRequestDTO = ScheduleRequestDTO.builder()

@@ -47,6 +47,5 @@ public class GuideSchedule extends BaseEntity{
 
     public void removeTimeSlot(TimeSlot slot) {
         timeSlots.remove(slot);
-        slot.setSchedule(null);
     }
 }

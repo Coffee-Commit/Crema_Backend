@@ -34,7 +34,7 @@ public class GuideService {
         if (!targetGuide.isOpened()) {
             // 비공개인데 로그인 안 했거나 본인이 아니면 접근 금지
             if (loginMemberId == null || !Objects.equals(targetGuide.getMember().getId(), loginMemberId)) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
+                throw new BaseException(ErrorStatus.GUIDE_NOT_FOUND);
             }
         }
     }

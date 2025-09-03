@@ -238,12 +238,15 @@ public class GuideMeService {
                     // TimeSlot 변환 및 연관관계 설정
                     List<TimeSlot> timeSlots = scheduleRequestDTO.getTimeSlots().stream()
                             .map(timeSlotRequestDTO -> {
-                                    LocalTime start = LocalTime.parse(timeSlotRequestDTO.getStartTime());
-                                    LocalTime end = LocalTime.parse(timeSlotRequestDTO.getEndTime());
+                                    LocalTime start = timeSlotRequestDTO.getStartTime();
+                                    LocalTime end = timeSlotRequestDTO.getEndTime();
 
                                     if (start.isAfter(end) || start.equals(end)) {
                                         throw new BaseException(ErrorStatus.INVALID_TIME_RANGE);
                                     }
+
+                                    validateNoOverlap(schedule.getTimeSlots(), start, end);
+
                                     return TimeSlot.builder()
                                             .schedule(schedule)
                                             .startTimeOption(start)
@@ -260,8 +263,18 @@ public class GuideMeService {
         return GuideScheduleResponseDTO.from(guide, savedSchedules);
 
     }
+    /* 새로운 TimeSlot이 기존 TimeSlot 들과 겹치지 않는지 검증 */
+    private void validateNoOverlap(List<TimeSlot> existingSlots, LocalTime newStart, LocalTime newEnd) {
+        for (TimeSlot slot : existingSlots) {
+            boolean isOverlapping = !(newEnd.isBefore(slot.getStartTimeOption()) || newStart.isAfter(slot.getEndTimeOption()));
+            if (isOverlapping) {
+                throw new BaseException(ErrorStatus.DUPLICATE_TIME_SLOT);
+            }
+        }
+    }
 
     /* 가이드 스케줄 삭제 */
+    @Transactional
     public GuideScheduleResponseDTO deleteGuideSchedule(String loginMemberId, Long timeSlotId) {
 
         // 1. 로그인한 사용자의 Guide 조회
