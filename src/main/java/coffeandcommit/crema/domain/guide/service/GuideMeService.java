@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.util.HtmlUtils;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -314,6 +315,10 @@ public class GuideMeService {
         Guide guide = guideRepository.findByMember_Id(loginMemberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
+        String safeWho = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getWho(), "UTF-8");
+        String safeSolution = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getSolution(), "UTF-8");
+        String safeHow = HtmlUtils.htmlEscape(guideExperienceDetailRequestDTO.getHow(), "UTF-8");
+
         // 2. 기존 소주제 조회 (있으면 업데이트, 없으면 새로 생성)
         ExperienceDetail experienceDetail = experienceDetailRepository.findByGuide(guide)
                 .orElseGet(() ->
@@ -325,9 +330,9 @@ public class GuideMeService {
 
         // 3. 필드 덮어쓰기
         experienceDetail = experienceDetail.toBuilder()
-                .who(guideExperienceDetailRequestDTO.getWho())
-                .solution(guideExperienceDetailRequestDTO.getSolution())
-                .how(guideExperienceDetailRequestDTO.getHow())
+                .who(safeWho)
+                .solution(safeSolution)
+                .how(safeHow)
                 .build();
 
         // 4. 저장
@@ -382,6 +387,10 @@ public class GuideMeService {
                 .map(groupReq  -> {
                     GuideChatTopic guideChatTopic = guideChatTopicRepository.findById(groupReq.getGuideChatTopicId())
                         .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC));
+
+                    if (!guideChatTopic.getGuide().getId().equals(guide.getId())) {
+                        throw new BaseException(ErrorStatus.FORBIDDEN);
+                    }
 
                     return ExperienceGroup.builder()
                             .guide(guide)

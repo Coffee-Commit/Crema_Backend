@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.guide.dto.request;
 
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotEmpty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -14,6 +15,6 @@ import java.util.List;
 @Builder
 public class GuideExperienceRequestDTO {
 
-    @NotNull(message = "경험 대주제 목록은 필수입니다.")
-    private List<GroupRequestDTO> groups;
+    @NotEmpty(message = "경험 대주제 목록은 필수입니다.")
+    private List<@Valid GroupRequestDTO> groups;
 }

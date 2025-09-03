@@ -18,10 +18,13 @@ public class GuideExperienceResponseDTO {
 
     public static GuideExperienceResponseDTO from(List<ExperienceGroup> experienceGroups) {
 
-        return GuideExperienceResponseDTO.builder()
-                .groups(experienceGroups.stream()
+        List<GroupResponseDTO> mapped = (experienceGroups == null) ? List.of() :
+                experienceGroups.stream()
                         .map(GroupResponseDTO::from)
-                        .toList())
+                        .toList();
+
+        return GuideExperienceResponseDTO.builder()
+                .groups(mapped)
                 .build();
     }
 }
