@@ -29,6 +29,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
 
+    /* 리뷰 생성 */
     @Transactional
     public ReviewResponseDTO createReview(String loginMemberId, @Valid ReviewRequestDTO reviewRequestDTO) {
 

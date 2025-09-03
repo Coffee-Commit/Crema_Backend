@@ -32,6 +32,7 @@ public class Review extends BaseEntity{
     @Column(length = 500)
     private String comment; // 후기 내용
 
+    @Builder.Default
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReviewExperience> experienceEvaluations = new ArrayList<>();
 

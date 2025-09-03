@@ -16,8 +16,11 @@ public class ReservationService {
 
     private final ReservationRepository reservationRepository;
 
-    public Reservation getReservationOrThrow(@NotNull Long reservationId) {
-
+    /* 예약 존재 여부 확인 */
+    public Reservation getReservationOrThrow(Long reservationId) {
+        if (reservationId == null) {
+            throw new NullPointerException("reservationId must not be null");
+        }
         return reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.RESERVATION_NOT_FOUND));
     }
