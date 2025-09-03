@@ -51,8 +51,8 @@ public class SecurityConfig {
                                 "/api/member/check/**",
                                 "/api/test/auth/**",
                                 "/api/debug/**", // 디버그 엔드포인트 추가
-                                "/oauth2/**",
-                                "/login/oauth2/**",
+                                "api/oauth2/**",
+                                "api/login/oauth2/**",
                                 // Swagger UI
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -74,7 +74,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        // loginPage 제거 - Spring Security가 기본 OAuth2 엔드포인트를 자동으로 처리하도록 함
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
