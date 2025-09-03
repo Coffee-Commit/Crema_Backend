@@ -10,13 +10,12 @@ import org.springframework.transaction.annotation.Transactional;
 import jakarta.annotation.PostConstruct;
 
 /**
- * 애플리케이션 시작 시 모든 JPA 엔티티의 테이블을 생성하는 초기화 컴포넌트
- *
- * OAuth2 회원가입 시 Member 테이블만 생성되는 문제를 해결하기 위해
- * 애플리케이션 시작 시점에 모든 엔티티 클래스를 스캔하여 테이블을 미리 생성합니다.
- *
- * 각 엔티티에 대해 COUNT 쿼리를 실행하여 Hibernate가 해당 테이블을 강제로 생성하도록 합니다.
- */
+* 애플리케이션 시작 시(local/test) 모든 JPA 엔티티의 테이블 “존재 여부”를 검증하고,
+* 누락된 테이블이 있으면 빠르게 실패하여 환경 설정(ddl-auto/update 또는 마이그레이션) 누락을 드러내는 컴포넌트입니다.
+*
+* 실제 테이블 “생성”은 local/test 프로파일의 ddl-auto(update) 또는 Flyway/Liquibase에 위임해야 합니다.
+* 각 엔티티에 대해 경량 쿼리를 실행해 테이블 존재 여부를 확인합니다(없으면 예외 발생)
+*/
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -24,12 +23,6 @@ public class DatabaseInitializer {
 
     private final EntityManager entityManager;
 
-    /**
-     * 애플리케이션 시작 시 모든 엔티티의 테이블을 생성합니다.
-     *
-     * JPA의 Metamodel을 통해 모든 엔티티 클래스를 스캔하고,
-     * 각 엔티티에 대해 COUNT 쿼리를 실행하여 Hibernate가 해당하는 테이블들을 자동으로 생성하도록 합니다.
-     */
     @PostConstruct
     @Transactional
     public void initializeTables() {
