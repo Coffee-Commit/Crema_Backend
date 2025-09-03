@@ -20,6 +20,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -57,6 +58,7 @@ public class TestAuthController {
         return ApiResponse.onSuccess(SuccessStatus.CREATED, response);
     }
 
+    @Transactional
     @Operation(summary = "가이드 테스트 계정 생성", description = "로컬 개발용 가이드 테스트 계정을 생성합니다.")
     @PostMapping("/create-guide")
     public ApiResponse<Map<String, String>> createGuideAccount() {
@@ -86,6 +88,10 @@ public class TestAuthController {
 
         Member member = memberRepository.findByNicknameAndIsDeletedFalse(nickname)
                 .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        if (!"test".equals(member.getProvider())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
 
         String accessToken = jwtTokenProvider.createAccessToken(member.getId());
         String refreshToken = jwtTokenProvider.createRefreshToken(member.getId());
