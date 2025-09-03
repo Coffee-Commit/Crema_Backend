@@ -60,7 +60,7 @@ public class Member extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Guide guide;
 
     // 프로필 업데이트 (이메일 추가)
