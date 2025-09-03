@@ -3,10 +3,8 @@ package coffeandcommit.crema.domain.guide.controller;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -171,6 +169,51 @@ public class GuideMeController {
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
 
+    }
+
+    @Operation(summary = "가이드 스케줄 등록", description = "가이드의 스케줄을 등록합니다.")
+    @PostMapping("/schedules")
+    public ResponseEntity<Response<GuideScheduleResponseDTO>> registerGuideSchedules(
+            @Valid @RequestBody GuideScheduleRequestDTO guideScheduleRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideScheduleResponseDTO result = guideMeService.registerGuideSchedules(loginMemberId, guideScheduleRequestDTO);
+
+        Response<GuideScheduleResponseDTO> response = Response.<GuideScheduleResponseDTO>builder()
+                .message("가이드 스케줄 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 스케줄 삭제", description = "가이드의 스케줄을 삭제합니다.")
+    @DeleteMapping("/schedules/{timeSlotId}")
+    public ResponseEntity<Response<GuideScheduleResponseDTO>> deleteGuideSchedule(
+            @PathVariable Long timeSlotId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideScheduleResponseDTO result = guideMeService.deleteGuideSchedule(loginMemberId, timeSlotId);
+
+        Response<GuideScheduleResponseDTO> response = Response.<GuideScheduleResponseDTO>builder()
+                .message("가이드 스케줄 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
 

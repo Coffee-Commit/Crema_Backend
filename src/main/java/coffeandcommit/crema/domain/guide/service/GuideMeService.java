@@ -7,18 +7,10 @@ import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
-import coffeandcommit.crema.domain.guide.entity.Guide;
-import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
-import coffeandcommit.crema.domain.guide.entity.GuideJobField;
-import coffeandcommit.crema.domain.guide.entity.HashTag;
-import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
-import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
-import coffeandcommit.crema.domain.guide.repository.GuideRepository;
-import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
+import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
+import coffeandcommit.crema.domain.guide.entity.*;
+import coffeandcommit.crema.domain.guide.repository.*;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.validation.Valid;
@@ -29,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -43,6 +36,8 @@ public class GuideMeService {
     private final ChatTopicRepository chatTopicRepository;
     private final GuideChatTopicRepository guideChatTopicRepository;
     private final HashTagRepository hashTagRepository;
+    private final GuideScheduleRepository guideScheduleRepository;
+    private final TimeSlotRepository timeSlotRepository;
 
     /* 가이드 본인 프로필 조회 */
     @Transactional(readOnly = true)
@@ -223,5 +218,92 @@ public class GuideMeService {
         return hashTagRepository.findByGuide(guide).stream()
                 .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
                 .collect(Collectors.toList());
+    }
+
+    /* 가이드 스케줄 등록 */
+    @Transactional
+    public GuideScheduleResponseDTO registerGuideSchedules(String loginMemberId, @Valid GuideScheduleRequestDTO guideScheduleRequestDTO) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 요청 DTO -> GuideSchedule + TimeSlot 변환
+        List<GuideSchedule> schedules = guideScheduleRequestDTO.getSchedules().stream()
+                .map(scheduleRequestDTO -> {
+                        GuideSchedule schedule = GuideSchedule.builder()
+                                .guide(guide)
+                                .dayOfWeek(scheduleRequestDTO.getDayOfWeek())
+                                .build();
+
+                    // TimeSlot 변환 및 연관관계 설정
+                    List<TimeSlot> timeSlots = scheduleRequestDTO.getTimeSlots().stream()
+                            .map(timeSlotRequestDTO -> {
+                                    LocalTime start = timeSlotRequestDTO.getStartTime();
+                                    LocalTime end = timeSlotRequestDTO.getEndTime();
+
+                                    if (start.isAfter(end) || start.equals(end)) {
+                                        throw new BaseException(ErrorStatus.INVALID_TIME_RANGE);
+                                    }
+
+                                    validateNoOverlap(schedule.getTimeSlots(), start, end);
+
+                                    return TimeSlot.builder()
+                                            .schedule(schedule)
+                                            .startTimeOption(start)
+                                            .endTimeOption(end)
+                                            .build();
+                            }).toList();
+
+                    schedule.getTimeSlots().addAll(timeSlots);
+                    return schedule;
+                }).toList();
+
+        List<GuideSchedule> savedSchedules = guideScheduleRepository.saveAll(schedules);
+
+        return GuideScheduleResponseDTO.from(guide, savedSchedules);
+
+    }
+    /* 새로운 TimeSlot이 기존 TimeSlot 들과 겹치지 않는지 검증 */
+    private void validateNoOverlap(List<TimeSlot> existingSlots, LocalTime newStart, LocalTime newEnd) {
+        for (TimeSlot slot : existingSlots) {
+            boolean isOverlapping = !(newEnd.isBefore(slot.getStartTimeOption()) || newStart.isAfter(slot.getEndTimeOption()));
+            if (isOverlapping) {
+                throw new BaseException(ErrorStatus.DUPLICATE_TIME_SLOT);
+            }
+        }
+    }
+
+    /* 가이드 스케줄 삭제 */
+    @Transactional
+    public GuideScheduleResponseDTO deleteGuideSchedule(String loginMemberId, Long timeSlotId) {
+
+        // 1. 로그인한 사용자의 Guide 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 삭제할 TimeSlot 조회
+        TimeSlot timeSlot = timeSlotRepository.findById(timeSlotId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.TIME_SLOT_NOT_FOUND));
+
+        GuideSchedule schedule = timeSlot.getSchedule();
+
+        // 3. 소유자 검증
+        if (!schedule.getGuide().getId().equals(guide.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 4. 삭제 처리
+        if (schedule.getTimeSlots().size() == 1) {
+            // 시간대가 1개뿐이면 요일 스케줄 자체 삭제
+            guideScheduleRepository.delete(schedule);
+        } else {
+            // 시간대만 삭제
+            timeSlotRepository.delete(timeSlot);
+        }
+
+        // 5. 남은 전체 스케줄 조회 후 응답 변환
+        List<GuideSchedule> remainingSchedules = guideScheduleRepository.findByGuide(guide);
+
+        return GuideScheduleResponseDTO.from(guide, remainingSchedules);
     }
 }

@@ -3,12 +3,11 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
-import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
-import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
-import coffeandcommit.crema.domain.guide.repository.GuideRepository;
-import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
+import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
+import coffeandcommit.crema.domain.guide.repository.*;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +28,16 @@ public class GuideService {
     private final GuideJobFieldRepository guideJobFieldRepository;
     private final GuideChatTopicRepository guideChatTopicRepository;
     private final HashTagRepository hashTagRepository;
+    private final GuideScheduleRepository guideScheduleRepository;
+
+    private void validateAccess(Guide targetGuide, String loginMemberId) {
+        if (!targetGuide.isOpened()) {
+            // 비공개인데 로그인 안 했거나 본인이 아니면 접근 금지
+            if (loginMemberId == null || !Objects.equals(targetGuide.getMember().getId(), loginMemberId)) {
+                throw new BaseException(ErrorStatus.GUIDE_NOT_FOUND);
+            }
+        }
+    }
 
     /* 가이드 직무분야 조회 */
     @Transactional(readOnly = true)
@@ -38,23 +47,7 @@ public class GuideService {
         Guide targetGuide = guideRepository.findById(guideId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-
-        // 2. 공개 여부 체크
-        if (!targetGuide.isOpened()) {
-            // 비공개 가이드일 경우 로그인 필요
-            if (loginMemberId == null) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-
-            // 로그인한 사용자가 가이드인지 확인
-            Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
-                    .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-            // 본인 가이드가 아니면 접근 불가
-            if (!Objects.equals(myGuide.getId(), targetGuide.getId())) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-        }
+        validateAccess(targetGuide, loginMemberId);
 
         // 3. 가이드 직무분야 조회
         GuideJobField guideJobField = guideJobFieldRepository.findByGuide(targetGuide)
@@ -72,22 +65,7 @@ public class GuideService {
         Guide targetGuide = guideRepository.findById(guideId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-
-        if (!targetGuide.isOpened()) {
-            // 비공개 가이드일 경우 로그인 필요
-            if (loginMemberId == null) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-
-            // 로그인한 사용자가 가이드인지 확인
-            Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
-                    .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-            // 본인 가이드가 아니면 접근 불가
-            if (!Objects.equals(myGuide.getId(), targetGuide.getId())) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-        }
+        validateAccess(targetGuide, loginMemberId);
 
         // 3. 해당 가이드의 채팅 주제 조회
         return guideChatTopicRepository.findAllByGuideWithJoin(targetGuide).stream()
@@ -103,25 +81,29 @@ public class GuideService {
         Guide targetGuide = guideRepository.findById(guideId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        if (!targetGuide.isOpened()) {
-            // 비공개 가이드일 경우 로그인 필요
-            if (loginMemberId == null) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
+        validateAccess(targetGuide, loginMemberId);
 
-            // 로그인한 사용자가 가이드인지 확인
-            Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
-                    .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-            // 본인 가이드가 아니면 접근 불가
-            if (!Objects.equals(myGuide.getId(), targetGuide.getId())) {
-                throw new BaseException(ErrorStatus.FORBIDDEN);
-            }
-        }
 
         // 3. 해당 가이드의 해시태그 조회
         return hashTagRepository.findByGuide(targetGuide).stream()
                 .map(ht -> GuideHashTagResponseDTO.from(ht, guideId))
                 .collect(Collectors.toList());
+    }
+
+    /* 가이드 스케줄 조회 */
+    @Transactional(readOnly = true)
+    public GuideScheduleResponseDTO getGuideSchedules(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 3. 가이드의 스케줄 전체 조회
+        List<GuideSchedule> schedules = guideScheduleRepository.findByGuide(targetGuide);
+
+        // 4. DTO 변환
+        return GuideScheduleResponseDTO.from(targetGuide, schedules);
     }
 }

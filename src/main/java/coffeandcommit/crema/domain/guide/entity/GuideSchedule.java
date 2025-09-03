@@ -1,8 +1,12 @@
 package coffeandcommit.crema.domain.guide.entity;
 
+import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -12,12 +16,9 @@ import lombok.*;
 @Builder(toBuilder = true)
 @Table(
     name = "guide_schedule",
-    uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"guide_id", "time_id"})
-    },
     indexes = {
-        @Index(name = "idx_guide_schedule_guide", columnList = "guide_id"),
-        @Index(name = "idx_guide_schedule_time", columnList = "time_id")
+        @Index(name = "idx_guide_schedule__guide", columnList = "guide_id"),
+        @Index(name = "idx_guide_schedule__day_of_week", columnList = "day_of_week")
     }
 )
 public class GuideSchedule extends BaseEntity{
@@ -30,7 +31,22 @@ public class GuideSchedule extends BaseEntity{
     @JoinColumn(name = "guide_id", nullable = false)
     private Guide guide; // FK, 가이드 ID
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "time_id", nullable = false)
-    private TimeSlot time; // FK, 시간 ID
+    @Enumerated(EnumType.STRING)
+    @Column(name = "day_of_week", nullable = false, length = 20)
+    private DayType dayOfWeek;
+
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    @OrderBy("startTimeOption ASC")
+    private List<TimeSlot> timeSlots = new ArrayList<>();
+
+    // 연관관계 메서드
+    public void addTimeSlot(TimeSlot slot) {
+        timeSlots.add(slot);
+        slot.setSchedule(this);
+    }
+
+    public void removeTimeSlot(TimeSlot slot) {
+        timeSlots.remove(slot);
+    }
 }
