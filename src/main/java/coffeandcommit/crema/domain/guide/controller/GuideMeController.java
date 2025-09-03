@@ -248,11 +248,57 @@ public class GuideMeController {
 
         String loginMemberId = userDetails.getMemberId();
 
-        GuideExperienceDetailResponseDTO deletedDetail = guideMeService.deleteExperienceDetail(loginMemberId, experienceDetailId);
+        GuideExperienceDetailResponseDTO result = guideMeService.deleteExperienceDetail(loginMemberId, experienceDetailId);
 
         Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
                 .message("가이드 경험 소주제 삭제 완료")
-                .data(deletedDetail)
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 목록 등록", description = "가이드의 경험 목록을 등록합니다.")
+    @PostMapping("/experiences")
+    public ResponseEntity<Response<GuideExperienceResponseDTO>> registerGuideExperience(
+            @Valid @RequestBody GuideExperienceRequestDTO guideExperienceRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceResponseDTO result = guideMeService.registerGuideExperience(loginMemberId, guideExperienceRequestDTO);
+
+        Response<GuideExperienceResponseDTO> response = Response.<GuideExperienceResponseDTO>builder()
+                .message("가이드 경험 목록 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 목록 삭제", description = "가이드의 경험 목록을 삭제합니다.")
+    @DeleteMapping("/experiences/{experienceId}")
+    public ResponseEntity<Response<GuideExperienceResponseDTO>> deleteGuideExperience(
+            @PathVariable Long experienceId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceResponseDTO result = guideMeService.deleteGuideExperience(loginMemberId, experienceId);
+
+        Response<GuideExperienceResponseDTO> response = Response.<GuideExperienceResponseDTO>builder()
+                .message("가이드 경험 목록 삭제 완료")
+                .data(result)
                 .build();
 
         return ResponseEntity.status(HttpStatus.OK).body(response);

@@ -1,7 +1,6 @@
 package coffeandcommit.crema.domain.guide.service;
 
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
-import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
@@ -119,13 +118,11 @@ public class GuideServiceTest {
 
         chatTopic1 = ChatTopic.builder()
                 .id(1L)
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
         chatTopic2 = ChatTopic.builder()
                 .id(2L)
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.JOB_CHANGE)
                 .build();
 
@@ -141,7 +138,6 @@ public class GuideServiceTest {
                 .chatTopic(chatTopic2)
                 .build();
 
-        // Create test hash tags
         hashTag1 = HashTag.builder()
                 .id(1L)
                 .guide(guide1)
@@ -327,13 +323,11 @@ public class GuideServiceTest {
         // 첫 번째 주제 검증
         assertEquals(1L, result.get(0).getId());
         assertEquals(guide1.getId(), result.get(0).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
         assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
 
         // 두 번째 주제 검증
         assertEquals(2L, result.get(1).getId());
         assertEquals(guide1.getId(), result.get(1).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(1).getTopic().getChatTopic());
         assertEquals(TopicNameType.JOB_CHANGE, result.get(1).getTopic().getTopicName());
 
         // 메서드 호출 검증
@@ -418,7 +412,6 @@ public class GuideServiceTest {
         assertEquals(1, result.size());
         assertEquals(3L, result.get(0).getId());
         assertEquals(guide2.getId(), result.get(0).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
         assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
 
         // 메서드 호출 검증

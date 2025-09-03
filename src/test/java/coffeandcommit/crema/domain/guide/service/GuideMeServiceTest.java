@@ -2,7 +2,6 @@ package coffeandcommit.crema.domain.guide.service;
 
 import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
-import coffeandcommit.crema.domain.globalTag.enums.ChatTopicType;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
@@ -126,13 +125,11 @@ public class GuideMeServiceTest {
 
         chatTopic1 = ChatTopic.builder()
                 .id(1L)
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
         chatTopic2 = ChatTopic.builder()
                 .id(2L)
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.JOB_CHANGE)
                 .build();
 
@@ -378,12 +375,10 @@ public class GuideMeServiceTest {
     void registerChatTopics_Success() {
         // 요청 DTO 생성
         TopicDTO topicDTO1 = TopicDTO.builder()
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
         TopicDTO topicDTO2 = TopicDTO.builder()
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.JOB_CHANGE)
                 .build();
 
@@ -395,9 +390,9 @@ public class GuideMeServiceTest {
 
         // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
-        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE))
+        when(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
                 .thenReturn(Optional.of(chatTopic1));
-        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE))
+        when(chatTopicRepository.findByTopicName(TopicNameType.JOB_CHANGE))
                 .thenReturn(Optional.of(chatTopic2));
 
         // 현재 주제 개수 설정
@@ -434,19 +429,17 @@ public class GuideMeServiceTest {
         // 첫 번째 주제 검증
         assertEquals(1L, result.get(0).getId());
         assertEquals(guide.getId(), result.get(0).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
         assertEquals(TopicNameType.CAREER_CHANGE, result.get(0).getTopic().getTopicName());
 
         // 두 번째 주제 검증
         assertEquals(2L, result.get(1).getId());
         assertEquals(guide.getId(), result.get(1).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(1).getTopic().getChatTopic());
         assertEquals(TopicNameType.JOB_CHANGE, result.get(1).getTopic().getTopicName());
 
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id(memberId);
-        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
-        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.JOB_CHANGE);
+        verify(chatTopicRepository).findByTopicName(TopicNameType.CAREER_CHANGE);
+        verify(chatTopicRepository).findByTopicName(TopicNameType.JOB_CHANGE);
         verify(guideChatTopicRepository).existsByGuideAndChatTopic(guide, chatTopic1);
         verify(guideChatTopicRepository).existsByGuideAndChatTopic(guide, chatTopic2);
         verify(guideChatTopicRepository).save(any(GuideChatTopic.class));
@@ -458,7 +451,6 @@ public class GuideMeServiceTest {
     void registerChatTopics_GuideNotFound() {
         // 요청 DTO 생성
         TopicDTO topicDTO = TopicDTO.builder()
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
@@ -476,7 +468,7 @@ public class GuideMeServiceTest {
 
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
-        verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
+        verify(chatTopicRepository, never()).findByTopicName(any());
         verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
@@ -489,7 +481,6 @@ public class GuideMeServiceTest {
         List<TopicDTO> topics = new ArrayList<>();
         for (int i = 0; i < 6; i++) {
             topics.add(TopicDTO.builder()
-                    .chatTopic(ChatTopicType.CAREER)
                     .topicName(TopicNameType.CAREER_CHANGE)
                     .build());
         }
@@ -510,7 +501,7 @@ public class GuideMeServiceTest {
         assertEquals(ErrorStatus.MAX_TOPIC_EXCEEDED, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).countByGuide(guide);
-        verify(chatTopicRepository, never()).findByChatTopicAndTopicName(any(), any());
+        verify(chatTopicRepository, never()).findByTopicName(any());
         verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
@@ -521,7 +512,6 @@ public class GuideMeServiceTest {
     void registerChatTopics_InvalidTopic() {
         // 요청 DTO 생성
         TopicDTO topicDTO = TopicDTO.builder()
-                .chatTopic(ChatTopicType.CAREER)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
@@ -532,7 +522,7 @@ public class GuideMeServiceTest {
         // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
         when(guideChatTopicRepository.countByGuide(guide)).thenReturn(0L);
-        when(chatTopicRepository.findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE))
+        when(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
                 .thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
@@ -543,7 +533,7 @@ public class GuideMeServiceTest {
         assertEquals(ErrorStatus.INVALID_TOPIC, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).countByGuide(guide);
-        verify(chatTopicRepository).findByChatTopicAndTopicName(ChatTopicType.CAREER, TopicNameType.CAREER_CHANGE);
+        verify(chatTopicRepository).findByTopicName(TopicNameType.CAREER_CHANGE);
         verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
@@ -574,7 +564,6 @@ public class GuideMeServiceTest {
         assertEquals(1, result.size());
         assertEquals(2L, result.get(0).getId());
         assertEquals(guide.getId(), result.get(0).getGuideId());
-        assertEquals(ChatTopicType.CAREER, result.get(0).getTopic().getChatTopic());
         assertEquals(TopicNameType.JOB_CHANGE, result.get(0).getTopic().getTopicName());
 
         // 메서드 호출 검증
