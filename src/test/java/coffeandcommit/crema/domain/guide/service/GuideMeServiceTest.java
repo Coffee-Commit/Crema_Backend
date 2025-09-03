@@ -7,15 +7,18 @@ import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceDetailRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.ScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.TimeSlotRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.GuideChatTopic;
 import coffeandcommit.crema.domain.guide.entity.GuideJobField;
@@ -23,6 +26,7 @@ import coffeandcommit.crema.domain.guide.entity.GuideSchedule;
 import coffeandcommit.crema.domain.guide.entity.HashTag;
 import coffeandcommit.crema.domain.guide.entity.TimeSlot;
 import coffeandcommit.crema.domain.guide.enums.DayType;
+import coffeandcommit.crema.domain.guide.repository.ExperienceDetailRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideChatTopicRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
@@ -74,6 +78,9 @@ public class GuideMeServiceTest {
     @Mock
     private TimeSlotRepository timeSlotRepository;
 
+    @Mock
+    private ExperienceDetailRepository experienceDetailRepository;
+
     @InjectMocks
     private GuideMeService guideMeService;
 
@@ -86,6 +93,7 @@ public class GuideMeServiceTest {
     private GuideChatTopic guideChatTopic;
     private GuideSchedule guideSchedule;
     private TimeSlot timeSlot;
+    private ExperienceDetail experienceDetail;
 
     @BeforeEach
     void setUp() {
@@ -150,6 +158,15 @@ public class GuideMeServiceTest {
 
         // Set up the relationship between GuideSchedule and TimeSlot
         guideSchedule.addTimeSlot(timeSlot);  // Use the helper method instead of direct access
+
+        // Create test experience detail
+        experienceDetail = ExperienceDetail.builder()
+                .id(1L)
+                .guide(guide)
+                .who("신입 개발자")
+                .solution("취업 준비")
+                .how("포트폴리오 작성")
+                .build();
     }
 
     @Test
@@ -1218,5 +1235,212 @@ public class GuideMeServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideScheduleRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerExperienceDetail 성공 테스트 - 새로 생성")
+    void registerExperienceDetail_CreateNew_Success() {
+        // 테스트 데이터 준비
+        GuideExperienceDetailRequestDTO requestDTO = GuideExperienceDetailRequestDTO.builder()
+                .who("신입 개발자")
+                .solution("취업 준비")
+                .how("포트폴리오 작성")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceDetailRepository.findByGuide(guide)).thenReturn(Optional.empty());
+        when(experienceDetailRepository.save(any(ExperienceDetail.class))).thenAnswer(invocation -> {
+            ExperienceDetail savedDetail = invocation.getArgument(0);
+            return ExperienceDetail.builder()
+                    .id(1L)
+                    .guide(savedDetail.getGuide())
+                    .who(savedDetail.getWho())
+                    .solution(savedDetail.getSolution())
+                    .how(savedDetail.getHow())
+                    .build();
+        });
+
+        // 테스트 실행
+        GuideExperienceDetailResponseDTO result = guideMeService.registerExperienceDetail(memberId, requestDTO);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(requestDTO.getWho(), result.getWho());
+        assertEquals(requestDTO.getSolution(), result.getSolution());
+        assertEquals(requestDTO.getHow(), result.getHow());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository).findByGuide(guide);
+        verify(experienceDetailRepository).save(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("registerExperienceDetail 성공 테스트 - 기존 업데이트")
+    void registerExperienceDetail_Update_Success() {
+        // 테스트 데이터 준비
+        GuideExperienceDetailRequestDTO requestDTO = GuideExperienceDetailRequestDTO.builder()
+                .who("경력 개발자")
+                .solution("이직 준비")
+                .how("기술 면접 준비")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceDetailRepository.findByGuide(guide)).thenReturn(Optional.of(experienceDetail));
+        when(experienceDetailRepository.save(any(ExperienceDetail.class))).thenAnswer(invocation -> {
+            ExperienceDetail savedDetail = invocation.getArgument(0);
+            return ExperienceDetail.builder()
+                    .id(experienceDetail.getId())
+                    .guide(savedDetail.getGuide())
+                    .who(savedDetail.getWho())
+                    .solution(savedDetail.getSolution())
+                    .how(savedDetail.getHow())
+                    .build();
+        });
+
+        // 테스트 실행
+        GuideExperienceDetailResponseDTO result = guideMeService.registerExperienceDetail(memberId, requestDTO);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(experienceDetail.getId(), result.getId());
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(requestDTO.getWho(), result.getWho());
+        assertEquals(requestDTO.getSolution(), result.getSolution());
+        assertEquals(requestDTO.getHow(), result.getHow());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository).findByGuide(guide);
+        verify(experienceDetailRepository).save(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("registerExperienceDetail 가이드 없음 테스트")
+    void registerExperienceDetail_GuideNotFound() {
+        // 테스트 데이터 준비
+        GuideExperienceDetailRequestDTO requestDTO = GuideExperienceDetailRequestDTO.builder()
+                .who("신입 개발자")
+                .solution("취업 준비")
+                .how("포트폴리오 작성")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.registerExperienceDetail(memberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository, never()).findByGuide(any(Guide.class));
+        verify(experienceDetailRepository, never()).save(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("deleteExperienceDetail 성공 테스트")
+    void deleteExperienceDetail_Success() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceDetailRepository.findById(1L)).thenReturn(Optional.of(experienceDetail));
+        doNothing().when(experienceDetailRepository).delete(experienceDetail);
+
+        // 테스트 실행
+        GuideExperienceDetailResponseDTO result = guideMeService.deleteExperienceDetail(memberId, 1L);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(experienceDetail.getId(), result.getId());
+        assertEquals(guide.getId(), result.getGuideId());
+        assertEquals(experienceDetail.getWho(), result.getWho());
+        assertEquals(experienceDetail.getSolution(), result.getSolution());
+        assertEquals(experienceDetail.getHow(), result.getHow());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository).findById(1L);
+        verify(experienceDetailRepository).delete(experienceDetail);
+    }
+
+    @Test
+    @DisplayName("deleteExperienceDetail 가이드 없음 테스트")
+    void deleteExperienceDetail_GuideNotFound() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteExperienceDetail(memberId, 1L)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository, never()).findById(anyLong());
+        verify(experienceDetailRepository, never()).delete(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("deleteExperienceDetail 경험 소주제 없음 테스트")
+    void deleteExperienceDetail_ExperienceDetailNotFound() {
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceDetailRepository.findById(999L)).thenReturn(Optional.empty());
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteExperienceDetail(memberId, 999L)
+        );
+
+        assertEquals(ErrorStatus.EXPERIENCE_DETAIL_NOT_FOUND, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository).findById(999L);
+        verify(experienceDetailRepository, never()).delete(any(ExperienceDetail.class));
+    }
+
+    @Test
+    @DisplayName("deleteExperienceDetail 접근 권한 없음 테스트")
+    void deleteExperienceDetail_Forbidden() {
+        // 다른 가이드의 경험 소주제 생성
+        Guide otherGuide = Guide.builder()
+                .id(2L)
+                .member(Member.builder().id("other-member-id").build())
+                .isOpened(true)
+                .build();
+
+        ExperienceDetail otherExperienceDetail = ExperienceDetail.builder()
+                .id(2L)
+                .guide(otherGuide)
+                .who("다른 가이드의 소주제")
+                .solution("다른 가이드의 해결책")
+                .how("다른 가이드의 방법")
+                .build();
+
+        // Mock 설정
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(experienceDetailRepository.findById(2L)).thenReturn(Optional.of(otherExperienceDetail));
+
+        // 테스트 실행 및 검증
+        BaseException exception = assertThrows(BaseException.class, () ->
+                guideMeService.deleteExperienceDetail(memberId, 2L)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceDetailRepository).findById(2L);
+        verify(experienceDetailRepository, never()).delete(any(ExperienceDetail.class));
     }
 }
