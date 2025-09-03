@@ -51,8 +51,8 @@ public class SecurityConfig {
                                 "/api/member/check/**",
                                 "/api/test/auth/**",
                                 "/api/debug/**", // 디버그 엔드포인트 추가
-                                "api/oauth2/**",
-                                "api/login/oauth2/**",
+                                "/api/oauth2/**",
+                                "/api/login/oauth2/**",
                                 // Swagger UI
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
