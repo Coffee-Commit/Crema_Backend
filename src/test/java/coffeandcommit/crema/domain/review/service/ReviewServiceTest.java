@@ -78,7 +78,7 @@ class ReviewServiceTest {
         // Create test review request DTO
         ExperienceEvaluationRequestDTO evaluationDTO = ExperienceEvaluationRequestDTO.builder()
                 .experienceGroupId(EXPERIENCE_GROUP_ID)
-                .thumbsUp(true)
+                .isThumbsUp(true)
                 .build();
 
         testReviewRequestDTO = ReviewRequestDTO.builder()
