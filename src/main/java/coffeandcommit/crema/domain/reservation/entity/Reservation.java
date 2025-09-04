@@ -37,6 +37,7 @@ public class Reservation extends BaseEntity{
     private LocalDateTime matchingTime;
 
     @Enumerated(EnumType.STRING)
+    @Builder.Default
     private Status status = Status.PENDING; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
     private String reason;

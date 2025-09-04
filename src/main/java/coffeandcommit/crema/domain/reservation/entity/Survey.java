@@ -31,6 +31,7 @@ public class Survey extends BaseEntity{
     private LocalDateTime preferredDate; // 희망 날짜
 
     @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<SurveyFile> files = new ArrayList<>();
 
 }
