@@ -17,9 +17,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.util.List;
-
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -46,34 +43,25 @@ public class ReviewService {
             throw new BaseException(ErrorStatus.DUPLICATE_REVIEW);
         }
 
-        // 4. 별점 검증 및 가공 (0.5 단위)
-        BigDecimal rawStar = reviewRequestDTO.getStarReview();
-        if (!isValidStarStep(rawStar)) {
-            throw new BaseException(ErrorStatus.VALIDATION_ERROR);
-        }
-
-        // 5. Review 생성
+        // 4. Review 생성
         Review review = Review.builder()
                 .reservation(reservation)
                 .starReview(reviewRequestDTO.getStarReview())
                 .comment(reviewRequestDTO.getComment())
                 .build();
 
-        // 6. 경험 평가 매핑
-        List<ReviewExperience> experiences = reviewRequestDTO.getExperienceEvaluations().stream()
-                .map(e -> {
-                    ExperienceGroup experienceGroup = experienceGroupRepository.findById(e.getExperienceGroupId())
-                            .orElseThrow(() -> new BaseException(ErrorStatus.EXPERIENCE_NOT_FOUND));
+        // 5. 경험 평가 매핑
+        reviewRequestDTO.getExperienceEvaluations().forEach(e -> {
+            ExperienceGroup experienceGroup = experienceGroupRepository.findById(e.getExperienceGroupId())
+                    .orElseThrow(() -> new BaseException(ErrorStatus.EXPERIENCE_NOT_FOUND));
 
-                    return ReviewExperience.builder()
-                            .review(review)
-                            .experienceGroup(experienceGroup)
-                            .thumbsUp(e.getThumbsUp())
-                            .build();
-                })
-                .toList();
+            ReviewExperience reviewExperience = ReviewExperience.builder()
+                    .experienceGroup(experienceGroup)
+                    .isThumbsUp(e.getIsThumbsUp())
+                    .build();
 
-        experiences.forEach(review::addExperienceEvaluation);
+            review.addExperienceEvaluation(reviewExperience); // FK 양방향 관계 세팅
+        });
 
         // 7. 저장
         Review saved = reviewRepository.save(review);
@@ -84,15 +72,6 @@ public class ReviewService {
 
         // 9. DTO 변환
         return ReviewResponseDTO.from(fullyLoaded);
-    }
-    private boolean isValidStarStep(BigDecimal starReview) {
-        if (starReview == null) return false;
-
-        // (별점 * 10) % 5 == 0 → 0.5 단위만 허용
-        return starReview
-                .multiply(BigDecimal.TEN)
-                .remainder(new BigDecimal("5"))
-                .compareTo(BigDecimal.ZERO) == 0;
     }
 
 }

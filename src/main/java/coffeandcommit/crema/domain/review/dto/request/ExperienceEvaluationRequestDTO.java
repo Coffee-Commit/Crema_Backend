@@ -16,6 +16,6 @@ public class ExperienceEvaluationRequestDTO {
     private Long experienceGroupId;
 
     @NotNull
-    private Boolean thumbsUp; // 좋아요 여부
+    private Boolean isThumbsUp; // 좋아요 여부
 
 }

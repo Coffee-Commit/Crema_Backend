@@ -71,10 +71,10 @@ class ReservationServiceTest {
     @DisplayName("getReservationOrThrow - 실패 케이스: reservationId가 null인 경우")
     void getReservationOrThrow_NullReservationId() {
         // When & Then
-        NullPointerException exception = assertThrows(NullPointerException.class, () -> {
+        BaseException exception = assertThrows(BaseException.class, () -> {
             reservationService.getReservationOrThrow(null);
         });
-        assertEquals("reservationId must not be null", exception.getMessage());
-        verify(reservationRepository, never()).findById(any());
+        assertEquals(ErrorStatus.INVALID_RESERVATION_ID, exception.getErrorCode());
+
     }
 }

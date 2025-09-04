@@ -15,6 +15,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @Query("""
         select distinct r from Review r
+        join fetch r.reservation res
         left join fetch r.experienceEvaluations re
         left join fetch re.experienceGroup eg
         where r.id = :id

@@ -20,7 +20,7 @@ public class ReservationService {
     @Transactional(readOnly = true)
     public Reservation getReservationOrThrow(Long reservationId) {
         if (reservationId == null) {
-            throw new BaseException(ErrorStatus.BAD_REQUEST);
+            throw new BaseException(ErrorStatus.INVALID_RESERVATION_ID);
         }
         return reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.RESERVATION_NOT_FOUND));
