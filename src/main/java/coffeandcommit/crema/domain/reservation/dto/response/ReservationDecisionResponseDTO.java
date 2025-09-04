@@ -12,25 +12,24 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
-public class ReservationResponseDTO {
+public class ReservationDecisionResponseDTO {
 
     private Long reservationId;
     private Long guideId;
-    private String status; // Enum -> String 직렬화
-    private String timeUnit; // Enum -> String 직렬화
-    private SurveyResponseDTO survey;
-    private LocalDateTime preferredDate;
-    private LocalDateTime createdAt;
+    private String status;   // Enum → String
+    private String timeUnit; // Enum → String
+    private String reason;   // 거절 사유
+    private LocalDateTime updatedAt;
 
-    public static ReservationResponseDTO from(Reservation reservation) {
-        return ReservationResponseDTO.builder()
+    public static ReservationDecisionResponseDTO from(Reservation reservation) {
+        return ReservationDecisionResponseDTO.builder()
                 .reservationId(reservation.getId())
                 .guideId(reservation.getGuide().getId())
                 .status(reservation.getStatus().name())
                 .timeUnit(reservation.getTimeUnit().getTimeType().name())
-                .survey(SurveyResponseDTO.from(reservation.getSurvey()))
-                .preferredDate(reservation.getSurvey().getPreferredDate())
-                .createdAt(reservation.getCreatedAt())
+                .reason(reservation.getReason())
+                .updatedAt(reservation.getModifiedAt())
                 .build();
     }
+
 }

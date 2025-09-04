@@ -37,7 +37,7 @@ public class Reservation extends BaseEntity{
     private LocalDateTime matchingTime;
 
     @Enumerated(EnumType.STRING)
-    private Status status; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
+    private Status status = Status.PENDING; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
     private String reason;
 
@@ -52,5 +52,15 @@ public class Reservation extends BaseEntity{
             timeUnit.setReservation(this); // 반대편도 세팅
         }
     }
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+    public void setReason(String reason) {
+        this.reason = reason;
+    }
+
+
 
 }

@@ -17,6 +17,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -36,6 +38,15 @@ public class ReviewService {
         // 2. 본인 예약 검증
         if (!reservation.getMember().getId().equals(loginMemberId)) {
             throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 2-1. 리뷰 작성 가능 시점 검증
+        LocalDateTime startTime = reservation.getMatchingTime();
+        int minutes = reservation.getTimeUnit().getTimeType().getMinutes();
+        LocalDateTime endTime = startTime.plusMinutes(minutes);
+
+        if (LocalDateTime.now().isBefore(endTime)) {
+            throw new BaseException(ErrorStatus.REVIEW_NOT_ALLOWED_YET);
         }
 
         // 3. 중복 리뷰 방지

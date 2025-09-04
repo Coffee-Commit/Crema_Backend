@@ -1,6 +1,8 @@
 package coffeandcommit.crema.domain.reservation.controller;
 
+import coffeandcommit.crema.domain.reservation.dto.request.ReservationDecisionRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
@@ -14,10 +16,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @Slf4j
 @RestController
@@ -44,6 +43,29 @@ public class ReservationController {
 
         Response<ReservationResponseDTO> response = Response.<ReservationResponseDTO>builder()
                 .message("커피챗 예약 신청 선공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "커피챗 예약 승인/거절", description = "커피챗 예약을 승인 또는 거절합니다.")
+    @PatchMapping("/{reservationId}")
+    public ResponseEntity<Response<ReservationDecisionResponseDTO>> decideReservation(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long reservationId,
+            @Valid @RequestBody ReservationDecisionRequestDTO reservationDecisionRequestDTO) {
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        ReservationDecisionResponseDTO result = reservationService.decideReservation(loginMemberId, reservationId, reservationDecisionRequestDTO);
+
+        Response<ReservationDecisionResponseDTO> response = Response.<ReservationDecisionResponseDTO>builder()
+                .message("커피챗 예약 승인/거절 성공")
                 .data(result)
                 .build();
 

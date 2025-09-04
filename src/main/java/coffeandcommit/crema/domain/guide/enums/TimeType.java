@@ -9,9 +9,10 @@ import lombok.ToString;
 @ToString
 public enum TimeType {
 
-    MINUTE_30(8000),
-    MINUTE_60(15000);
+    MINUTE_30(30, 8000),
+    MINUTE_60(60, 15000);
 
+    private final int minutes;
     private final int price;
 
 }

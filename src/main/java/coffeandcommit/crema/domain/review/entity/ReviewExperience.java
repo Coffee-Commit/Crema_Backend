@@ -40,7 +40,7 @@ public class ReviewExperience extends BaseEntity {
     @Column(name = "is_thumbs_up", nullable = false)
     private boolean isThumbsUp = false; // 좋아요 여부
 
-    protected void setReview(Review review) {
+    public void setReview(Review review) {
         this.review = review;
     }
 }

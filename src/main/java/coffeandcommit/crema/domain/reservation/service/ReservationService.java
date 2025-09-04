@@ -6,7 +6,9 @@ import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
+import coffeandcommit.crema.domain.reservation.dto.request.ReservationDecisionRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
@@ -91,4 +93,52 @@ public class ReservationService {
 
         return ReservationResponseDTO.from(saved);
     }
+
+    /* 커피챗 예약 승인/거절 */
+    public ReservationDecisionResponseDTO decideReservation(String loginMemberId, Long reservationId, @Valid ReservationDecisionRequestDTO reservationDecisionRequestDTO) {
+
+        // 1. 예약 조회
+        Reservation reservation = getReservationOrThrow(reservationId);
+
+        // 2. 이미 처리된 예약인지 확인 (PENDING만 허용)
+        if (reservation.getStatus() != Status.PENDING) {
+            throw new BaseException(ErrorStatus.ALREADY_DECIDED);
+        }
+
+        // 3. 로그인한 사용자가 해당 예약의 가이드인지 확인
+        if (!reservation.getGuide().getMember().getId().equals(loginMemberId)) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 4. 상태 업데이트
+        Status newStatus = reservationDecisionRequestDTO.getStatus();
+        if (newStatus == Status.CONFIRMED) {
+            reservation.setStatus(Status.CONFIRMED);
+
+            int price = reservation.getTimeUnit().getTimeType().getPrice();
+
+            // 멘티 포인트 차감
+            Member mentee = reservation.getMember();
+            try {
+                mentee.decreasePoint(price);
+            } catch (IllegalArgumentException e) {
+                throw new BaseException(ErrorStatus.INSUFFICIENT_POINTS);
+            }
+
+            // 가이드 포인트 적립
+            Member guideMember = reservation.getGuide().getMember();
+            guideMember.addPoint(price);
+
+        } else if (newStatus == Status.CANCELLED) {
+            reservation.setStatus(Status.CANCELLED);
+            reservation.setReason(reservationDecisionRequestDTO.getReason());
+
+        } else {
+            // CONFIRMED, CANCELLED 외 다른 상태는 요청 불가
+            throw new BaseException(ErrorStatus.INVALID_STATUS);
+        }
+
+        return ReservationDecisionResponseDTO.from(reservation);
+    }
+
 }
