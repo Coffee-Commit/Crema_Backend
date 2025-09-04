@@ -14,7 +14,6 @@ import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionR
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
-import coffeandcommit.crema.domain.reservation.entity.SurveyFile;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -28,7 +27,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
