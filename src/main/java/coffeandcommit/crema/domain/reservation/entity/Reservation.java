@@ -1,9 +1,9 @@
 package coffeandcommit.crema.domain.reservation.entity;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
-import coffeandcommit.crema.domain.survey.entity.Survey;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -42,4 +42,15 @@ public class Reservation extends BaseEntity{
     private String reason;
 
     private LocalDateTime reservedAt;
+
+    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private TimeUnit timeUnit;
+
+    public void setTimeUnit(TimeUnit timeUnit) {
+        this.timeUnit = timeUnit;
+        if (timeUnit.getReservation() != this) {
+            timeUnit.setReservation(this); // 반대편도 세팅
+        }
+    }
+
 }

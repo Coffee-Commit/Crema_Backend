@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.guide.entity;
 
 import coffeandcommit.crema.domain.guide.enums.TimeType;
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
@@ -15,11 +16,11 @@ import lombok.*;
     name = "time_unit",
     uniqueConstraints = {
         @UniqueConstraint(
-            columnNames = {"guide_id", "time_type"}
+            columnNames = {"reservation_id", "time_type"} // 예약별로 30분/60분 중 하나만
         )
     },
     indexes = {
-        @Index(columnList = "guide_id"),
+        @Index(columnList = "reservation_id"),
         @Index(columnList = "time_type")
     }
 )
@@ -29,14 +30,19 @@ public class TimeUnit extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "guide_id", nullable = false)
-    private Guide guide; // FK, 가이드 ID
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reservation_id", nullable = false, unique = true)
+    private Reservation reservation;
 
     @Enumerated(EnumType.STRING)
-    private TimeType timeType; // 30분, 60분
+    @Column(name = "time_type", nullable = false)
+    private TimeType timeType;
 
-    @Column
-    private int price; // 가격
+    public void setReservation(Reservation reservation) {
+        this.reservation = reservation;
+        if (reservation.getTimeUnit() != this) {
+            reservation.setTimeUnit(this);
+        }
+    }
 
 }
