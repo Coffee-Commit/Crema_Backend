@@ -2,7 +2,6 @@ package coffeandcommit.crema.domain.reservation.service;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
-import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
@@ -95,6 +94,7 @@ public class ReservationService {
     }
 
     /* 커피챗 예약 승인/거절 */
+    @Transactional
     public ReservationDecisionResponseDTO decideReservation(String loginMemberId, Long reservationId, @Valid ReservationDecisionRequestDTO reservationDecisionRequestDTO) {
 
         // 1. 예약 조회
