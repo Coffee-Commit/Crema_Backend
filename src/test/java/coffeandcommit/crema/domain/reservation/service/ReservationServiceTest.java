@@ -229,12 +229,26 @@ class ReservationServiceTest {
 
         when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
 
+        // Mock the pessimistic lock queries
+        when(memberRepository.findById(testMember.getId())).thenReturn(Optional.of(testMember));
+        when(memberRepository.findById(testGuide.getMember().getId())).thenReturn(Optional.of(testGuide.getMember()));
+
         // When
         ReservationDecisionResponseDTO result = reservationService.decideReservation(guideLoginId, RESERVATION_ID, confirmRequest);
 
         // Then
         assertNotNull(result);
         assertEquals(Status.CONFIRMED.name(), result.getStatus());
+
+        // Verify the pessimistic lock queries were called
+        verify(memberRepository, times(1)).findById(testMember.getId());
+        verify(memberRepository, times(1)).findById(testGuide.getMember().getId());
+
+        // Verify points were transferred
+        int expectedPrice = testReservation.getTimeUnit().getTimeType().getPrice();
+        assertEquals(testMember.getPoint(), 20000 - expectedPrice);
+        assertEquals(testGuide.getMember().getPoint(), expectedPrice);
+
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
     }
 
@@ -348,6 +362,7 @@ class ReservationServiceTest {
                 .build();
 
         when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithPoorMember));
+        when(memberRepository.findById(poorMember.getId())).thenReturn(Optional.of(poorMember));
 
         // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
@@ -356,5 +371,63 @@ class ReservationServiceTest {
 
         assertEquals(ErrorStatus.INSUFFICIENT_POINTS, exception.getErrorCode());
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+        verify(memberRepository, times(1)).findById(poorMember.getId());
+    }
+
+    @Test
+    @DisplayName("decideReservation - 실패 케이스: timeUnit이 null인 경우")
+    void decideReservation_NullTimeUnit() {
+        // Given
+        String guideLoginId = "guide-member-id";
+        ReservationDecisionRequestDTO confirmRequest = ReservationDecisionRequestDTO.builder()
+                .status(Status.CONFIRMED)
+                .build();
+
+        Reservation reservationWithNullTimeUnit = testReservation.toBuilder()
+                .timeUnit(null)
+                .build();
+
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithNullTimeUnit));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.decideReservation(guideLoginId, RESERVATION_ID, confirmRequest);
+        });
+
+        assertEquals(ErrorStatus.INVALID_TIME_UNIT, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+        verify(memberRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("decideReservation - 실패 케이스: timeUnit.timeType이 null인 경우")
+    void decideReservation_NullTimeType() {
+        // Given
+        String guideLoginId = "guide-member-id";
+        ReservationDecisionRequestDTO confirmRequest = ReservationDecisionRequestDTO.builder()
+                .status(Status.CONFIRMED)
+                .build();
+
+        TimeUnit timeUnitWithNullType = TimeUnit.builder()
+                .id(1L)
+                .timeType(null)
+                .build();
+
+        Reservation reservationWithNullTimeType = testReservation.toBuilder()
+                .timeUnit(timeUnitWithNullType)
+                .build();
+
+        timeUnitWithNullType.setReservation(reservationWithNullTimeType);
+
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithNullTimeType));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.decideReservation(guideLoginId, RESERVATION_ID, confirmRequest);
+        });
+
+        assertEquals(ErrorStatus.INVALID_TIME_UNIT, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+        verify(memberRepository, never()).findById(any());
     }
 }
