@@ -7,6 +7,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Getter
@@ -20,7 +21,7 @@ public class ReviewRequestDTO {
 
     @DecimalMin(value = "0.0")
     @DecimalMax(value = "5.0")
-    private float starReview; // 별점 (1~5)
+    private BigDecimal starReview; // 별점 (1~5)
 
     @NotBlank
     @Size(min = 10, max = 500)

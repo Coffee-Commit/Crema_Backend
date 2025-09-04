@@ -23,6 +23,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,7 +48,7 @@ class ReviewServiceTest {
     private final Long EXPERIENCE_GROUP_ID = 1L;
     private final String LOGIN_MEMBER_ID = "member123";
     private final String COMMENT = "This is a test review comment that is at least 10 characters long.";
-    private final float STAR_REVIEW = 4.5f;
+    private final BigDecimal STAR_REVIEW = BigDecimal.valueOf(4.5);
 
     private Member testMember;
     private Reservation testReservation;
@@ -57,18 +58,18 @@ class ReviewServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Create test member
+        // Create test_member
         testMember = Member.builder()
                 .id(LOGIN_MEMBER_ID)
                 .build();
 
-        // Create test reservation
+        // Create test_reservation
         testReservation = Reservation.builder()
                 .id(RESERVATION_ID)
                 .member(testMember)
                 .build();
 
-        // Create test experience group
+        // Create test experience_group
         testExperienceGroup = ExperienceGroup.builder()
                 .id(EXPERIENCE_GROUP_ID)
                 .experienceTitle("Test Experience")
@@ -87,11 +88,10 @@ class ReviewServiceTest {
                 .experienceEvaluations(Collections.singletonList(evaluationDTO))
                 .build();
 
-        // Create test review
         testReview = Review.builder()
                 .id(1L)
                 .reservation(testReservation)
-                .starReview(BigDecimal.valueOf(STAR_REVIEW))
+                .starReview(STAR_REVIEW)
                 .comment(COMMENT)
                 .build();
     }
@@ -104,6 +104,8 @@ class ReviewServiceTest {
         when(experienceGroupRepository.findById(EXPERIENCE_GROUP_ID)).thenReturn(java.util.Optional.of(testExperienceGroup));
         when(reviewRepository.existsByReservation(testReservation)).thenReturn(false);
         when(reviewRepository.save(any(Review.class))).thenReturn(testReview);
+        when(reviewRepository.findByIdWithExperiences(testReview.getId()))
+                .thenReturn(Optional.of(testReview));
 
         // When
         ReviewResponseDTO result = reviewService.createReview(LOGIN_MEMBER_ID, testReviewRequestDTO);
@@ -112,7 +114,7 @@ class ReviewServiceTest {
         assertNotNull(result);
         assertEquals(testReview.getId(), result.getReviewId());
         assertEquals(RESERVATION_ID, result.getReservationId());
-        assertEquals(STAR_REVIEW, result.getStarReview(), 0.001);
+        assertEquals(STAR_REVIEW, result.getStarReview());
         assertEquals(COMMENT, result.getComment());
 
         // Verify interactions
@@ -120,6 +122,7 @@ class ReviewServiceTest {
         verify(reviewRepository, times(1)).existsByReservation(testReservation);
         verify(experienceGroupRepository, times(1)).findById(EXPERIENCE_GROUP_ID);
         verify(reviewRepository, times(1)).save(any(Review.class));
+        verify(reviewRepository, times(1)).findByIdWithExperiences(testReview.getId());
 
         // Capture the Review object passed to save method to verify its properties
         ArgumentCaptor<Review> reviewCaptor = ArgumentCaptor.forClass(Review.class);
@@ -127,7 +130,7 @@ class ReviewServiceTest {
         Review capturedReview = reviewCaptor.getValue();
 
         assertEquals(testReservation, capturedReview.getReservation());
-        assertEquals(BigDecimal.valueOf(STAR_REVIEW), capturedReview.getStarReview());
+        assertEquals(STAR_REVIEW, capturedReview.getStarReview());
         assertEquals(COMMENT, capturedReview.getComment());
         assertEquals(1, capturedReview.getExperienceEvaluations().size());
     }

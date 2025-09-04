@@ -7,6 +7,7 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -16,9 +17,10 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
 
     /* 예약 존재 여부 확인 */
+    @Transactional(readOnly = true)
     public Reservation getReservationOrThrow(Long reservationId) {
         if (reservationId == null) {
-            throw new NullPointerException("reservationId must not be null");
+            throw new BaseException(ErrorStatus.BAD_REQUEST);
         }
         return reservationRepository.findById(reservationId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.RESERVATION_NOT_FOUND));

@@ -3,9 +3,21 @@ package coffeandcommit.crema.domain.review.repository;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.review.entity.Review;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.util.Optional;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     boolean existsByReservation(Reservation reservation);
+
+    @Query("""
+        select distinct r from Review r
+        left join fetch r.experienceEvaluations re
+        left join fetch re.experienceGroup eg
+        where r.id = :id
+    """)
+    Optional<Review> findByIdWithExperiences(@Param("id") Long id);
 }

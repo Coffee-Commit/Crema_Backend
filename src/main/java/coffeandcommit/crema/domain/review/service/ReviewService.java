@@ -46,14 +46,20 @@ public class ReviewService {
             throw new BaseException(ErrorStatus.DUPLICATE_REVIEW);
         }
 
-        // 4. Review 생성
+        // 4. 별점 검증 및 가공 (0.5 단위)
+        BigDecimal rawStar = reviewRequestDTO.getStarReview();
+        if (!isValidStarStep(rawStar)) {
+            throw new BaseException(ErrorStatus.VALIDATION_ERROR);
+        }
+
+        // 5. Review 생성
         Review review = Review.builder()
                 .reservation(reservation)
-                .starReview(BigDecimal.valueOf(reviewRequestDTO.getStarReview()))
+                .starReview(reviewRequestDTO.getStarReview())
                 .comment(reviewRequestDTO.getComment())
                 .build();
 
-        // 5. 경험 평가 매핑
+        // 6. 경험 평가 매핑
         List<ReviewExperience> experiences = reviewRequestDTO.getExperienceEvaluations().stream()
                 .map(e -> {
                     ExperienceGroup experienceGroup = experienceGroupRepository.findById(e.getExperienceGroupId())
@@ -67,12 +73,26 @@ public class ReviewService {
                 })
                 .toList();
 
-        review.getExperienceEvaluations().addAll(experiences);
+        experiences.forEach(review::addExperienceEvaluation);
 
-        // 6. 저장
+        // 7. 저장
         Review saved = reviewRepository.save(review);
 
-        // 7. DTO 변환
-        return ReviewResponseDTO.from(saved);
+        // 8. fetch join 으로 다시 조회 (experienceGroup 포함)
+        Review fullyLoaded = reviewRepository.findByIdWithExperiences(saved.getId())
+                .orElseThrow(() -> new BaseException(ErrorStatus.REVIEW_NOT_FOUND));
+
+        // 9. DTO 변환
+        return ReviewResponseDTO.from(fullyLoaded);
     }
+    private boolean isValidStarStep(BigDecimal starReview) {
+        if (starReview == null) return false;
+
+        // (별점 * 10) % 5 == 0 → 0.5 단위만 허용
+        return starReview
+                .multiply(BigDecimal.TEN)
+                .remainder(new BigDecimal("5"))
+                .compareTo(BigDecimal.ZERO) == 0;
+    }
+
 }

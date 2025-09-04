@@ -15,7 +15,12 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "review")
+@Table(
+        name = "review",
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_review_reservation", columnNames = "reservation_id")
+        }
+)
 public class Review extends BaseEntity{
 
     @Id
@@ -36,5 +41,9 @@ public class Review extends BaseEntity{
     @OneToMany(mappedBy = "review", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<ReviewExperience> experienceEvaluations = new ArrayList<>();
 
+    public void addExperienceEvaluation(ReviewExperience experience) {
+        experience.setReview(this);  // FK 세팅
+        this.experienceEvaluations.add(experience);
+    }
 
 }
