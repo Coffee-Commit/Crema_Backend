@@ -121,6 +121,7 @@ class ReservationServiceTest {
                 .build();
 
         testTimeUnit.setReservation(testReservation);
+        testReservation.setTimeUnit(testTimeUnit);
     }
 
     @Test

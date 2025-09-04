@@ -113,21 +113,33 @@ public class ReservationService {
         // 4. 상태 업데이트
         Status newStatus = reservationDecisionRequestDTO.getStatus();
         if (newStatus == Status.CONFIRMED) {
-            reservation.setStatus(Status.CONFIRMED);
+            // 필수 값 가드
+            if (reservation.getTimeUnit() == null || reservation.getTimeUnit().getTimeType() == null) {
+                throw new BaseException(ErrorStatus.INVALID_TIME_UNIT);
+            }
 
             int price = reservation.getTimeUnit().getTimeType().getPrice();
 
-            // 멘티 포인트 차감
-            Member mentee = reservation.getMember();
+            // 멘티를 락 모드로 다시 조회 (동시성 보호)
+            Member mentee = memberRepository.findById(reservation.getMember().getId())
+                    .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+
+            // 포인트 차감
             try {
                 mentee.decreasePoint(price);
             } catch (IllegalArgumentException e) {
                 throw new BaseException(ErrorStatus.INSUFFICIENT_POINTS);
             }
 
-            // 가이드 포인트 적립
-            Member guideMember = reservation.getGuide().getMember();
+            // 가이드도 락 모드로 조회
+            Member guideMember = memberRepository.findById(reservation.getGuide().getMember().getId())
+                    .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+
+            // 포인트 적립
             guideMember.addPoint(price);
+
+            // 모든 로직 성공 후 상태 변경
+            reservation.setStatus(Status.CONFIRMED);
 
         } else if (newStatus == Status.CANCELLED) {
             reservation.setStatus(Status.CANCELLED);

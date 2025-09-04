@@ -3,6 +3,7 @@ package coffeandcommit.crema.domain.review.service;
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReviewResponseDTO;
@@ -40,7 +41,21 @@ public class ReviewService {
             throw new BaseException(ErrorStatus.FORBIDDEN);
         }
 
-        // 2-1. 리뷰 작성 가능 시점 검증
+        // 2-1. 상태 기반 차단: COMPLETED 이외에는 리뷰 불가
+        if (reservation.getStatus() != Status.COMPLETED) {
+            throw new BaseException(ErrorStatus.INVALID_STATUS);
+            // 필요하다면 REVIEW_NOT_ALLOWED 같은 전용 에러코드 만들어도 됨
+        }
+
+        // 2-2. null 가드 (데이터 무결성 검증)
+        if (reservation.getMatchingTime() == null
+                || reservation.getTimeUnit() == null
+                || reservation.getTimeUnit().getTimeType() == null) {
+            throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+            // 운영 데이터 오류 → 서버 내부 오류 처리
+        }
+
+        // 2-3. 리뷰 작성 가능 시점 검증
         LocalDateTime startTime = reservation.getMatchingTime();
         int minutes = reservation.getTimeUnit().getTimeType().getMinutes();
         LocalDateTime endTime = startTime.plusMinutes(minutes);

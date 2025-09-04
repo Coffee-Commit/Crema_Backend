@@ -14,6 +14,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,11 +43,11 @@ public class ReservationController {
         ReservationResponseDTO result = reservationService.createReservation(loginMemberId, reservationRequestDTO);
 
         Response<ReservationResponseDTO> response = Response.<ReservationResponseDTO>builder()
-                .message("커피챗 예약 신청 선공")
+                .message("커피챗 예약 신청 성공")
                 .data(result)
                 .build();
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @Operation(summary = "커피챗 예약 승인/거절", description = "커피챗 예약을 승인 또는 거절합니다.")

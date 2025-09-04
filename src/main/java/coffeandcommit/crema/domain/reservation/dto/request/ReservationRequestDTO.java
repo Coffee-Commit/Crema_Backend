@@ -21,5 +21,6 @@ public class ReservationRequestDTO {
     private TimeType timeUnit; // Enum (THIRTY_MINUTES, SIXTY_MINUTES)
 
     @Valid
+    @NotNull(message = "사전자료는 필수입니다.")
     private SurveyRequestDTO survey; // 예약 시 함께 등록되는 사전자료
 }

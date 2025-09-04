@@ -5,10 +5,13 @@ import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @Entity
@@ -48,11 +51,19 @@ public class Reservation extends BaseEntity{
     private TimeUnit timeUnit;
 
     public void setTimeUnit(TimeUnit timeUnit) {
+        if (Objects.equals(this.timeUnit, timeUnit)) return;
+
+        if (timeUnit == null) {
+            throw new BaseException(ErrorStatus.INVALID_TIME_UNIT);
+        }
+
         this.timeUnit = timeUnit;
+
         if (timeUnit.getReservation() != this) {
-            timeUnit.setReservation(this); // 반대편도 세팅
+            timeUnit.setReservation(this);
         }
     }
+
 
     public void setStatus(Status status) {
         this.status = status;

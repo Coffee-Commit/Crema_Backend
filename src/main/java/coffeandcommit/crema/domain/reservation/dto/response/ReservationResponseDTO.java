@@ -19,7 +19,6 @@ public class ReservationResponseDTO {
     private String status; // Enum -> String 직렬화
     private String timeUnit; // Enum -> String 직렬화
     private SurveyResponseDTO survey;
-    private LocalDateTime preferredDate;
     private LocalDateTime createdAt;
 
     public static ReservationResponseDTO from(Reservation reservation) {
@@ -29,7 +28,6 @@ public class ReservationResponseDTO {
                 .status(reservation.getStatus().name())
                 .timeUnit(reservation.getTimeUnit().getTimeType().name())
                 .survey(SurveyResponseDTO.from(reservation.getSurvey()))
-                .preferredDate(reservation.getSurvey().getPreferredDate())
                 .createdAt(reservation.getCreatedAt())
                 .build();
     }

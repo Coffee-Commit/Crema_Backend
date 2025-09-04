@@ -12,7 +12,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder(toBuilder = true)
-@Table(name = "survey_file")
+@Table(
+    name = "survey_file",
+    indexes = {
+        @Index(name = "idx_survey_file_survey_id", columnList = "survey_id")
+    }
+)
 public class SurveyFile extends BaseEntity {
 
     @Id

@@ -1,7 +1,9 @@
 package coffeandcommit.crema.domain.member.repository;
 
 import coffeandcommit.crema.domain.member.entity.Member;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -27,4 +29,7 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     // provider='test'인 Member 조회만 (실제 삭제는 서비스에서 CASCADE 활용)
     @Query("SELECT m FROM Member m WHERE m.provider = 'test'")
     List<Member> findTestAccounts();
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Member> findById(String id);
 }
