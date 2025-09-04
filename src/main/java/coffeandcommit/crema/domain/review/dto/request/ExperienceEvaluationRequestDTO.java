@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.review.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -16,6 +17,7 @@ public class ExperienceEvaluationRequestDTO {
     private Long experienceGroupId;
 
     @NotNull
+    @JsonProperty("thumbsUp")
     private Boolean isThumbsUp; // 좋아요 여부
 
 }
