@@ -39,3 +39,5 @@ out/
 *.yml
 /doc/
 .env
+
+**gcp_crema.json
