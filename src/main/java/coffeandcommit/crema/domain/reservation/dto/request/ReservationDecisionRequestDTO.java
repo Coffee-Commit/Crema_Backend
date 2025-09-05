@@ -15,6 +15,4 @@ public class ReservationDecisionRequestDTO {
 
     @NotNull(message = "상태 값은 필수입니다.")
     private Status status; // CONFIRMED or CANCELLED
-
-    private String reason; // CANCELLED일 때만 작성
 }

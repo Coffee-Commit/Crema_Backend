@@ -8,6 +8,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public enum JobNameType {
+    UNDEFINED("미정"),
 
     DESIGN("디자인"),
     PLANNING_STRATEGY("기획/전략"),

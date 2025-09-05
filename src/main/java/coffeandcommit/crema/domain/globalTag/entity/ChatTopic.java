@@ -25,6 +25,7 @@ public class ChatTopic extends BaseEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(name = "topic_name",nullable = false)
-    private TopicNameType topicName; // 서브 주제 이름
+    @Builder.Default
+    private TopicNameType topicName = TopicNameType.UNDEFINED;; // 서브 주제 이름
 
 }

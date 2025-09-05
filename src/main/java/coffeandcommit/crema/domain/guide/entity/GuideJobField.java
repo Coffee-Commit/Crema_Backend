@@ -27,7 +27,7 @@ public class GuideJobField extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "job_field_id")
+    @Column(name = "id")
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
@@ -36,7 +36,8 @@ public class GuideJobField extends BaseEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(name = "job_name", nullable = false)
-    private JobNameType jobName; // 직무 분야 이름
+    @Builder.Default
+    private JobNameType jobName = JobNameType.UNDEFINED; // 직무 분야 이름
 
     public void updateJobName(JobNameType jobName) {
         this.jobName = jobName;

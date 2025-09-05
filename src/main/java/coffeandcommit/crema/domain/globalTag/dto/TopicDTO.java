@@ -11,7 +11,6 @@ import jakarta.validation.constraints.NotNull;
 @Builder
 public class TopicDTO {
 
-    @NotNull
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private TopicNameType topicName;
 }
