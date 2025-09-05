@@ -1,9 +1,12 @@
 package coffeandcommit.crema.domain.review.service;
 
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
+import coffeandcommit.crema.domain.guide.entity.TimeUnit;
+import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ExperienceEvaluationRequestDTO;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
@@ -22,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.Optional;
 
@@ -63,11 +67,22 @@ class ReviewServiceTest {
                 .id(LOGIN_MEMBER_ID)
                 .build();
 
+        // Create test time unit
+        TimeUnit timeUnit = TimeUnit.builder()
+                .timeType(TimeType.MINUTE_30)
+                .build();
+
         // Create test_reservation
         testReservation = Reservation.builder()
                 .id(RESERVATION_ID)
                 .member(testMember)
+                .status(Status.COMPLETED)
+                .matchingTime(LocalDateTime.now().minusHours(1)) // Meeting ended 1 hour ago
                 .build();
+
+        // Set time unit to reservation
+        timeUnit.setReservation(testReservation);
+        testReservation.setTimeUnit(timeUnit);
 
         // Create test experience_group
         testExperienceGroup = ExperienceGroup.builder()
@@ -187,6 +202,92 @@ class ReviewServiceTest {
         verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
         verify(reviewRepository, times(1)).existsByReservation(testReservation);
         verify(experienceGroupRepository, times(1)).findById(EXPERIENCE_GROUP_ID);
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("createReview - 실패 케이스: 예약 상태가 COMPLETED가 아닌 경우")
+    void createReview_InvalidStatus() {
+        // Given
+        Reservation pendingReservation = testReservation.toBuilder()
+                .status(Status.PENDING)
+                .build();
+
+        when(reservationService.getReservationOrThrow(RESERVATION_ID)).thenReturn(pendingReservation);
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reviewService.createReview(LOGIN_MEMBER_ID, testReviewRequestDTO);
+        });
+
+        assertEquals(ErrorStatus.INVALID_STATUS, exception.getErrorCode());
+        verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
+        verify(reviewRepository, never()).existsByReservation(any());
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("createReview - 실패 케이스: 데이터 무결성 검증 실패 (matchingTime이 null인 경우)")
+    void createReview_DataIntegrityFailure_NullMatchingTime() {
+        // Given
+        Reservation invalidReservation = testReservation.toBuilder()
+                .matchingTime(null)
+                .build();
+
+        when(reservationService.getReservationOrThrow(RESERVATION_ID)).thenReturn(invalidReservation);
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reviewService.createReview(LOGIN_MEMBER_ID, testReviewRequestDTO);
+        });
+
+        assertEquals(ErrorStatus.INTERNAL_SERVER_ERROR, exception.getErrorCode());
+        verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
+        verify(reviewRepository, never()).existsByReservation(any());
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("createReview - 실패 케이스: 데이터 무결성 검증 실패 (timeUnit이 null인 경우)")
+    void createReview_DataIntegrityFailure_NullTimeUnit() {
+        // Given
+        Reservation invalidReservation = testReservation.toBuilder()
+                .timeUnit(null)
+                .build();
+
+        when(reservationService.getReservationOrThrow(RESERVATION_ID)).thenReturn(invalidReservation);
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reviewService.createReview(LOGIN_MEMBER_ID, testReviewRequestDTO);
+        });
+
+        assertEquals(ErrorStatus.INTERNAL_SERVER_ERROR, exception.getErrorCode());
+        verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
+        verify(reviewRepository, never()).existsByReservation(any());
+        verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("createReview - 실패 케이스: 미팅이 아직 끝나지 않은 경우")
+    void createReview_MeetingNotEndedYet() {
+        // Given
+        LocalDateTime futureTime = LocalDateTime.now().plusHours(1); // Meeting will end in the future
+
+        Reservation futureReservation = testReservation.toBuilder()
+                .matchingTime(futureTime)
+                .build();
+
+        when(reservationService.getReservationOrThrow(RESERVATION_ID)).thenReturn(futureReservation);
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reviewService.createReview(LOGIN_MEMBER_ID, testReviewRequestDTO);
+        });
+
+        assertEquals(ErrorStatus.REVIEW_NOT_ALLOWED_YET, exception.getErrorCode());
+        verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
+        verify(reviewRepository, never()).existsByReservation(any());
         verify(reviewRepository, never()).save(any(Review.class));
     }
 }

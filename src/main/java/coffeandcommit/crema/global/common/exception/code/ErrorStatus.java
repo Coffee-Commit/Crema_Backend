@@ -63,8 +63,14 @@ public enum ErrorStatus implements BaseCode {
     // Review Domain
     RESERVATION_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 예약을 찾을 수 없습니다."),
     DUPLICATE_REVIEW(HttpStatus.CONFLICT, "이미 해당 예약에 대한 리뷰가 존재합니다."),
+    REVIEW_NOT_ALLOWED_YET(HttpStatus.CONFLICT, "커피챗 종료 이후에만 리뷰를 작성할 수 있습니다."),
     REVIEW_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 리뷰를 찾을 수 없습니다."),
-    INVALID_RESERVATION_ID(HttpStatus.BAD_REQUEST, "예약 ID는 null일 수 없습니다.");
+    INVALID_RESERVATION_ID(HttpStatus.BAD_REQUEST, "예약 ID는 null일 수 없습니다."),
+
+    // Reservation Domain
+    INVALID_STATUS(HttpStatus.CONFLICT,"잘못된 예약 상태 요청입니다."),
+    ALREADY_DECIDED(HttpStatus.CONFLICT,"이미 처리된 예약입니다."),
+    INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "유효하지 않은 시간 단위입니다.");
 
 
 

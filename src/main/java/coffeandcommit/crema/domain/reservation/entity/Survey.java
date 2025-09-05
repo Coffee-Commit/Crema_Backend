@@ -1,10 +1,12 @@
-package coffeandcommit.crema.domain.survey.entity;
+package coffeandcommit.crema.domain.reservation.entity;
 
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 
 @Entity
@@ -27,5 +29,9 @@ public class Survey extends BaseEntity{
 
     @Column(name = "preferred_date",nullable = false)
     private LocalDateTime preferredDate; // 희망 날짜
+
+    @OneToMany(mappedBy = "survey", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<SurveyFile> files = new ArrayList<>();
 
 }

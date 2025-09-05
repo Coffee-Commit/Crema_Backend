@@ -27,7 +27,7 @@ public class GuideJobField extends BaseEntity{
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id")
+    @Column(name = "job_field_id")
     private Long id;
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
