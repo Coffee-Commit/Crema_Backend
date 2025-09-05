@@ -2,8 +2,7 @@ package coffeandcommit.crema.domain.reservation.controller;
 
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationDecisionRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.*;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -23,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
-@Tag(name = "reservation" , description = "예약(커피챗) API")
+@Tag(name = "Reservation" , description = "예약(커피챗) API")
 public class ReservationController {
 
     private final ReservationService reservationService;
@@ -67,6 +66,72 @@ public class ReservationController {
 
         Response<ReservationDecisionResponseDTO> response = Response.<ReservationDecisionResponseDTO>builder()
                 .message("커피챗 예약 승인/거절 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "커피챗 예약 신청 정보 조회", description = "특정 가이드의 커피챗 예약 신청 정보를 조회합니다.")
+    @GetMapping("/apply/{guideId}")
+    public ResponseEntity<Response<ReservationApplyResponseDTO>> getReservationApply(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        ReservationApplyResponseDTO result = reservationService.getReservationApply(guideId, loginMemberId);
+
+        Response<ReservationApplyResponseDTO> response = Response.<ReservationApplyResponseDTO>builder()
+                .message("커피챗 예약 신청 정보 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+
+    }
+
+    @Operation(summary = "커피챗 사전 정보 조회", description = "특정 예약의 커피챗 사전 정보를 조회합니다.")
+    @GetMapping("/{reservationId}/survey")
+    public ResponseEntity<Response<ReservationSurveyResponseDTO>> getSurvey(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        ReservationSurveyResponseDTO result = reservationService.getSurvey(reservationId, loginMemberId);
+
+        Response<ReservationSurveyResponseDTO> response = Response.<ReservationSurveyResponseDTO>builder()
+                .message("사전 정보 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "나의 커피챗 요약 정보 조회", description = "로그인한 사용자의 커피챗 요약 정보를 조회합니다.")
+    @GetMapping("/summary/me")
+    public ResponseEntity<Response<CoffeeChatSummaryResponseDTO>> getMyCoffeeChatSummary(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        CoffeeChatSummaryResponseDTO result = reservationService.getMyCoffeeChatSummary(loginMemberId);
+
+        Response<CoffeeChatSummaryResponseDTO> response = Response.<CoffeeChatSummaryResponseDTO>builder()
+                .message("나의 커피챗 요약 정보 조회 성공")
                 .data(result)
                 .build();
 

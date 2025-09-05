@@ -8,5 +8,7 @@ import java.util.Optional;
 
 @Repository
 public interface GuideRepository extends JpaRepository<Guide, Long> {
+
+
     Optional<Guide> findByMember_Id(String memberId);
 }

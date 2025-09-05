@@ -65,6 +65,7 @@ public class Guide extends BaseEntity {
     private GuideJobField guideJobField;
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<GuideChatTopic> guideChatTopics = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
@@ -77,6 +78,7 @@ public class Guide extends BaseEntity {
     private List<ExperienceGroup> experienceGroups = new ArrayList<>();
 
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+
     private ExperienceDetail experienceDetail;
 
 }

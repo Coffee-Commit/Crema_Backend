@@ -10,8 +10,11 @@ import coffeandcommit.crema.domain.reservation.dto.request.ReservationDecisionRe
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.SurveyFileRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.SurveyRequestDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.CoffeeChatSummaryResponseDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.ReservationApplyResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.ReservationSurveyResponseDTO;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
@@ -269,10 +272,8 @@ class ReservationServiceTest {
     void decideReservation_CancelSuccess() {
         // Given
         String guideLoginId = "guide-member-id";
-        String cancelReason = "Schedule conflict";
         ReservationDecisionRequestDTO cancelRequest = ReservationDecisionRequestDTO.builder()
                 .status(Status.CANCELLED)
-                .reason(cancelReason)
                 .build();
 
         when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
@@ -283,7 +284,6 @@ class ReservationServiceTest {
         // Then
         assertNotNull(result);
         assertEquals(Status.CANCELLED.name(), result.getStatus());
-        assertEquals(cancelReason, result.getReason());
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
     }
 
@@ -448,5 +448,177 @@ class ReservationServiceTest {
         assertEquals(ErrorStatus.INVALID_TIME_UNIT, exception.getErrorCode());
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
         verify(memberRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("getReservationApply - 성공 케이스: 예약 신청 정보 조회")
+    void getReservationApply_Success() {
+        // Given
+        when(memberRepository.findById(MEMBER_ID)).thenReturn(Optional.of(testMember));
+        when(guideRepository.findById(GUIDE_ID)).thenReturn(Optional.of(testGuide));
+
+        // When
+        ReservationApplyResponseDTO result = reservationService.getReservationApply(GUIDE_ID, MEMBER_ID);
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.getMember());
+        assertNotNull(result.getGuide());
+        assertEquals(MEMBER_ID, result.getMember().getId());
+        assertEquals(GUIDE_ID, result.getGuide().getId());
+
+        // Verify repository calls
+        verify(memberRepository, times(1)).findById(MEMBER_ID);
+        verify(guideRepository, times(1)).findById(GUIDE_ID);
+    }
+
+    @Test
+    @DisplayName("getReservationApply - 실패 케이스: 멤버가 존재하지 않는 경우")
+    void getReservationApply_MemberNotFound() {
+        // Given
+        when(memberRepository.findById(MEMBER_ID)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getReservationApply(GUIDE_ID, MEMBER_ID);
+        });
+
+        assertEquals(ErrorStatus.MEMBER_NOT_FOUND, exception.getErrorCode());
+        verify(memberRepository, times(1)).findById(MEMBER_ID);
+        verify(guideRepository, never()).findById(any());
+    }
+
+    @Test
+    @DisplayName("getReservationApply - 실패 케이스: 가이드가 존재하지 않는 경우")
+    void getReservationApply_GuideNotFound() {
+        // Given
+        when(memberRepository.findById(MEMBER_ID)).thenReturn(Optional.of(testMember));
+        when(guideRepository.findById(GUIDE_ID)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getReservationApply(GUIDE_ID, MEMBER_ID);
+        });
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+        verify(memberRepository, times(1)).findById(MEMBER_ID);
+        verify(guideRepository, times(1)).findById(GUIDE_ID);
+    }
+
+    @Test
+    @DisplayName("getSurvey - 성공 케이스: 멘티가 자신의 설문 조회")
+    void getSurvey_SuccessForMentee() {
+        // Given
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
+
+        // When
+        ReservationSurveyResponseDTO result = reservationService.getSurvey(RESERVATION_ID, MEMBER_ID);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(testReservation.getSurvey().getMessageToGuide(), result.getMessageToGuide());
+        assertNotNull(result.getMember());
+        assertNotNull(result.getGuide());
+        assertEquals(MEMBER_ID, result.getMember().getId());
+
+        // Verify repository calls
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getSurvey - 성공 케이스: 가이드가 멘티의 설문 조회")
+    void getSurvey_SuccessForGuide() {
+        // Given
+        String guideLoginId = "guide-member-id";
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
+
+        // When
+        ReservationSurveyResponseDTO result = reservationService.getSurvey(RESERVATION_ID, guideLoginId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(testReservation.getSurvey().getMessageToGuide(), result.getMessageToGuide());
+        assertNotNull(result.getMember());
+        assertNotNull(result.getGuide());
+        assertEquals(MEMBER_ID, result.getMember().getId());
+
+        // Verify repository calls
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getSurvey - 실패 케이스: 예약이 존재하지 않는 경우")
+    void getSurvey_ReservationNotFound() {
+        // Given
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getSurvey(RESERVATION_ID, MEMBER_ID);
+        });
+
+        assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getSurvey - 실패 케이스: 권한이 없는 사용자가 조회하는 경우")
+    void getSurvey_Forbidden() {
+        // Given
+        String unauthorizedUserId = "unauthorized-user-id";
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getSurvey(RESERVATION_ID, unauthorizedUserId);
+        });
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getSurvey - 실패 케이스: 설문이 존재하지 않는 경우")
+    void getSurvey_SurveyNotFound() {
+        // Given
+        Reservation reservationWithoutSurvey = testReservation.toBuilder()
+                .survey(null)
+                .build();
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithoutSurvey));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getSurvey(RESERVATION_ID, MEMBER_ID);
+        });
+
+        assertEquals(ErrorStatus.SURVEY_NOT_FOUND, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getMyCoffeeChatSummary - 성공 케이스: 커피챗 요약 정보 조회")
+    void getMyCoffeeChatSummary_Success() {
+        // Given
+        int pendingCount = 2;
+        int confirmedCount = 3;
+        int completedCount = 1;
+
+        when(reservationRepository.countByMember_IdAndStatus(MEMBER_ID, Status.PENDING)).thenReturn(pendingCount);
+        when(reservationRepository.countByMember_IdAndStatus(MEMBER_ID, Status.CONFIRMED)).thenReturn(confirmedCount);
+        when(reservationRepository.countByMember_IdAndStatus(MEMBER_ID, Status.COMPLETED)).thenReturn(completedCount);
+
+        // When
+        CoffeeChatSummaryResponseDTO result = reservationService.getMyCoffeeChatSummary(MEMBER_ID);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(pendingCount, result.getPendingCount());
+        assertEquals(confirmedCount, result.getConfirmedCount());
+        assertEquals(completedCount, result.getCompletedCount());
+
+        // Verify repository calls
+        verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.PENDING);
+        verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.CONFIRMED);
+        verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.COMPLETED);
     }
 }

@@ -18,7 +18,6 @@ public class ReservationDecisionResponseDTO {
     private Long guideId;
     private String status;   // Enum → String
     private String timeUnit; // Enum → String
-    private String reason;   // 거절 사유
     private LocalDateTime updatedAt;
 
     public static ReservationDecisionResponseDTO from(Reservation reservation) {
@@ -27,7 +26,6 @@ public class ReservationDecisionResponseDTO {
                 .guideId(reservation.getGuide().getId())
                 .status(reservation.getStatus().name())
                 .timeUnit(reservation.getTimeUnit().getTimeType().name())
-                .reason(reservation.getReason())
                 .updatedAt(reservation.getModifiedAt())
                 .build();
     }

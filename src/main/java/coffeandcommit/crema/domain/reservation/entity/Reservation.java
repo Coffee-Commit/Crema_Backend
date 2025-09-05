@@ -43,8 +43,6 @@ public class Reservation extends BaseEntity{
     @Builder.Default
     private Status status = Status.PENDING; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
-    private String reason;
-
     private LocalDateTime reservedAt;
 
     @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
@@ -67,10 +65,6 @@ public class Reservation extends BaseEntity{
 
     public void setStatus(Status status) {
         this.status = status;
-    }
-
-    public void setReason(String reason) {
-        this.reason = reason;
     }
 
 

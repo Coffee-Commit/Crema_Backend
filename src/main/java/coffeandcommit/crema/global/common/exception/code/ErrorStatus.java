@@ -70,7 +70,8 @@ public enum ErrorStatus implements BaseCode {
     // Reservation Domain
     INVALID_STATUS(HttpStatus.CONFLICT,"잘못된 예약 상태 요청입니다."),
     ALREADY_DECIDED(HttpStatus.CONFLICT,"이미 처리된 예약입니다."),
-    INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "유효하지 않은 시간 단위입니다.");
+    INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "유효하지 않은 시간 단위입니다."),
+    SURVEY_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 사전 정보가 없습니다.");
 
 
 

@@ -7,8 +7,7 @@ import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationDecisionRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.*;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.entity.SurveyFile;
@@ -143,7 +142,6 @@ public class ReservationService {
 
         } else if (newStatus == Status.CANCELLED) {
             reservation.setStatus(Status.CANCELLED);
-            reservation.setReason(reservationDecisionRequestDTO.getReason());
 
         } else {
             // CONFIRMED, CANCELLED 외 다른 상태는 요청 불가
@@ -153,4 +151,72 @@ public class ReservationService {
         return ReservationDecisionResponseDTO.from(reservation);
     }
 
+    /* 커피챗 예약 신청 정보 조회 */
+    @Transactional(readOnly = true)
+    public ReservationApplyResponseDTO getReservationApply(Long guideId, String loginMemberId) {
+
+        // 1. 로그인한 멘티 조회
+        Member member = memberRepository.findById(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // 2. 대상 가이드 조회
+        Guide guide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 3. DTO 변환 (정적 메서드 활용)
+        return ReservationApplyResponseDTO.from(member, guide);
+    }
+
+    /* 커피챗 사전 정보 조회 */
+    @Transactional(readOnly = true)
+    public ReservationSurveyResponseDTO getSurvey(Long reservationId, String loginMemberId) {
+
+        // 1. 예약 조회
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.RESERVATION_NOT_FOUND));
+
+        // 2. 예약 당사자 검증 (멘티 or 가이드)
+        String menteeId = reservation.getMember().getId();
+        String guideMemberId = reservation.getGuide().getMember().getId();
+
+        if (!loginMemberId.equals(menteeId) && !loginMemberId.equals(guideMemberId)) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 3. 설문 조회
+        Survey survey = reservation.getSurvey();
+        if (survey == null) {
+            throw new BaseException(ErrorStatus.SURVEY_NOT_FOUND);
+        }
+
+        // 4. 파일 매핑
+        List<SurveyFileResponseDTO> fileDTOs = survey.getFiles().stream()
+                .map(SurveyFileResponseDTO::from)
+                .toList();
+
+        // 5. 멤버 매핑
+        MemberDTO memberDTO = MemberDTO.from(reservation.getMember());
+
+        // 6. 가이드 매핑 (별도 DTO 사용)
+        GuideSurveyResponseDTO guideDTO = GuideSurveyResponseDTO.from(reservation.getGuide());
+
+        // 7. 최종 응답 DTO 반환
+        return ReservationSurveyResponseDTO.builder()
+                .messageToGuide(survey.getMessageToGuide())
+                .files(fileDTOs)
+                .member(memberDTO)
+                .guide(guideDTO)
+                .build();
+    }
+
+    /* 나의 커피챗 요약 정보 조회 */
+    @Transactional(readOnly = true)
+    public CoffeeChatSummaryResponseDTO getMyCoffeeChatSummary(String loginMemberId) {
+
+        int pendingCount = reservationRepository.countByMember_IdAndStatus(loginMemberId, Status.PENDING);
+        int confirmedCount = reservationRepository.countByMember_IdAndStatus(loginMemberId, Status.CONFIRMED);
+        int completedCount = reservationRepository.countByMember_IdAndStatus(loginMemberId, Status.COMPLETED);
+
+        return CoffeeChatSummaryResponseDTO.of(pendingCount, confirmedCount, completedCount);
+    }
 }
