@@ -2,7 +2,6 @@ package coffeandcommit.crema.domain.reservation.dto.response;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.member.entity.Member;
-import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
