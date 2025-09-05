@@ -4,7 +4,6 @@ import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.mapper.MemberMapper;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
-import coffeandcommit.crema.global.AWS.service.ImageService;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -24,7 +23,7 @@ public class MemberProfileService {
 
     private final MemberRepository memberRepository;
     private final MemberMapper memberMapper;
-    private final ImageService imageService;
+//    private final ImageService imageService;
 
     // 프로필 이미지 전용 설정
     private static final List<String> ALLOWED_PROFILE_IMAGE_TYPES = Arrays.asList(
@@ -51,19 +50,19 @@ public class MemberProfileService {
                 // URL에서 S3 키 추출하여 삭제
                 String oldImageKey = extractS3KeyFromUrl(member.getProfileImageUrl());
                 if (oldImageKey != null) {
-                    imageService.deleteImage(oldImageKey);
+//                    imageService.deleteImage(oldImageKey);
                     log.info("Old profile image deleted for member: {}, imageKey: {}", id, oldImageKey);
                 }
             }
 
             // 새 프로필 이미지 업로드
-            var uploadResponse = imageService.uploadProfileImage(imageFile, id);
+//            var uploadResponse = imageService.uploadProfileImage(imageFile, id);
 
             // DB 업데이트 - updateProfile 메서드 수정된 시그니처로 호출
-            member.updateProfile(null, null, uploadResponse.getImageUrl(), null);
+//            member.updateProfile(null, null, uploadResponse.getImageUrl(), null);
             Member savedMember = memberRepository.save(member);
 
-            log.info("Member profile image updated: {}, new imageKey: {}", id, uploadResponse.getImageKey());
+//            log.info("Member profile image updated: {}, new imageKey: {}", id, uploadResponse.getImageKey());
             return memberMapper.memberToMemberResponse(savedMember);
 
         } catch (BaseException e) {
@@ -86,7 +85,7 @@ public class MemberProfileService {
             String imageKey = extractS3KeyFromUrl(member.getProfileImageUrl());
             if (imageKey != null) {
                 try {
-                    imageService.deleteImage(imageKey);
+//                    imageService.deleteImage(imageKey);
                     log.info("Profile image deleted for member: {}, imageKey: {}", memberId, imageKey);
                 } catch (Exception e) {
                     log.warn("Failed to delete profile image for member: {} - {}", memberId, e.getMessage());
