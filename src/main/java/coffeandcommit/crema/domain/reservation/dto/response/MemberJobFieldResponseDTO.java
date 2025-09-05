@@ -19,7 +19,11 @@ public class MemberJobFieldResponseDTO {
     public static MemberJobFieldResponseDTO from(MemberJobField memberJobField) {
         return MemberJobFieldResponseDTO.builder()
                 .memberId(memberJobField.getMember().getId())
-                .jobName(memberJobField.getJobName())
+                .jobName(
+                        memberJobField.getJobName() != null
+                                ? memberJobField.getJobName()
+                                : JobNameType.UNDEFINED // null일 경우 보정
+                )
                 .build();
     }
 }

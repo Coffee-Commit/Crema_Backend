@@ -36,10 +36,12 @@ public class GuideJobField extends BaseEntity{
 
     @Enumerated(EnumType.STRING)
     @Column(name = "job_name", nullable = false)
-    @Builder.Default
-    private JobNameType jobName = JobNameType.UNDEFINED; // 직무 분야 이름
+    private JobNameType jobName; // 직무 분야 이름
 
     public void updateJobName(JobNameType jobName) {
+        if (jobName == null) {
+            throw new IllegalArgumentException("직무 분야는 null일 수 없습니다.");
+        }
         this.jobName = jobName;
     }
 }

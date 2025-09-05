@@ -462,10 +462,10 @@ class ReservationServiceTest {
 
         // Then
         assertNotNull(result);
-        assertNotNull(result.getMemberDTO());
-        assertNotNull(result.getGuideDTO());
-        assertEquals(MEMBER_ID, result.getMemberDTO().getId());
-        assertEquals(GUIDE_ID, result.getGuideDTO().getId());
+        assertNotNull(result.getMember());
+        assertNotNull(result.getGuide());
+        assertEquals(MEMBER_ID, result.getMember().getId());
+        assertEquals(GUIDE_ID, result.getGuide().getId());
 
         // Verify repository calls
         verify(memberRepository, times(1)).findById(MEMBER_ID);

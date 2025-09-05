@@ -5,6 +5,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+import java.util.Collections;
 import java.util.List;
 
 @Getter
@@ -14,7 +15,8 @@ import java.util.List;
 public class ReservationSurveyResponseDTO {
 
     private String messageToGuide;
-    private List<SurveyFileResponseDTO> files;
+    @Builder.Default
+    private List<SurveyFileResponseDTO> files = Collections.emptyList();
     private MemberDTO member;
     private GuideSurveyResponseDTO guide;
 }

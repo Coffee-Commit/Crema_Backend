@@ -69,18 +69,16 @@ public class Guide extends BaseEntity {
     private List<GuideChatTopic> guideChatTopics = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<HashTag> hashTags = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<GuideSchedule> guideSchedules = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<ExperienceGroup> experienceGroups = new ArrayList<>();
 
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+
     private ExperienceDetail experienceDetail;
 
 }

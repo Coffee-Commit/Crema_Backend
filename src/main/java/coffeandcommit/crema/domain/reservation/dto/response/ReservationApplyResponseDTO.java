@@ -13,13 +13,13 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ReservationApplyResponseDTO {
 
-    private MemberDTO memberDTO;
-    private GuideDTO guideDTO;
+    private MemberDTO member;
+    private GuideDTO guide;
 
     public static ReservationApplyResponseDTO from(Member member, Guide guide) {
         return ReservationApplyResponseDTO.builder()
-                .memberDTO(MemberDTO.from(member))
-                .guideDTO(GuideDTO.from(guide))
+                .member(MemberDTO.from(member))
+                .guide(GuideDTO.from(guide))
                 .build();
     }
 }

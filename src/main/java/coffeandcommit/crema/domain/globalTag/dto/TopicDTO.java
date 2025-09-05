@@ -12,4 +12,10 @@ public class TopicDTO {
 
     @JsonFormat(shape = JsonFormat.Shape.STRING)
     private TopicNameType topicName;
+
+    public static TopicDTO from(TopicNameType topicName) {
+        return TopicDTO.builder()
+                .topicName(topicName != null ? topicName : TopicNameType.UNDEFINED)
+                .build();
+    }
 }
