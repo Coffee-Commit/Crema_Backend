@@ -47,7 +47,7 @@ public class Reservation extends BaseEntity{
 
     private LocalDateTime reservedAt;
 
-    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private TimeUnit timeUnit;
 
     public void setTimeUnit(TimeUnit timeUnit) {

@@ -2,9 +2,11 @@ package coffeandcommit.crema.domain.member.repository;
 
 import coffeandcommit.crema.domain.member.entity.Member;
 import jakarta.persistence.LockModeType;
+import jakarta.persistence.QueryHint;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
 import org.springframework.lang.NonNull;
 
@@ -30,5 +32,6 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     List<Member> findTestAccounts();
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Member> findById(@NonNull String id);
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
+    Optional<Member> findByIdForUpdate(@NonNull String id);
 }

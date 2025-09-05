@@ -18,11 +18,6 @@ import java.util.Objects;
 @Builder(toBuilder = true)
 @Table(
     name = "time_unit",
-    uniqueConstraints = {
-        @UniqueConstraint(
-            columnNames = {"reservation_id", "time_type"} // 예약별로 30분/60분 중 하나만
-        )
-    },
     indexes = {
         @Index(columnList = "reservation_id"),
         @Index(columnList = "time_type")
@@ -49,7 +44,7 @@ public class TimeUnit extends BaseEntity{
 
         // null 방어
         if (reservation == null) {
-            throw new BaseException(ErrorStatus.INVALID_RESERVATION_ID);
+            throw new IllegalArgumentException("Reservation cannot be null");
         }
 
         this.reservation = reservation;

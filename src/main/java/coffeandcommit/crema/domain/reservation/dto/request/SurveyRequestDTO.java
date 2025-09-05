@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Getter
@@ -24,5 +25,6 @@ public class SurveyRequestDTO {
     private LocalDateTime preferredDate; // 희망 날짜
 
     @Valid
-    private List<@Valid SurveyFileRequestDTO> files; // 여러 개 파일 업로드
+    @Builder.Default
+    private List<@Valid SurveyFileRequestDTO> files = new ArrayList<>(); // 여러 개 파일 업로드
 }

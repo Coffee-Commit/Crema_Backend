@@ -120,8 +120,8 @@ public class ReservationService {
 
             int price = reservation.getTimeUnit().getTimeType().getPrice();
 
-            // 멘티를 락 모드로 다시 조회 (동시성 보호)
-            Member mentee = memberRepository.findById(reservation.getMember().getId())
+            // 멘티 포인트 차감 (락 적용)
+            Member mentee = memberRepository.findByIdForUpdate(reservation.getMember().getId())
                     .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
             // 포인트 차감
@@ -132,7 +132,7 @@ public class ReservationService {
             }
 
             // 가이드도 락 모드로 조회
-            Member guideMember = memberRepository.findById(reservation.getGuide().getMember().getId())
+            Member guideMember = memberRepository.findByIdForUpdate(reservation.getGuide().getMember().getId())
                     .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
             // 포인트 적립
