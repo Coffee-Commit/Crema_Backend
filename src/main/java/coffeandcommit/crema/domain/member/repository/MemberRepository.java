@@ -8,7 +8,6 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.jpa.repository.QueryHints;
 import org.springframework.data.repository.query.Param;
-import org.springframework.lang.NonNull;
 
 import java.util.List;
 import java.util.Optional;
@@ -34,5 +33,5 @@ public interface MemberRepository extends JpaRepository<Member, String> {
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "3000"))
     @Query("SELECT m FROM Member m WHERE m.id = :id")
-    Optional<Member> findByIdForUpdate(@NonNull String id);
+    Optional<Member> findByIdForUpdate(@Param("id") String id);
 }
