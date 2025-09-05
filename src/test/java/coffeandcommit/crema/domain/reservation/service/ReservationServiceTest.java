@@ -227,28 +227,40 @@ class ReservationServiceTest {
                 .status(Status.CONFIRMED)
                 .build();
 
-        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
+        // TimeUnit 세팅 (가격 스냅샷 포함)
+        TimeUnit timeUnit = TimeUnit.builder()
+                .timeType(TimeType.MINUTE_30) // 가격이 들어있는 enum 값
+                .build();
+        testReservation.setTimeUnit(timeUnit);
 
-        // Mock the pessimistic lock queries
-        when(memberRepository.findById(testMember.getId())).thenReturn(Optional.of(testMember));
-        when(memberRepository.findById(testGuide.getMember().getId())).thenReturn(Optional.of(testGuide.getMember()));
+        // ReservationRepository mock (기존 getReservationOrThrow 내부에서 findById 호출됨)
+        when(reservationRepository.findById(RESERVATION_ID))
+                .thenReturn(Optional.of(testReservation));
+
+        // Pessimistic lock 적용된 MemberRepository mock
+        when(memberRepository.findByIdForUpdate(testMember.getId()))
+                .thenReturn(Optional.of(testMember));
+        when(memberRepository.findByIdForUpdate(testGuide.getMember().getId()))
+                .thenReturn(Optional.of(testGuide.getMember()));
 
         // When
-        ReservationDecisionResponseDTO result = reservationService.decideReservation(guideLoginId, RESERVATION_ID, confirmRequest);
+        ReservationDecisionResponseDTO result =
+                reservationService.decideReservation(guideLoginId, RESERVATION_ID, confirmRequest);
 
         // Then
         assertNotNull(result);
         assertEquals(Status.CONFIRMED.name(), result.getStatus());
 
-        // Verify the pessimistic lock queries were called
-        verify(memberRepository, times(1)).findById(testMember.getId());
-        verify(memberRepository, times(1)).findById(testGuide.getMember().getId());
+        // Verify 락 쿼리 호출
+        verify(memberRepository, times(1)).findByIdForUpdate(testMember.getId());
+        verify(memberRepository, times(1)).findByIdForUpdate(testGuide.getMember().getId());
 
-        // Verify points were transferred
+        // Verify 포인트 이동
         int expectedPrice = testReservation.getTimeUnit().getTimeType().getPrice();
-        assertEquals(testMember.getPoint(), 20000 - expectedPrice);
-        assertEquals(testGuide.getMember().getPoint(), expectedPrice);
+        assertEquals(20000 - expectedPrice, testMember.getPoint()); // 멘티 포인트 차감
+        assertEquals(expectedPrice, testGuide.getMember().getPoint()); // 가이드 포인트 적립
 
+        // ReservationRepository 호출 검증
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
     }
 
@@ -361,8 +373,13 @@ class ReservationServiceTest {
                 .member(poorMember)
                 .build();
 
-        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithPoorMember));
-        when(memberRepository.findById(poorMember.getId())).thenReturn(Optional.of(poorMember));
+        // Reservation mock
+        when(reservationRepository.findById(RESERVATION_ID))
+                .thenReturn(Optional.of(reservationWithPoorMember));
+
+        // Pessimistic lock mock (멘티만 차감 시도)
+        when(memberRepository.findByIdForUpdate(poorMember.getId()))
+                .thenReturn(Optional.of(poorMember));
 
         // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
@@ -370,8 +387,10 @@ class ReservationServiceTest {
         });
 
         assertEquals(ErrorStatus.INSUFFICIENT_POINTS, exception.getErrorCode());
+
         verify(reservationRepository, times(1)).findById(RESERVATION_ID);
-        verify(memberRepository, times(1)).findById(poorMember.getId());
+        verify(memberRepository, times(1)).findByIdForUpdate(poorMember.getId());
+        verify(memberRepository, never()).findByIdForUpdate(testGuide.getMember().getId());
     }
 
     @Test
