@@ -70,6 +70,7 @@ public class Member extends BaseEntity {
     private MemberJobField jobField;
 
     @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<MemberChatTopic> chatTopics = new ArrayList<>();
 
     // 프로필 업데이트 (이메일 추가)

@@ -22,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/reservations")
 @RequiredArgsConstructor
-@Tag(name = "reservation" , description = "예약(커피챗) API")
+@Tag(name = "Reservation" , description = "예약(커피챗) API")
 public class ReservationController {
 
     private final ReservationService reservationService;
