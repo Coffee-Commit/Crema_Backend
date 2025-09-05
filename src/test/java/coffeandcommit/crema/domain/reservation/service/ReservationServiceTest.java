@@ -11,14 +11,10 @@ import coffeandcommit.crema.domain.reservation.dto.request.ReservationRequestDTO
 import coffeandcommit.crema.domain.reservation.dto.request.SurveyFileRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.SurveyRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.CoffeeChatSummaryResponseDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.GuideDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.GuideSurveyResponseDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.MemberDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationApplyResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationSurveyResponseDTO;
-import coffeandcommit.crema.domain.reservation.dto.response.SurveyFileResponseDTO;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
