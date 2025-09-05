@@ -3,8 +3,6 @@ package coffeandcommit.crema.domain.guide.entity;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
-import coffeandcommit.crema.global.common.exception.BaseException;
-import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
