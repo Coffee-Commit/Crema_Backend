@@ -2,6 +2,7 @@ package coffeandcommit.crema.global.storage.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import coffeandcommit.crema.global.common.IntegrationTest;
 import coffeandcommit.crema.global.file.FileService;
 import coffeandcommit.crema.global.storage.StorageService;
 import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
@@ -18,15 +19,7 @@ import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 import java.util.Base64;
 import org.springframework.test.context.TestPropertySource;
 
-@SpringBootTest
-@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.ANY)
-@TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1",
-        "spring.datasource.driver-class-name=org.h2.Driver",
-        "spring.datasource.username=sa",
-        "spring.datasource.password=",
-        "jwt.secret=YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0="
-})
+@IntegrationTest
 public class StorageServiceIntegrationTest {
 
     @Autowired

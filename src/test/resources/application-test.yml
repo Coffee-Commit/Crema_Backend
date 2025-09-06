@@ -15,8 +15,7 @@ spring:
 
   data:
     redis:
-    # host: ${REDIS_HOST}
-    # port: ${REDIS_PORT}
+      host:
 
 jwt:
   secret: "YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0="
