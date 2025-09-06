@@ -46,12 +46,14 @@ pipeline {
         stage('Build & Test') {
             steps {
                 withCredentials([
-                    string(credentialsId: 'S3SecretKey', variable: 'AWS_SECRET_KEY'),
-                    string(credentialsId: 'S3AccessKey', variable: 'AWS_ACCESS_KEY'),
-                    string(credentialsId: 'S3Bucket', variable: 'AWS_S3_BUCKET')
+                    file(credentialsId: 'gcp-test-credentials', variable: 'GCP_KEY_FILE')
                 ]) {
-                    sh 'chmod +x ./gradlew'
-                    sh './gradlew clean build'
+                sh '''
+                    export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE
+
+                    'chmod +x ./gradlew'
+                    './gradlew clean build'
+                '''
                 }
             }
         }
