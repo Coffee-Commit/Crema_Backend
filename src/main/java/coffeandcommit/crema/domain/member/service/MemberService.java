@@ -348,10 +348,6 @@ public class MemberService {
                 request.getWorkingEnd(),
                 request.getIsCurrent()
         );
-        int workingPeriodMonths = calculateWorkingPeriodMonths(
-                request.getWorkingStart(),
-                request.getWorkingEnd()
-        );
 
         return Guide.builder()
                 .member(member)
@@ -375,7 +371,6 @@ public class MemberService {
      */
     private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
-        int workingPeriodMonths = calculateWorkingPeriodMonths(guide.getWorkingStart(), guide.getWorkingEnd());
         String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
@@ -387,7 +382,6 @@ public class MemberService {
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriod(workingPeriod)
                 .workingPeriodYears(workingPeriodYears)
-                .workingPeriodMonths(workingPeriodMonths)
                 .build();
     }
 
@@ -401,18 +395,6 @@ public class MemberService {
         LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
         int years = Period.between(workingStart, endDate).getYears();
         return Math.max(0, years);
-    }
-
-    /**
-     * 근무 기간 개월 수 계산
-     */
-    private int calculateWorkingPeriodMonths(LocalDate workingStart, LocalDate workingEnd) {
-        if (workingStart == null) {
-            return 0;
-        }
-        LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
-        Period period = Period.between(workingStart, endDate);
-        return period.getYears() * 12 + period.getMonths();
     }
 
     /**
