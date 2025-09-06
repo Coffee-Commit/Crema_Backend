@@ -50,6 +50,9 @@ pipeline {
                 ]) {
                     sh '''
                         export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE
+                        export GCP_PROJECT_ID="${env.GCP_PROJECT_ID}"
+                        export GCS_BUCKET_NAME="goorm-crema-coffeechat"
+                        export RUN_GCS_IT='true'
 
                         chmod +x ./gradlew
                         ./gradlew clean build
