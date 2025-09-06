@@ -47,10 +47,10 @@ public class Guide extends BaseEntity {
     @Column(name = "working_end")
     private LocalDate workingEnd;
 
-    @Column(name = "working_period", length = 50)
+    @Column(name = "working_period")
     private String workingPeriod;
 
-    @Column(name = "company_name")
+    @Column(name = "company_name", length = 16)
     private String companyName;
 
     @Column(name = "is_company_name_public", nullable = false)

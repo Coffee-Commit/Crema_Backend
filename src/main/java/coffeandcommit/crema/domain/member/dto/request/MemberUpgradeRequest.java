@@ -17,7 +17,7 @@ import java.time.LocalDate;
 public class MemberUpgradeRequest {
 
     @NotBlank(message = "회사명은 필수 입력 값입니다.")
-    @Size(max = 100, message = "회사명은 최대 100자까지 가능합니다.")
+    @Size(max = 16, message = "회사명은 최대 16자까지 가능합니다.")
     private String companyName;
 
     @NotNull(message = "회사명 공개 여부는 필수입니다.")
