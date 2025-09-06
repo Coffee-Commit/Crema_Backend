@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
+import java.util.Base64;
 
 @SpringBootTest
 public class StorageServiceIntegrationTest {
@@ -33,21 +35,30 @@ public class StorageServiceIntegrationTest {
     @AfterEach
     void tearDown() {
         if (uploadedFileKey != null) {
-            System.out.println("Clean up file : " + uploadedFileKey);
-            storageService.deleteFile(uploadedFileKey);
-            uploadedFileKey = null;
+            try {
+                System.out.println("Clean up file : " + uploadedFileKey);
+                storageService.deleteFile(uploadedFileKey);
+            } catch (Exception e) {
+                System.out.println("Cleanup failed for key: " + uploadedFileKey + " - " + e.getMessage());
+            } finally {
+                uploadedFileKey = null;
+            }
         }
     }
 
     @Test
     @DisplayName("GCS 파일 업로드 및 URL 조회 후 삭제")
+    @EnabledIfEnvironmentVariable(named = "RUN_GCS_IT", matches = "true")
     void uploadAndViewAndDelete_IntegrationTest() {
         // given
+        byte[] png = Base64.getDecoder().decode(
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII"
+        );
         MockMultipartFile testFile = new MockMultipartFile(
                 "file",
                 "integration-test-file.png",
                 "image/png",
-                "This is an integration test.".getBytes()
+                png
         );
 
         FileUploadResponse response = fileService.uploadFile(
@@ -58,8 +69,8 @@ public class StorageServiceIntegrationTest {
         );
 
         // then
-        assertNotNull(response);
-        assertNotNull(response.getFileKey());
+        assertThat(response).isNotNull();
+        assertThat(response.getFileKey()).isNotBlank();
         assertThat(response.getFileUrl()).contains(bucketName);
 
         // given
