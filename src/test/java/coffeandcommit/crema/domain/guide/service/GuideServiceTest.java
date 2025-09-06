@@ -110,7 +110,6 @@ public class GuideServiceTest {
                 .member(member1)
                 .isOpened(true)
                 .title("Guide 1")
-                .isApproved(true)
                 .build();
 
         guide2 = Guide.builder()
@@ -118,7 +117,6 @@ public class GuideServiceTest {
                 .member(member2)
                 .isOpened(false)  // Private guide
                 .title("Guide 2")
-                .isApproved(true)
                 .build();
 
         guideJobField = GuideJobField.builder()
@@ -955,7 +953,7 @@ public class GuideServiceTest {
         assertNotNull(result);
         assertEquals(guide1.getTitle(), result.getTitle());
         assertEquals(guide1.getChatDescription(), result.getChatDescription());
-        assertEquals(guide1.isOpened(), result.isOpen());
+        assertEquals(guide1.isOpened(), result.isOpened());
         assertEquals(4.5, result.getReviewScore());
         assertEquals(10L, result.getReviewCount());
         assertNotNull(result.getTags());
@@ -1043,7 +1041,7 @@ public class GuideServiceTest {
         // Then
         assertNotNull(result);
         assertEquals(guide2.getTitle(), result.getTitle());
-        assertEquals(guide2.isOpened(), result.isOpen());
+        assertEquals(guide2.isOpened(), result.isOpened());
         assertEquals(0.0, result.getReviewScore()); // Default value when no reviews
         assertEquals(0L, result.getReviewCount());
 

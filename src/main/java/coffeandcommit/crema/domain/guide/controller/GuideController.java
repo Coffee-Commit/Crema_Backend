@@ -136,7 +136,7 @@ public class GuideController {
     }
 
     @Operation(summary = "가이드 커피챗 조회", description = "특정 가이드의 커피챗 정보를 조회합니다.")
-    @GetMapping("/guides/{guideId}/coffeechats")
+    @GetMapping("/{guideId}/coffeechats")
     public ResponseEntity<Response<GuideCoffeeChatResponseDTO>> getGuideCoffeeChat(
             @PathVariable Long guideId,
             @AuthenticationPrincipal CustomUserDetails userDetails) {

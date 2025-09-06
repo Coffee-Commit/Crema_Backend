@@ -453,6 +453,7 @@ public class GuideMeService {
         Guide updatedGuide = guide.toBuilder()
                 .title(requestDTO.getTitle())
                 .chatDescription(requestDTO.getChatDescription())
+                .isOpened(true)
                 .build();
 
         guideRepository.save(updatedGuide);
@@ -479,9 +480,6 @@ public class GuideMeService {
                         .map(GuideExperienceDetailResponseDTO::from)
                         .orElse(null);
 
-        // 7-1. 오픈 여부
-        boolean isOpened = true;
-
         // 8. Response DTO 변환
         return GuideCoffeeChatResponseDTO.from(
                 updatedGuide,
@@ -490,7 +488,7 @@ public class GuideMeService {
                 reviewCount,
                 experiences,
                 experienceDetail,
-                isOpened
+                updatedGuide.isOpened()
         );
     }
 }

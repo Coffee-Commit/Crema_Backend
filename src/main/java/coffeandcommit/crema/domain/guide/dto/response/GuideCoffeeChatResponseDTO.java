@@ -2,6 +2,7 @@ package coffeandcommit.crema.domain.guide.dto.response;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.reservation.dto.response.GuideDTO;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +19,8 @@ public class GuideCoffeeChatResponseDTO {
 
     private GuideDTO guide; // 가이드 요약 정보
 
-    private boolean isOpen;
+    @JsonProperty("isOpened")
+    private boolean isOpened;
 
     private String title;
     private String chatDescription;
@@ -42,7 +44,7 @@ public class GuideCoffeeChatResponseDTO {
             Long reviewCount,
             GuideExperienceResponseDTO experiences,
             GuideExperienceDetailResponseDTO experienceDetail,
-            boolean isOpen
+            boolean isOpened
     ) {
         return GuideCoffeeChatResponseDTO.builder()
                 .guide(GuideDTO.from(guide))
@@ -53,7 +55,7 @@ public class GuideCoffeeChatResponseDTO {
                 .reviewCount(reviewCount)
                 .experiences(experiences)
                 .experienceDetail(experienceDetail)
-                .isOpen(isOpen)
+                .isOpened(isOpened)
                 .createdAt(guide.getCreatedAt())
                 .updatedAt(guide.getModifiedAt())
                 .build();

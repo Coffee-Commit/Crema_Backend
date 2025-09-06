@@ -121,7 +121,6 @@ public class GuideMeServiceTest {
         guide = Guide.builder()
                 .id(1L)
                 .member(member)
-                .isApproved(true)
                 .chatDescription("description")
                 .isOpened(true)
                 .title("Test Guide")
@@ -1750,7 +1749,6 @@ public class GuideMeServiceTest {
                 .title("Old Title")
                 .chatDescription("Old Description")
                 .isOpened(false)
-                .isApproved(true)
                 .build();
 
         // 업데이트된 guide (save 시 반환)
@@ -1760,7 +1758,6 @@ public class GuideMeServiceTest {
                 .title("New Coffee Chat Title")
                 .chatDescription("New Coffee Chat Description")
                 .isOpened(true)
-                .isApproved(true)
                 .build();
 
         // 해시태그
@@ -1789,7 +1786,7 @@ public class GuideMeServiceTest {
         assertNotNull(result);
         assertEquals("New Coffee Chat Title", result.getTitle());
         assertEquals("New Coffee Chat Description", result.getChatDescription());
-        assertTrue(result.isOpen()); // 등록 시 무조건 true
+        assertTrue(result.isOpened()); // 등록 시 무조건 true
         assertEquals(4.5, result.getReviewScore());
         assertEquals(10L, result.getReviewCount());
         assertNotNull(result.getTags());

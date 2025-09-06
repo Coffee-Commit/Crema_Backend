@@ -141,6 +141,7 @@ public class GuideService {
     }
 
     /* 가이드 커피챗 조회 */
+    @Transactional(readOnly = true)
     public GuideCoffeeChatResponseDTO getGuideCoffeeChat(Long guideId, String loginMemberId) {
 
         // 1. 조회 대상 가이드 조회
