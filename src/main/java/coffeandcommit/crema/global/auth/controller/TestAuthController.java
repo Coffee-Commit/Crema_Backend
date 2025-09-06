@@ -159,7 +159,6 @@ public class TestAuthController {
     private void createTestGuideEntity(Member member) {
         Guide guide = Guide.builder()
                 .member(member)
-                .isApproved(true)      // 테스트용이므로 승인됨으로 설정
                 .isOpened(true)        // 테스트용이므로 공개로 설정
                 .title("테스트 가이드")
                 .companyName("테스트 회사")

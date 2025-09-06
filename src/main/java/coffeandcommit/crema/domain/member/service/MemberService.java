@@ -343,7 +343,6 @@ public class MemberService {
     private Guide createGuideEntity(Member member, MemberUpgradeRequest request) {
         return Guide.builder()
                 .member(member)
-                .isApproved(false) // 관리자 승인 대기
                 .isOpened(false) // 처음엔 비공개
                 .title("") // 빈 제목으로 시작
                 .chatDescription("") // 빈 설명으로 시작
@@ -373,7 +372,6 @@ public class MemberService {
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriodYears(workingPeriodYears)
-                .isApproved(guide.isApproved())
                 .isOpened(guide.isOpened())
                 .title(guide.getTitle())
                 .chatDescription(guide.getChatDescription())
@@ -395,7 +393,6 @@ public class MemberService {
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriodYears(workingPeriodYears)
-                .isApproved(guide.isApproved())
                 .isOpened(guide.isOpened())
                 .title(guide.getTitle())
                 .chatDescription(guide.getChatDescription())
