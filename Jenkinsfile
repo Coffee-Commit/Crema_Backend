@@ -57,7 +57,6 @@ pipeline {
 
                         chmod +x ./gradlew
 
-                        # 이제 Gradle 명령어에서는 -D 옵션을 제거합니다.
                         ./gradlew clean build
                     '''
                 }
