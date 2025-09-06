@@ -304,10 +304,9 @@ class ReviewServiceTest {
     }
 
     @Test
-    @DisplayName("getMyReviews - 성공 케이스: 완료된 예약 목록 조회 (리뷰 있음/없음 혼합)")
-    void getMyReviews_Success() {
+    @DisplayName("getMyReviews - 성공 케이스: 완료된 예약 목록 조회 (리뷰 있음/없음 혼합, filter=ALL)")
+    void getMyReviews_Success_All() {
         // Given
-        // Create a second reservation without a review
         Reservation secondReservation = Reservation.builder()
                 .id(2L)
                 .member(testMember)
@@ -322,7 +321,6 @@ class ReviewServiceTest {
         timeUnit2.setReservation(secondReservation);
         secondReservation.setTimeUnit(timeUnit2);
 
-        // Setup mocks
         when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
                 .thenReturn(java.util.List.of(testReservation, secondReservation));
 
@@ -333,40 +331,92 @@ class ReviewServiceTest {
                 .thenReturn(Optional.empty());
 
         // When
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID);
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL");
 
         // Then
         assertNotNull(result);
         assertEquals(2, result.size());
 
+        // 첫 번째 예약은 리뷰 있음
         assertEquals(RESERVATION_ID, result.get(0).getReservationId());
         assertNotNull(result.get(0).getReview());
         assertEquals(STAR_REVIEW.doubleValue(), result.get(0).getReview().getStar());
         assertEquals(COMMENT, result.get(0).getReview().getComment());
 
+        // 두 번째 예약은 리뷰 없음
         assertEquals(2L, result.get(1).getReservationId());
         assertNull(result.get(1).getReview());
 
-        // Verify interactions
         verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
         verify(reviewRepository, times(1)).findByReservationId(RESERVATION_ID);
         verify(reviewRepository, times(1)).findByReservationId(2L);
     }
 
     @Test
+    @DisplayName("getMyReviews - 성공 케이스: 작성된 리뷰만 조회 (filter=WRITTEN)")
+    void getMyReviews_Success_Written() {
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
+                .thenReturn(Collections.singletonList(testReservation));
+
+        when(reviewRepository.findByReservationId(RESERVATION_ID))
+                .thenReturn(Optional.of(testReview));
+
+        // When
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertNotNull(result.get(0).getReview());
+        assertEquals(STAR_REVIEW.doubleValue(), result.get(0).getReview().getStar());
+    }
+
+    @Test
+    @DisplayName("getMyReviews - 성공 케이스: 작성되지 않은 리뷰만 조회 (filter=NOT_WRITTEN)")
+    void getMyReviews_Success_NotWritten() {
+        Reservation secondReservation = Reservation.builder()
+                .id(2L)
+                .member(testMember)
+                .guide(testGuide)
+                .status(Status.COMPLETED)
+                .matchingTime(LocalDateTime.now().minusHours(2))
+                .build();
+
+        TimeUnit timeUnit2 = TimeUnit.builder()
+                .timeType(TimeType.MINUTE_30)
+                .build();
+        timeUnit2.setReservation(secondReservation);
+        secondReservation.setTimeUnit(timeUnit2);
+
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
+                .thenReturn(Collections.singletonList(secondReservation));
+
+        when(reviewRepository.findByReservationId(2L))
+                .thenReturn(Optional.empty());
+
+        // When
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN");
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertNull(result.get(0).getReview());
+    }
+
+    @Test
     @DisplayName("getMyReviews - 실패 케이스: 완료된 예약이 없는 경우")
     void getMyReviews_NoReservationsFound() {
-        // Given
         when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
                 .thenReturn(Collections.emptyList());
 
         // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
-            reviewService.getMyReviews(LOGIN_MEMBER_ID);
+            reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL");
         });
 
         assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
         verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
         verify(reviewRepository, never()).findByReservationId(any());
     }
+
 }

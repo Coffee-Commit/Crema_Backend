@@ -106,7 +106,7 @@ public class ReviewService {
 
     /* 내 리뷰 조회 */
     @Transactional(readOnly = true)
-    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId) {
+    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter) {
 
         // 1. 예약 조회 (예약 상태 = COMPLETED, 로그인한 멤버 기준)
         List<Reservation> reservations = reservationRepository
@@ -116,12 +116,19 @@ public class ReviewService {
             throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
         }
 
-        // 2. 각 예약마다 리뷰 조회 후 DTO 변환
         return reservations.stream()
                 .map(reservation -> {
                     Review review = reviewRepository.findByReservationId(reservation.getId())
-                            .orElse(null); // 리뷰 없으면 null
+                            .orElse(null);
                     return MyReviewResponseDTO.from(reservation, review);
+                })
+                .filter(dto -> {
+                    if ("WRITTEN".equalsIgnoreCase(filter)) {
+                        return dto.getReview() != null;
+                    } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
+                        return dto.getReview() == null;
+                    }
+                    return true; // ALL
                 })
                 .toList();
     }

@@ -56,7 +56,8 @@ public class ReviewController {
     @Operation(summary = "내 리뷰 조회", description = "로그인한 사용자가 작성했거나 작성 가능한 리뷰 목록을 조회합니다..")
     @GetMapping("/me")
     public ResponseEntity<Response<List<MyReviewResponseDTO>>> getMyReviews(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "ALL") String filter) {
 
         if (userDetails == null) {
             throw new BaseException(ErrorStatus.UNAUTHORIZED);
@@ -64,7 +65,7 @@ public class ReviewController {
 
         String loginMemberId = userDetails.getMemberId();
 
-        List<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId);
+        List<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId, filter);
 
         Response<List<MyReviewResponseDTO>> response = Response.<List<MyReviewResponseDTO>>builder()
                 .message("내 리뷰 조회 성공")
