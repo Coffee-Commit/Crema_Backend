@@ -51,7 +51,7 @@ public class StorageServiceIntegrationTest {
     void uploadAndViewAndDelete_IntegrationTest() {
         // given
         byte[] png = Base64.getDecoder().decode(
-                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII"
+                "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR4nGNgYAAAAAMAASsJTYQAAAAASUVORK5CYII="
         );
         MockMultipartFile testFile = new MockMultipartFile(
                 "file",
