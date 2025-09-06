@@ -5,3 +5,9 @@ app:
   cookie:
     domain: ${COOKIE_DOMAIN:}  # 로컬에서는 쿠키 도메인 없음
     same-site: ${COOKIE_SAMESITE:Lax}
+
+spring:
+  cloud:
+    gcp:
+      credentials:
+        location: "${GCP_CREDENTIALS_JSON_PATH}"
