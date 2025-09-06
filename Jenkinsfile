@@ -4,6 +4,7 @@ pipeline {
     environment {
         GCP_PROJECT_ID = 'coffee-and-commit'
         GCP_REGION = 'asia-northeast3'
+        GCS_BUCKET_NAME = 'goorm-crema-coffeechat'
         REPO_NAME = 'coffee'
         INFRA_REPO_URL = 'git@github.com:Coffee-Commit/Crema_Infra.git'
     }
@@ -50,8 +51,6 @@ pipeline {
                 ]) {
                     sh '''
                         export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE
-                        export GCP_PROJECT_ID="${env.GCP_PROJECT_ID}"
-                        export GCS_BUCKET_NAME="goorm-crema-coffeechat"
                         export RUN_GCS_IT='true'
 
                         chmod +x ./gradlew
