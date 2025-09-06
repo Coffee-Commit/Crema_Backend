@@ -24,8 +24,16 @@ public class FileValidator {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("이미지 파일이 비어있습니다.");
         }
-        if (!ALLOWED_IMAGE_TYPES.contains(file.getContentType())) {
-            throw new IllegalArgumentException("허용되지 않는 이미지 타입입니다.");
+        final String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty()) {
+            throw new IllegalArgumentException("파일명이 유효하지 않습니다,");
+        }
+        if (!originalFilename.contains(".")) {
+            throw new IllegalArgumentException("파일 확장자가 없습니다.");
         }
         if (file.getSize() > MAX_SIZE) {
             throw new IllegalArgumentException("이미지 파일 크기가 너무 큽니다.");
@@ -36,8 +44,13 @@ public class FileValidator {
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("PDF 파일이 비어있습니다.");
         }
-        if (!ALLOWED_PDF_TYPE.equals(file.getContentType())) {
+        final String contentType = file.getContentType();
+        if (!ALLOWED_PDF_TYPE.equalsIgnoreCase(contentType)) {
             throw new IllegalArgumentException("PDF 파일만 업로드할 수 있습니다.");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty() || !originalFilename.contains(".")) {
+            throw new IllegalArgumentException("PDF 파일명이 유효하지 않습니다.");
         }
         if (file.getSize() > MAX_SIZE) {
             throw new IllegalArgumentException("PDF 파일 크기가 너무 큽니다.");
