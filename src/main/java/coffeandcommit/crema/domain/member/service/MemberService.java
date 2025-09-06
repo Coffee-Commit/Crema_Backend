@@ -20,6 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.Period;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
@@ -354,6 +355,7 @@ public class MemberService {
                 .isOpened(false) // 처음엔 비공개
                 .title("") // 빈 제목으로 시작
                 .chatDescription("") // 빈 설명으로 시작
+                .approvedDate(LocalDateTime.now())
                 .companyName(request.getCompanyName())
                 .jobPosition(request.getJobPosition())
                 .workingStart(request.getWorkingStart())
