@@ -49,35 +49,16 @@ pipeline {
                 withCredentials([
                     file(credentialsId: 'gcp-test-credentials', variable: 'GCP_KEY_FILE')
                 ]) {
-                    sh 'chmod +x ./gradlew'
                     sh '''
-                        echo "================ 셸 환경 변수 검사 ================"
-                        # 1. Jenkins가 이 셸에 어떤 환경 변수를 주입했는지 모두 확인합니다.
-                        printenv | sort
-                        echo "=================================================="
-
-                        echo " "
-                        echo "=========== GCP 관련 변수 직접 확인 =========="
-                        # 2. 우리가 설정하려는 변수들이 셸에 어떻게 보이는지 확인합니다.
-                        echo "GCP_KEY_FILE (from Groovy) is: $GCP_KEY_FILE"
-                        echo "GCP_PROJECT_ID (from env block) is: $GCP_PROJECT_ID"
-                        echo "GCS_BUCKET_NAME (from env block) is: $GCS_BUCKET_NAME"
-                        echo "=================================================="
-
                         export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE
                         export RUN_GCS_IT='true'
 
-                        echo " "
-                        echo "========= Gradle이 인식하는 최종 속성 검사 =========="
-                        # 3. (가장 중요) Gradle에게 "spring.profiles.active" 속성값이 뭐냐고 직접 물어봅니다.
-                        # 이 결과가 'test'가 아니면, Gradle 레벨에서 덮어써지고 있다는 확실한 증거입니다.
-                        ./gradlew properties --no-daemon | grep "spring.profiles.active"
-                        echo "=================================================="
+                        export SPRING_PROFILES_ACTIVE='test'
 
-                        echo " "
-                        echo "============ 최종 빌드 시작 (상세 로그 포함) ============"
-                        # 4. --info 옵션을 추가하여 Gradle의 동작에 대한 더 상세한 로그를 봅니다.
-                        ./gradlew clean build -Dspring.profiles.active=test --info
+                        chmod +x ./gradlew
+
+                        # 이제 Gradle 명령어에서는 -D 옵션을 제거합니다.
+                        ./gradlew clean build
                     '''
                 }
             }
