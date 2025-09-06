@@ -26,9 +26,6 @@ public class Guide extends BaseEntity {
     @JoinColumn(name = "member_id", nullable = false, unique = true)
     private Member member; // FK, 멤버 ID는 String (UUID)
 
-    @Column(name = "is_approved", nullable = false)
-    private boolean isApproved;
-
     @Column(name = "chat_description", length = 1000)
     private String chatDescription;
 

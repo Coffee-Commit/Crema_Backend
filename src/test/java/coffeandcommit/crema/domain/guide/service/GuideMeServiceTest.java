@@ -6,6 +6,7 @@ import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideCoffeeChatRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceDetailRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
@@ -15,6 +16,7 @@ import coffeandcommit.crema.domain.guide.dto.request.GroupRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.ScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.TimeSlotRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
@@ -37,6 +39,7 @@ import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.domain.guide.repository.TimeSlotRepository;
+import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -88,6 +91,9 @@ public class GuideMeServiceTest {
     @Mock
     private ExperienceGroupRepository experienceGroupRepository;
 
+    @Mock
+    private ReviewRepository reviewRepository;
+
     @InjectMocks
     private GuideMeService guideMeService;
 
@@ -115,7 +121,6 @@ public class GuideMeServiceTest {
         guide = Guide.builder()
                 .id(1L)
                 .member(member)
-                .isApproved(true)
                 .chatDescription("description")
                 .isOpened(true)
                 .title("Test Guide")
@@ -1725,5 +1730,140 @@ public class GuideMeServiceTest {
         verify(experienceGroupRepository).countByGuide(guide);
         verify(guideChatTopicRepository).findById(999L);
         verify(experienceGroupRepository, never()).saveAll(any());
+    }
+
+    @Test
+    @DisplayName("registerGuideCoffeeChat 성공 테스트")
+    void registerGuideCoffeeChat_Success() {
+        // Given
+        String loginMemberId = memberId;
+        GuideCoffeeChatRequestDTO requestDTO = GuideCoffeeChatRequestDTO.builder()
+                .title("New Coffee Chat Title")
+                .chatDescription("New Coffee Chat Description")
+                .build();
+
+        // 기존 guide (조회 시 반환)
+        Guide guide = Guide.builder()
+                .id(1L)
+                .member(member)
+                .title("Old Title")
+                .chatDescription("Old Description")
+                .isOpened(false)
+                .build();
+
+        // 업데이트된 guide (save 시 반환)
+        Guide updatedGuide = Guide.builder()
+                .id(1L) // ID 동일
+                .member(member)
+                .title("New Coffee Chat Title")
+                .chatDescription("New Coffee Chat Description")
+                .isOpened(true)
+                .build();
+
+        // 해시태그
+        List<HashTag> hashTags = Arrays.asList(
+                HashTag.builder().id(1L).guide(updatedGuide).hashTagName("Java").build(),
+                HashTag.builder().id(2L).guide(updatedGuide).hashTagName("Spring").build()
+        );
+
+        // 경험 그룹 & 상세
+        List<ExperienceGroup> experienceGroups = new ArrayList<>();
+
+        // Stubbing
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.of(guide));
+        when(guideRepository.save(any(Guide.class))).thenReturn(updatedGuide);
+
+        when(hashTagRepository.findByGuide(any(Guide.class))).thenReturn(hashTags);
+        when(reviewRepository.getAverageScoreByGuideId(anyLong())).thenReturn(4.5);
+        when(reviewRepository.countByGuideId(anyLong())).thenReturn(10L);
+        when(experienceGroupRepository.findByGuide(any(Guide.class))).thenReturn(experienceGroups);
+        when(experienceDetailRepository.findByGuide(any(Guide.class))).thenReturn(Optional.of(experienceDetail));
+
+        // When
+        GuideCoffeeChatResponseDTO result = guideMeService.registerGuideCoffeeChat(loginMemberId, requestDTO);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("New Coffee Chat Title", result.getTitle());
+        assertEquals("New Coffee Chat Description", result.getChatDescription());
+        assertTrue(result.isOpened()); // 등록 시 무조건 true
+        assertEquals(4.5, result.getReviewScore());
+        assertEquals(10L, result.getReviewCount());
+        assertNotNull(result.getTags());
+        assertEquals(2, result.getTags().size());
+        assertNotNull(result.getExperienceDetail());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verify(guideRepository).save(any(Guide.class));
+        verify(hashTagRepository).findByGuide(any(Guide.class));
+        verify(reviewRepository).getAverageScoreByGuideId(anyLong());
+        verify(reviewRepository).countByGuideId(anyLong());
+        verify(experienceGroupRepository).findByGuide(any(Guide.class));
+        verify(experienceDetailRepository).findByGuide(any(Guide.class));
+    }
+
+
+    @Test
+    @DisplayName("registerGuideCoffeeChat 가이드 없음 테스트")
+    void registerGuideCoffeeChat_GuideNotFound() {
+        // Given
+        String loginMemberId = "nonexistent-member-id";
+        GuideCoffeeChatRequestDTO requestDTO = GuideCoffeeChatRequestDTO.builder()
+                .title("New Coffee Chat Title")
+                .chatDescription("New Coffee Chat Description")
+                .build();
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> 
+            guideMeService.registerGuideCoffeeChat(loginMemberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verifyNoMoreInteractions(guideRepository);
+        verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
+    }
+
+    @Test
+    @DisplayName("registerGuideCoffeeChat 권한 없음 테스트")
+    void registerGuideCoffeeChat_Forbidden() {
+        // Given
+        String loginMemberId = "different-member-id";
+        GuideCoffeeChatRequestDTO requestDTO = GuideCoffeeChatRequestDTO.builder()
+                .title("New Coffee Chat Title")
+                .chatDescription("New Coffee Chat Description")
+                .build();
+
+        Member differentMember = Member.builder()
+                .id("different-member-id")
+                .nickname("Different Member")
+                .build();
+
+        Guide guideWithDifferentOwner = Guide.builder()
+                .id(1L)
+                .member(member) // Original member, not the login member
+                .title("Original Title")
+                .chatDescription("Original Description")
+                .isOpened(true)
+                .build();
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.of(guideWithDifferentOwner));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> 
+            guideMeService.registerGuideCoffeeChat(loginMemberId, requestDTO)
+        );
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verifyNoMoreInteractions(guideRepository);
+        verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
     }
 }

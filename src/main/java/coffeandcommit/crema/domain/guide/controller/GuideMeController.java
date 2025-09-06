@@ -305,5 +305,27 @@ public class GuideMeController {
 
     }
 
+    @Operation(summary = "가이드 커피챗 등록", description = "가이드의 커피챗을 등록합니다.")
+    @PostMapping("/coffeechat")
+    public ResponseEntity<Response<GuideCoffeeChatResponseDTO>> registerGuideCoffeeChat(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody GuideCoffeeChatRequestDTO requestDTO) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideCoffeeChatResponseDTO result = guideMeService.registerGuideCoffeeChat(loginMemberId, requestDTO);
+
+        Response<GuideCoffeeChatResponseDTO> response = Response.<GuideCoffeeChatResponseDTO>builder()
+                .message("가이드 커피챗 등록 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }

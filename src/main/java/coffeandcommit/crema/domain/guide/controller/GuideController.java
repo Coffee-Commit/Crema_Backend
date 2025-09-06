@@ -135,4 +135,24 @@ public class GuideController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "가이드 커피챗 조회", description = "특정 가이드의 커피챗 정보를 조회합니다.")
+    @GetMapping("/{guideId}/coffeechats")
+    public ResponseEntity<Response<GuideCoffeeChatResponseDTO>> getGuideCoffeeChat(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        String loginMemberId = (userDetails != null) ? userDetails.getMemberId() : null;
+
+        GuideCoffeeChatResponseDTO result = guideService.getGuideCoffeeChat(guideId, loginMemberId);
+
+        Response<GuideCoffeeChatResponseDTO> response = Response.<GuideCoffeeChatResponseDTO>builder()
+                .message("가이드 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+
+    }
+
+
 }
