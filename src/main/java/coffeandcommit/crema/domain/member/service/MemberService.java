@@ -342,6 +342,17 @@ public class MemberService {
      * Guide 엔티티 생성
      */
     private Guide createGuideEntity(Member member, MemberUpgradeRequest request) {
+        // 근무 기간 계산
+        String workingPeriod = calculateWorkingPeriodDisplay(
+                request.getWorkingStart(),
+                request.getWorkingEnd(),
+                request.getIsCurrent()
+        );
+        int workingPeriodMonths = calculateWorkingPeriodMonths(
+                request.getWorkingStart(),
+                request.getWorkingEnd()
+        );
+
         return Guide.builder()
                 .member(member)
                 .isOpened(false) // 처음엔 비공개
@@ -351,6 +362,7 @@ public class MemberService {
                 .jobPosition(request.getJobPosition())
                 .workingStart(request.getWorkingStart())
                 .workingEnd(request.getWorkingEnd())
+                .workingPeriod(workingPeriod)
                 .isCurrent(request.getIsCurrent())
                 .isCompanyNamePublic(request.getIsCompanyNamePublic())
                 // TODO: PDF 업로드 필드 연동 예정
@@ -376,9 +388,6 @@ public class MemberService {
                 .workingPeriod(workingPeriod)
                 .workingPeriodYears(workingPeriodYears)
                 .workingPeriodMonths(workingPeriodMonths)
-                .isOpened(guide.isOpened())
-                .title(guide.getTitle())
-                .chatDescription(guide.getChatDescription())
                 .build();
     }
 

@@ -47,6 +47,9 @@ public class Guide extends BaseEntity {
     @Column(name = "working_end")
     private LocalDate workingEnd;
 
+    @Column(name = "working_period", length = 50)
+    private String workingPeriod;
+
     @Column(name = "company_name")
     private String companyName;
 

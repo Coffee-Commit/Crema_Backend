@@ -23,9 +23,4 @@ public class MemberUpgradeResponse {
     private String workingPeriod; // "2년 3개월" 또는 "2021.07 ~ 재직중"
     private int workingPeriodYears;
     private int workingPeriodMonths;
-
-    private boolean isApproved;
-    private boolean isOpened;
-    private String title;
-    private String chatDescription;
 }
