@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -362,16 +363,20 @@ public class MemberService {
      */
     private MemberUpgradeResponse createUpgradeResponse(Guide guide, MemberUpgradeRequest request) {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
+        int workingPeriodMonths = calculateWorkingPeriodMonths(guide.getWorkingStart(), guide.getWorkingEnd());
+        String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
                 .guideId(guide.getId())
                 .companyName(guide.getCompanyName())
-                .isCompanyNamePublic(request.getIsCompanyNamePublic()) // 요청값 그대로 반환
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
                 .jobPosition(guide.getJobPosition())
                 .isCurrent(guide.isCurrent())
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
+                .workingPeriod(workingPeriod)
                 .workingPeriodYears(workingPeriodYears)
+                .workingPeriodMonths(workingPeriodMonths)
                 .isOpened(guide.isOpened())
                 .title(guide.getTitle())
                 .chatDescription(guide.getChatDescription())
@@ -383,6 +388,8 @@ public class MemberService {
      */
     private MemberUpgradeResponse createUpgradeResponseFromGuide(Guide guide) {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
+        int workingPeriodMonths = calculateWorkingPeriodMonths(guide.getWorkingStart(), guide.getWorkingEnd());
+        String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
                 .guideId(guide.getId())
@@ -392,7 +399,9 @@ public class MemberService {
                 .isCurrent(guide.isCurrent())
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
+                .workingPeriod(workingPeriod)
                 .workingPeriodYears(workingPeriodYears)
+                .workingPeriodMonths(workingPeriodMonths)
                 .isOpened(guide.isOpened())
                 .title(guide.getTitle())
                 .chatDescription(guide.getChatDescription())
@@ -409,6 +418,52 @@ public class MemberService {
         LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
         int years = Period.between(workingStart, endDate).getYears();
         return Math.max(0, years);
+    }
+
+    /**
+     * 근무 기간 개월 수 계산
+     */
+    private int calculateWorkingPeriodMonths(LocalDate workingStart, LocalDate workingEnd) {
+        if (workingStart == null) {
+            return 0;
+        }
+        LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
+        Period period = Period.between(workingStart, endDate);
+        return period.getYears() * 12 + period.getMonths();
+    }
+
+    /**
+     * 근무 기간 표시 문자열 생성
+     */
+    private String calculateWorkingPeriodDisplay(LocalDate workingStart, LocalDate workingEnd, boolean isCurrent) {
+        if (workingStart == null) {
+            return "정보 없음";
+        }
+
+        // 시작일 포맷팅 (2022.03 형식)
+        String startFormatted = workingStart.format(DateTimeFormatter.ofPattern("yyyy.MM"));
+
+        if (isCurrent) {
+            // 재직중인 경우: "2022.03 ~ 재직중"
+            return startFormatted + " ~ 재직중";
+        } else {
+            // 퇴사한 경우: 기간 계산해서 "2년 3개월" 형식
+            LocalDate endDate = workingEnd != null ? workingEnd : LocalDate.now();
+            Period period = Period.between(workingStart, endDate);
+
+            int years = period.getYears();
+            int months = period.getMonths();
+
+            if (years > 0 && months > 0) {
+                return years + "년 " + months + "개월";
+            } else if (years > 0) {
+                return years + "년";
+            } else if (months > 0) {
+                return months + "개월";
+            } else {
+                return "1개월 미만";
+            }
+        }
     }
 
     /**
