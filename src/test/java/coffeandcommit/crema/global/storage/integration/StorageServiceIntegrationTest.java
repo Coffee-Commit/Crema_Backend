@@ -1,7 +1,6 @@
 package coffeandcommit.crema.global.storage.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hibernate.validator.internal.util.Contracts.assertNotNull;
 
 import coffeandcommit.crema.global.file.FileService;
 import coffeandcommit.crema.global.storage.StorageService;
