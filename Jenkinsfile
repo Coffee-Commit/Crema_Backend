@@ -51,8 +51,8 @@ pipeline {
                     sh '''
                         export GOOGLE_APPLICATION_CREDENTIALS=$GCP_KEY_FILE
 
-                        'chmod +x ./gradlew'
-                        './gradlew clean build'
+                        chmod +x ./gradlew
+                        ./gradlew clean build
                     '''
                 }
             }
