@@ -176,7 +176,7 @@ public class MemberService {
         guide = guideRepository.save(guide);
 
         // 응답 생성
-        return createUpgradeResponse(guide, request);
+        return createUpgradeResponse(guide);
     }
 
     /**
@@ -194,7 +194,7 @@ public class MemberService {
         Guide guide = guideRepository.findByMember_Id(memberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        return createUpgradeResponseFromGuide(guide);
+        return createUpgradeResponse(guide);
     }
 
     /**
@@ -228,7 +228,7 @@ public class MemberService {
 
         guide = guideRepository.save(guide);
 
-        return createUpgradeResponse(guide, request);
+        return createUpgradeResponse(guide);
     }
 
     /**
@@ -359,40 +359,14 @@ public class MemberService {
     }
 
     /**
-     * MemberUpgradeResponse 생성 (요청값 포함)
+     * MemberUpgradeResponse 생성
      */
-    private MemberUpgradeResponse createUpgradeResponse(Guide guide, MemberUpgradeRequest request) {
+    private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
         int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
         int workingPeriodMonths = calculateWorkingPeriodMonths(guide.getWorkingStart(), guide.getWorkingEnd());
         String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
-                .guideId(guide.getId())
-                .companyName(guide.getCompanyName())
-                .isCompanyNamePublic(request.getIsCompanyNamePublic())
-                .jobPosition(guide.getJobPosition())
-                .isCurrent(guide.isCurrent())
-                .workingStart(guide.getWorkingStart())
-                .workingEnd(guide.getWorkingEnd())
-                .workingPeriod(workingPeriod)
-                .workingPeriodYears(workingPeriodYears)
-                .workingPeriodMonths(workingPeriodMonths)
-                .isOpened(guide.isOpened())
-                .title(guide.getTitle())
-                .chatDescription(guide.getChatDescription())
-                .build();
-    }
-
-    /**
-     * MemberUpgradeResponse 생성 (Guide 엔티티만으로)
-     */
-    private MemberUpgradeResponse createUpgradeResponseFromGuide(Guide guide) {
-        int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
-        int workingPeriodMonths = calculateWorkingPeriodMonths(guide.getWorkingStart(), guide.getWorkingEnd());
-        String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
-
-        return MemberUpgradeResponse.builder()
-                .guideId(guide.getId())
                 .companyName(guide.getCompanyName())
                 .isCompanyNamePublic(guide.isCompanyNamePublic())
                 .jobPosition(guide.getJobPosition())
