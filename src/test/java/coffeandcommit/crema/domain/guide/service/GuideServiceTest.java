@@ -5,6 +5,7 @@ import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
@@ -25,6 +26,7 @@ import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
+import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -71,6 +73,9 @@ public class GuideServiceTest {
     @Mock
     private ExperienceGroupRepository experienceGroupRepository;
 
+    @Mock
+    private ReviewRepository reviewRepository;
+
     private Member member1;
     private Member member2;
     private Guide guide1;
@@ -105,7 +110,6 @@ public class GuideServiceTest {
                 .member(member1)
                 .isOpened(true)
                 .title("Guide 1")
-                .isApproved(true)
                 .build();
 
         guide2 = Guide.builder()
@@ -113,7 +117,6 @@ public class GuideServiceTest {
                 .member(member2)
                 .isOpened(false)  // Private guide
                 .title("Guide 2")
-                .isApproved(true)
                 .build();
 
         guideJobField = GuideJobField.builder()
@@ -925,5 +928,129 @@ public class GuideServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
         verify(experienceGroupRepository).findByGuide(guide1);
+    }
+    @Test
+    @DisplayName("getGuideCoffeeChat 성공 테스트")
+    void getGuideCoffeeChat_Success() {
+        // Given
+        Long guideId = 1L;
+        String loginMemberId = "member1";
+
+        List<HashTag> hashTags = Arrays.asList(hashTag1, hashTag2);
+        List<ExperienceGroup> experienceGroups = new ArrayList<>();
+
+        when(guideRepository.findById(guideId)).thenReturn(Optional.of(guide1));
+        when(hashTagRepository.findByGuide(guide1)).thenReturn(hashTags);
+        when(reviewRepository.getAverageScoreByGuideId(guideId)).thenReturn(4.5);
+        when(reviewRepository.countByGuideId(guideId)).thenReturn(10L);
+        when(experienceGroupRepository.findByGuide(guide1)).thenReturn(experienceGroups);
+        when(experienceDetailRepository.findByGuide(guide1)).thenReturn(Optional.of(experienceDetail));
+
+        // When
+        GuideCoffeeChatResponseDTO result = guideService.getGuideCoffeeChat(guideId, loginMemberId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(guide1.getTitle(), result.getTitle());
+        assertEquals(guide1.getChatDescription(), result.getChatDescription());
+        assertEquals(guide1.isOpened(), result.isOpened());
+        assertEquals(4.5, result.getReviewScore());
+        assertEquals(10L, result.getReviewCount());
+        assertNotNull(result.getTags());
+        assertEquals(2, result.getTags().size());
+        assertNotNull(result.getExperienceDetail());
+
+        // Verify
+        verify(guideRepository).findById(guideId);
+        verify(hashTagRepository).findByGuide(guide1);
+        verify(reviewRepository).getAverageScoreByGuideId(guideId);
+        verify(reviewRepository).countByGuideId(guideId);
+        verify(experienceGroupRepository).findByGuide(guide1);
+        verify(experienceDetailRepository).findByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("getGuideCoffeeChat 가이드 없음 테스트")
+    void getGuideCoffeeChat_GuideNotFound() {
+        // Given
+        Long guideId = 999L;
+        String loginMemberId = "member1";
+
+        when(guideRepository.findById(guideId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> 
+            guideService.getGuideCoffeeChat(guideId, loginMemberId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // Verify
+        verify(guideRepository).findById(guideId);
+        verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
+    }
+
+    @Test
+    @DisplayName("getGuideCoffeeChat 비공개 가이드 접근 금지 테스트")
+    void getGuideCoffeeChat_ForbiddenAccessToPrivateGuide() {
+        // Given
+        Long guideId = 2L;
+        String loginMemberId = "member1"; // Not the owner of guide2
+
+        when(guideRepository.findById(guideId)).thenReturn(Optional.of(guide2)); // guide2 is private
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> 
+            guideService.getGuideCoffeeChat(guideId, loginMemberId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // Verify
+        verify(guideRepository).findById(guideId);
+        verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
+    }
+
+    @Test
+    @DisplayName("getGuideCoffeeChat 비공개 가이드 소유자 접근 성공 테스트")
+    void getGuideCoffeeChat_OwnerCanAccessPrivateGuide() {
+        // Given
+        Long guideId = 2L;
+        String loginMemberId = "member2"; // Owner of guide2
+
+        List<HashTag> hashTags = new ArrayList<>();
+        List<ExperienceGroup> experienceGroups = new ArrayList<>();
+        ExperienceDetail privateExperienceDetail = ExperienceDetail.builder()
+                .id(2L)
+                .guide(guide2)
+                .who("경력 개발자")
+                .solution("이직 준비")
+                .how("포트폴리오 업데이트")
+                .build();
+
+        when(guideRepository.findById(guideId)).thenReturn(Optional.of(guide2));
+        when(hashTagRepository.findByGuide(guide2)).thenReturn(hashTags);
+        when(reviewRepository.getAverageScoreByGuideId(guideId)).thenReturn(null); // No reviews
+        when(reviewRepository.countByGuideId(guideId)).thenReturn(0L);
+        when(experienceGroupRepository.findByGuide(guide2)).thenReturn(experienceGroups);
+        when(experienceDetailRepository.findByGuide(guide2)).thenReturn(Optional.of(privateExperienceDetail));
+
+        // When
+        GuideCoffeeChatResponseDTO result = guideService.getGuideCoffeeChat(guideId, loginMemberId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(guide2.getTitle(), result.getTitle());
+        assertEquals(guide2.isOpened(), result.isOpened());
+        assertEquals(0.0, result.getReviewScore()); // Default value when no reviews
+        assertEquals(0L, result.getReviewCount());
+
+        // Verify
+        verify(guideRepository).findById(guideId);
+        verify(hashTagRepository).findByGuide(guide2);
+        verify(reviewRepository).getAverageScoreByGuideId(guideId);
+        verify(reviewRepository).countByGuideId(guideId);
+        verify(experienceGroupRepository).findByGuide(guide2);
+        verify(experienceDetailRepository).findByGuide(guide2);
     }
 }
