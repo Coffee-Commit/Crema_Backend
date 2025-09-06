@@ -2,6 +2,8 @@ package coffeandcommit.crema.domain.review.dto.response;
 
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.review.entity.Review;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -20,6 +22,10 @@ public class MyReviewResponseDTO {
     private ReviewInfo review;           // 리뷰 정보 (없으면 null)
 
     public static MyReviewResponseDTO from(Reservation reservation, Review review) {
+
+        if (reservation == null) {
+            throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
+        }
         return MyReviewResponseDTO.builder()
                 .reservationId(reservation.getId())
                 .guide(GuideInfo.from(reservation.getGuide()))

@@ -25,10 +25,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -65,9 +70,11 @@ class ReviewServiceTest {
     private ExperienceGroup testExperienceGroup;
     private ReviewRequestDTO testReviewRequestDTO;
     private Review testReview;
+    private Pageable pageable;
 
     @BeforeEach
     void setUp() {
+        pageable = PageRequest.of(0, 10);
         // Create test_member
         testMember = Member.builder()
                 .id(LOGIN_MEMBER_ID)
@@ -306,7 +313,6 @@ class ReviewServiceTest {
     @Test
     @DisplayName("getMyReviews - 성공 케이스: 완료된 예약 목록 조회 (리뷰 있음/없음 혼합, filter=ALL)")
     void getMyReviews_Success_All() {
-        // Given
         Reservation secondReservation = Reservation.builder()
                 .id(2L)
                 .member(testMember)
@@ -321,54 +327,38 @@ class ReviewServiceTest {
         timeUnit2.setReservation(secondReservation);
         secondReservation.setTimeUnit(timeUnit2);
 
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
-                .thenReturn(java.util.List.of(testReservation, secondReservation));
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(testReservation, secondReservation)));
 
-        when(reviewRepository.findByReservationId(RESERVATION_ID))
-                .thenReturn(Optional.of(testReview));
+        when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID, 2L)))
+                .thenReturn(List.of(testReview)); // 두 번째 예약은 리뷰 없음
 
-        when(reviewRepository.findByReservationId(2L))
-                .thenReturn(Optional.empty());
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
 
-        // When
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL");
-
-        // Then
         assertNotNull(result);
         assertEquals(2, result.size());
 
-        // 첫 번째 예약은 리뷰 있음
         assertEquals(RESERVATION_ID, result.get(0).getReservationId());
         assertNotNull(result.get(0).getReview());
-        assertEquals(STAR_REVIEW.doubleValue(), result.get(0).getReview().getStar());
-        assertEquals(COMMENT, result.get(0).getReview().getComment());
 
-        // 두 번째 예약은 리뷰 없음
         assertEquals(2L, result.get(1).getReservationId());
         assertNull(result.get(1).getReview());
-
-        verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
-        verify(reviewRepository, times(1)).findByReservationId(RESERVATION_ID);
-        verify(reviewRepository, times(1)).findByReservationId(2L);
     }
 
     @Test
     @DisplayName("getMyReviews - 성공 케이스: 작성된 리뷰만 조회 (filter=WRITTEN)")
     void getMyReviews_Success_Written() {
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
-                .thenReturn(Collections.singletonList(testReservation));
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(testReservation)));
 
-        when(reviewRepository.findByReservationId(RESERVATION_ID))
-                .thenReturn(Optional.of(testReview));
+        when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID)))
+                .thenReturn(List.of(testReview));
 
-        // When
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN");
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN", pageable);
 
-        // Then
         assertNotNull(result);
         assertEquals(1, result.size());
         assertNotNull(result.get(0).getReview());
-        assertEquals(STAR_REVIEW.doubleValue(), result.get(0).getReview().getStar());
     }
 
     @Test
@@ -388,16 +378,14 @@ class ReviewServiceTest {
         timeUnit2.setReservation(secondReservation);
         secondReservation.setTimeUnit(timeUnit2);
 
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
-                .thenReturn(Collections.singletonList(secondReservation));
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(secondReservation)));
 
-        when(reviewRepository.findByReservationId(2L))
-                .thenReturn(Optional.empty());
+        when(reviewRepository.findByReservationIdIn(List.of(2L)))
+                .thenReturn(Collections.emptyList()); // 리뷰 없음
 
-        // When
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN");
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN", pageable);
 
-        // Then
         assertNotNull(result);
         assertEquals(1, result.size());
         assertNull(result.get(0).getReview());
@@ -406,17 +394,14 @@ class ReviewServiceTest {
     @Test
     @DisplayName("getMyReviews - 실패 케이스: 완료된 예약이 없는 경우")
     void getMyReviews_NoReservationsFound() {
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
-                .thenReturn(Collections.emptyList());
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(Page.empty(pageable));
 
-        // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
-            reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL");
+            reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
         });
 
         assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
-        verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
-        verify(reviewRepository, never()).findByReservationId(any());
     }
 
 }

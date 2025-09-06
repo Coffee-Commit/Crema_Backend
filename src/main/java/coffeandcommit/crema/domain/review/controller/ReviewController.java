@@ -13,6 +13,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -57,7 +59,8 @@ public class ReviewController {
     @GetMapping("/me")
     public ResponseEntity<Response<List<MyReviewResponseDTO>>> getMyReviews(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @RequestParam(defaultValue = "ALL") String filter) {
+            @RequestParam(defaultValue = "ALL") String filter,
+            @ParameterObject Pageable pageable) {
 
         if (userDetails == null) {
             throw new BaseException(ErrorStatus.UNAUTHORIZED);
@@ -65,7 +68,7 @@ public class ReviewController {
 
         String loginMemberId = userDetails.getMemberId();
 
-        List<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId, filter);
+        List<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId, filter, pageable);
 
         Response<List<MyReviewResponseDTO>> response = Response.<List<MyReviewResponseDTO>>builder()
                 .message("내 리뷰 조회 성공")

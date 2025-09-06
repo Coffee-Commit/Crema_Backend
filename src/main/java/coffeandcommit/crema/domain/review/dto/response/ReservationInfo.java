@@ -2,6 +2,8 @@ package coffeandcommit.crema.domain.review.dto.response;
 
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,6 +21,10 @@ public class ReservationInfo {
     private TimeType timeUnit;
 
     public static ReservationInfo from(Reservation reservation) {
+
+        if (reservation.getTimeUnit() == null || reservation.getTimeUnit().getTimeType() == null) {
+            throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
+        }
         return ReservationInfo.builder()
                 .matchingDateTime(reservation.getMatchingTime())
                 .timeUnit(reservation.getTimeUnit().getTimeType())

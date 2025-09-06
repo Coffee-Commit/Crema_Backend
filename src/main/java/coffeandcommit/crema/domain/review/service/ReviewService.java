@@ -17,11 +17,15 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -106,20 +110,28 @@ public class ReviewService {
 
     /* 내 리뷰 조회 */
     @Transactional(readOnly = true)
-    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter) {
+    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
 
         // 1. 예약 조회 (예약 상태 = COMPLETED, 로그인한 멤버 기준)
-        List<Reservation> reservations = reservationRepository
-                .findByMember_IdAndStatus(loginMemberId, Status.COMPLETED);
+        Page<Reservation> reservations = reservationRepository
+                .findByMember_IdAndStatus(loginMemberId, Status.COMPLETED, pageable);
 
         if (reservations.isEmpty()) {
             throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
         }
 
+        // 2. 예약 ID 모아서 한 번에 리뷰 조회
+        List<Long> reservationIds = reservations.stream()
+                .map(Reservation::getId)
+                .toList();
+
+        Map<Long, Review> reviewMap = reviewRepository.findByReservationIdIn(reservationIds).stream()
+                .collect(Collectors.toMap(r -> r.getReservation().getId(), r -> r));
+
+        // 3. DTO 매핑 + 필터 적용
         return reservations.stream()
                 .map(reservation -> {
-                    Review review = reviewRepository.findByReservationId(reservation.getId())
-                            .orElse(null);
+                    Review review = reviewMap.get(reservation.getId()); // 있으면 가져오고 없으면 null
                     return MyReviewResponseDTO.from(reservation, review);
                 })
                 .filter(dto -> {
@@ -128,7 +140,7 @@ public class ReviewService {
                     } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
                         return dto.getReview() == null;
                     }
-                    return true; // ALL
+                    return true; // 기본 ALL
                 })
                 .toList();
     }
