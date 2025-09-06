@@ -57,6 +57,9 @@ public class FileValidator {
         if (originalFilename == null || originalFilename.trim().isEmpty() || !originalFilename.contains(".")) {
             throw new IllegalArgumentException("PDF 파일명이 유효하지 않습니다.");
         }
+        if (originalFilename.contains("/") || originalFilename.contains("\\")) {
+            throw new IllegalArgumentException("파일명에 허용되지 않는 문자가 포함되어 있습니다.");
+        }
         if (file.getSize() > MAX_SIZE) {
             throw new IllegalArgumentException("PDF 파일 크기가 너무 큽니다.");
         }
@@ -73,20 +76,49 @@ public class FileValidator {
         if (originalFilename == null || !originalFilename.contains(".")) {
             throw new IllegalArgumentException("파일명 또는 확장자가 유효하지 않습니다.");
         }
+        if (originalFilename.contains("/") || originalFilename.contains("\\")) {
+            throw new IllegalArgumentException("파일명에 허용되지 않는 문자가 포함되어 있습니다.");
+        }
 
         try {
-            if (!isValidImageFileSignature(file.getBytes())) {
+            if (!hasValidImageSignature(file)) {
                 throw new IllegalArgumentException("파일 시그니처가 유효하지 않습니다.");
             }
         } catch (Exception e) {
-            throw new RuntimeException("파일을 읽는 중 오류가 발생했습니다.", e);
+            throw new IllegalArgumentException("파일을 읽는 중 오류가 발생했습니다.", e);
         }
     }
 
-    private boolean isValidImageFileSignature(byte[] fileBytes) {
-        if (fileBytes == null || fileBytes.length < 8) return false;
-        if (fileBytes[0] == (byte) 0xFF && fileBytes[1] == (byte) 0xD8 && fileBytes[2] == (byte) 0xFF) return true;
-        if (fileBytes[0] == (byte) 0x89 && fileBytes[1] == (byte) 0x50 && fileBytes[2] == (byte) 0x4E) return true;
+    private boolean hasValidImageSignature(MultipartFile file) {
+        try (var in = file.getInputStream()) {
+            byte[] h = in.readNBytes(12);
+            return isValidImageHeader(h);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isValidImageHeader(byte[] header) {
+        if (header == null || header.length < 8) return false;
+
+        // PNG: 89 50 4E 47 0D 0A 1A 0A
+        if (header[0] == (byte)0x89 &&
+                header[1] == (byte)0x50 &&
+                header[2] == (byte)0x4E &&
+                header[3] == (byte)0x47 &&
+                header[4] == (byte)0x0D &&
+                header[5] == (byte)0x0A &&
+                header[6] == (byte)0x1A &&
+                header[7] == (byte)0x0A) {
+            return true;
+        }
+
+        // JPEG / JPG: FF D8 FF
+        if (header[0] == (byte)0xFF &&
+                header[1] == (byte)0xD8 &&
+                header[2] == (byte)0xFF) {
+            return true;
+        }
 
         return false;
     }
