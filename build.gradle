@@ -64,7 +64,7 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 
     // gcp gcs
-    implementation platform('com.google.cloud:spring-cloud-gcp-dependencies:5.1.2')
+    implementation platform('com.google.cloud:spring-cloud-gcp-dependencies:7.0.0')
     implementation 'com.google.cloud:spring-cloud-gcp-starter-storage'
     implementation 'com.google.cloud:spring-cloud-gcp-starter-secretmanager'
 
