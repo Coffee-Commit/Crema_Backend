@@ -1,4 +1,7 @@
 spring:
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+
   datasource:
     url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1
     driver-class-name: org.h2.Driver
@@ -13,12 +16,8 @@ spring:
         format_sql: true
     defer-datasource-initialization: true
 
-  data:
-    redis:
-      host:
-
 jwt:
-  secret: "YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0="
+  secret: "YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcmlOaG0="
 
 security:
   oauth2:
