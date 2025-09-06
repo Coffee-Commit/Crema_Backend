@@ -4,8 +4,10 @@ import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
+import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReviewResponseDTO;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.entity.ReviewExperience;
@@ -15,10 +17,15 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -26,6 +33,7 @@ import java.time.LocalDateTime;
 public class ReviewService {
 
     private final ReservationService reservationService;
+    private final ReservationRepository reservationRepository;
     private final ReviewRepository reviewRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
 
@@ -100,4 +108,30 @@ public class ReviewService {
         return ReviewResponseDTO.from(fullyLoaded);
     }
 
+    /* 내 리뷰 조회 */
+    @Transactional(readOnly = true)
+    public Page<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
+
+        Page<Reservation> reservations;
+
+        if ("WRITTEN".equalsIgnoreCase(filter)) {
+            reservations = reservationRepository.findWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
+        } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
+            reservations = reservationRepository.findNotWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
+        } else { // 기본: ALL
+            reservations = reservationRepository.findByMember_IdAndStatus(loginMemberId, Status.COMPLETED, pageable);
+        }
+
+        if (reservations.isEmpty()) {
+            throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
+        }
+
+        // 리뷰 bulk 조회
+        List<Long> reservationIds = reservations.stream().map(Reservation::getId).toList();
+        Map<Long, Review> reviewMap = reviewRepository.findByReservationIdIn(reservationIds).stream()
+                .collect(Collectors.toMap(r -> r.getReservation().getId(), r -> r));
+
+        return reservations.map(reservation ->
+                MyReviewResponseDTO.from(reservation, reviewMap.get(reservation.getId())));
+    }
 }
