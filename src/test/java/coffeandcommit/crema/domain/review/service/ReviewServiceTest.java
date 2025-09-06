@@ -12,6 +12,7 @@ import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ExperienceEvaluationRequestDTO;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
+import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReviewResponseDTO;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
@@ -327,38 +328,44 @@ class ReviewServiceTest {
         timeUnit2.setReservation(secondReservation);
         secondReservation.setTimeUnit(timeUnit2);
 
+        // Reservation 조회 mock
         when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(testReservation, secondReservation)));
+                .thenReturn(new PageImpl<>(List.of(testReservation, secondReservation), pageable, 2));
 
+        // Review 조회 mock (첫 번째 예약만 리뷰 있음)
         when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID, 2L)))
-                .thenReturn(List.of(testReview)); // 두 번째 예약은 리뷰 없음
+                .thenReturn(List.of(testReview));
 
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
+        // When
+        Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
 
+        // Then
         assertNotNull(result);
-        assertEquals(2, result.size());
+        assertEquals(2, result.getContent().size());
 
-        assertEquals(RESERVATION_ID, result.get(0).getReservationId());
-        assertNotNull(result.get(0).getReview());
+        MyReviewResponseDTO first = result.getContent().get(0);
+        assertEquals(RESERVATION_ID, first.getReservationId());
+        assertNotNull(first.getReview());
 
-        assertEquals(2L, result.get(1).getReservationId());
-        assertNull(result.get(1).getReview());
+        MyReviewResponseDTO second = result.getContent().get(1);
+        assertEquals(2L, second.getReservationId());
+        assertNull(second.getReview());
     }
 
     @Test
     @DisplayName("getMyReviews - 성공 케이스: 작성된 리뷰만 조회 (filter=WRITTEN)")
     void getMyReviews_Success_Written() {
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(testReservation)));
+        when(reservationRepository.findWrittenByMember(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(testReservation), pageable, 1));
 
         when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID)))
                 .thenReturn(List.of(testReview));
 
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN", pageable);
+        Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN", pageable);
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertNotNull(result.get(0).getReview());
+        assertEquals(1, result.getContent().size());
+        assertNotNull(result.getContent().get(0).getReview());
     }
 
     @Test
@@ -378,17 +385,17 @@ class ReviewServiceTest {
         timeUnit2.setReservation(secondReservation);
         secondReservation.setTimeUnit(timeUnit2);
 
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(secondReservation)));
+        when(reservationRepository.findNotWrittenByMember(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+                .thenReturn(new PageImpl<>(List.of(secondReservation), pageable, 1));
 
         when(reviewRepository.findByReservationIdIn(List.of(2L)))
                 .thenReturn(Collections.emptyList()); // 리뷰 없음
 
-        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN", pageable);
+        Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN", pageable);
 
         assertNotNull(result);
-        assertEquals(1, result.size());
-        assertNull(result.get(0).getReview());
+        assertEquals(1, result.getContent().size());
+        assertNull(result.getContent().get(0).getReview());
     }
 
     @Test

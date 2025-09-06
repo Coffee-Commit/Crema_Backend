@@ -14,13 +14,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @Slf4j
 @RestController
@@ -57,7 +56,7 @@ public class ReviewController {
 
     @Operation(summary = "내 리뷰 조회", description = "로그인한 사용자가 작성했거나 작성 가능한 리뷰 목록을 조회합니다..")
     @GetMapping("/me")
-    public ResponseEntity<Response<List<MyReviewResponseDTO>>> getMyReviews(
+    public ResponseEntity<Response<Page<MyReviewResponseDTO>>> getMyReviews(
             @AuthenticationPrincipal CustomUserDetails userDetails,
             @RequestParam(defaultValue = "ALL") String filter,
             @ParameterObject Pageable pageable) {
@@ -68,9 +67,9 @@ public class ReviewController {
 
         String loginMemberId = userDetails.getMemberId();
 
-        List<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId, filter, pageable);
+        Page<MyReviewResponseDTO> result = reviewService.getMyReviews(loginMemberId, filter, pageable);
 
-        Response<List<MyReviewResponseDTO>> response = Response.<List<MyReviewResponseDTO>>builder()
+        Response<Page<MyReviewResponseDTO>> response = Response.<Page<MyReviewResponseDTO>>builder()
                 .message("내 리뷰 조회 성공")
                 .data(result)
                 .build();

@@ -110,38 +110,28 @@ public class ReviewService {
 
     /* 내 리뷰 조회 */
     @Transactional(readOnly = true)
-    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
+    public Page<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
 
-        // 1. 예약 조회 (예약 상태 = COMPLETED, 로그인한 멤버 기준)
-        Page<Reservation> reservations = reservationRepository
-                .findByMember_IdAndStatus(loginMemberId, Status.COMPLETED, pageable);
+        Page<Reservation> reservations;
+
+        if ("WRITTEN".equalsIgnoreCase(filter)) {
+            reservations = reservationRepository.findWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
+        } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
+            reservations = reservationRepository.findNotWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
+        } else { // 기본: ALL
+            reservations = reservationRepository.findByMember_IdAndStatus(loginMemberId, Status.COMPLETED, pageable);
+        }
 
         if (reservations.isEmpty()) {
             throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
         }
 
-        // 2. 예약 ID 모아서 한 번에 리뷰 조회
-        List<Long> reservationIds = reservations.stream()
-                .map(Reservation::getId)
-                .toList();
-
+        // 리뷰 bulk 조회
+        List<Long> reservationIds = reservations.stream().map(Reservation::getId).toList();
         Map<Long, Review> reviewMap = reviewRepository.findByReservationIdIn(reservationIds).stream()
                 .collect(Collectors.toMap(r -> r.getReservation().getId(), r -> r));
 
-        // 3. DTO 매핑 + 필터 적용
-        return reservations.stream()
-                .map(reservation -> {
-                    Review review = reviewMap.get(reservation.getId()); // 있으면 가져오고 없으면 null
-                    return MyReviewResponseDTO.from(reservation, review);
-                })
-                .filter(dto -> {
-                    if ("WRITTEN".equalsIgnoreCase(filter)) {
-                        return dto.getReview() != null;
-                    } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
-                        return dto.getReview() == null;
-                    }
-                    return true; // 기본 ALL
-                })
-                .toList();
+        return reservations.map(reservation ->
+                MyReviewResponseDTO.from(reservation, reviewMap.get(reservation.getId())));
     }
 }
