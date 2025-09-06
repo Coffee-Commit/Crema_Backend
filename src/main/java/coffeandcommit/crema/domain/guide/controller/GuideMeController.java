@@ -29,27 +29,6 @@ public class GuideMeController {
 
     private final GuideMeService guideMeService;
 
-    @Operation(summary = "가이드 본인 프로필 조회", description = "현재 로그인한 가이드의 프로필을 조회합니다.")
-    @GetMapping
-    public ResponseEntity<Response<GuideProfileResponseDTO>> getGuideMeProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        if(userDetails == null){
-            throw new BaseException(ErrorStatus.UNAUTHORIZED);
-        }
-
-        GuideProfileResponseDTO result = guideMeService.getGuideMeProfile(userDetails.getMemberId());
-
-        Response<GuideProfileResponseDTO> response = Response.<GuideProfileResponseDTO>builder()
-                .message("조회 완료")
-                .data(result)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-
-
-    }
-
     @Operation(summary = "가이드 직무 분야 등록", description = "가이드의 직무 분야를 등록합니다.")
     @PostMapping("/job-field")
     public ResponseEntity<Response<GuideJobFieldResponseDTO>> registerJobField(
@@ -304,6 +283,5 @@ public class GuideMeController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
 
     }
-
 
 }

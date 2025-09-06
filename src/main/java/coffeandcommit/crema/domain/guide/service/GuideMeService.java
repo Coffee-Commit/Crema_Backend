@@ -18,9 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 
-import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Period;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,34 +36,6 @@ public class GuideMeService {
     private final TimeSlotRepository timeSlotRepository;
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
-
-    /* 가이드 본인 프로필 조회 */
-    @Transactional(readOnly = true)
-    public GuideProfileResponseDTO getGuideMeProfile(String memberId) {
-
-        // 1. 가이드 기본 정보 조회
-        Guide guide = guideRepository.findByMember_Id(memberId).orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
-
-        // 2. 가이드 직무 분야 조회
-        GuideJobField guideJobField = guideJobFieldRepository.findByGuide(guide).orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_JOB_FIELD_NOT_FOUND));
-
-        // 3. 연차 계산
-        int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
-
-        // 4. 직무분야 DTO 변환
-        GuideJobFieldResponseDTO guideJobFieldResponseDTO = GuideJobFieldResponseDTO.from(guideJobField);
-
-        return GuideProfileResponseDTO.from(guide, workingPeriodYears, guideJobFieldResponseDTO);
-
-    }
-    private int calculateWorkingPeriodYears(LocalDate workingStart, LocalDate workingEnd) {
-        if (workingStart == null) {
-            return 0; // 시작일이 없으면 0년으로 간주
-        }
-        LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
-        int years = Period.between(workingStart, endDate).getYears();
-        return Math.max(0, years); // 음수 방지
-    }
 
     /* 가이드 직무 분야 등록 */
     @Transactional
@@ -179,18 +149,18 @@ public class GuideMeService {
         }
 
         List<HashTag> hashTags = guideHashTagRequestDTOs.stream()
-            .map(dto -> {
-                boolean exists = hashTagRepository.existsByGuideAndHashTagName(guide, dto.getHashTagName());
-                if (exists) {
-                    throw new BaseException(ErrorStatus.DUPLICATE_HASHTAG);
-                }
+                .map(dto -> {
+                    boolean exists = hashTagRepository.existsByGuideAndHashTagName(guide, dto.getHashTagName());
+                    if (exists) {
+                        throw new BaseException(ErrorStatus.DUPLICATE_HASHTAG);
+                    }
 
-                return HashTag.builder()
-                        .guide(guide)
-                        .hashTagName(dto.getHashTagName())
-                        .build();
-            })
-            .collect(Collectors.toList());
+                    return HashTag.builder()
+                            .guide(guide)
+                            .hashTagName(dto.getHashTagName())
+                            .build();
+                })
+                .collect(Collectors.toList());
 
         List<HashTag> savedHashTags = hashTagRepository.saveAll(hashTags);
 
@@ -230,28 +200,28 @@ public class GuideMeService {
         // 요청 DTO -> GuideSchedule + TimeSlot 변환
         List<GuideSchedule> schedules = guideScheduleRequestDTO.getSchedules().stream()
                 .map(scheduleRequestDTO -> {
-                        GuideSchedule schedule = GuideSchedule.builder()
-                                .guide(guide)
-                                .dayOfWeek(scheduleRequestDTO.getDayOfWeek())
-                                .build();
+                    GuideSchedule schedule = GuideSchedule.builder()
+                            .guide(guide)
+                            .dayOfWeek(scheduleRequestDTO.getDayOfWeek())
+                            .build();
 
                     // TimeSlot 변환 및 연관관계 설정
                     List<TimeSlot> timeSlots = scheduleRequestDTO.getTimeSlots().stream()
                             .map(timeSlotRequestDTO -> {
-                                    LocalTime start = timeSlotRequestDTO.getStartTime();
-                                    LocalTime end = timeSlotRequestDTO.getEndTime();
+                                LocalTime start = timeSlotRequestDTO.getStartTime();
+                                LocalTime end = timeSlotRequestDTO.getEndTime();
 
-                                    if (start.isAfter(end) || start.equals(end)) {
-                                        throw new BaseException(ErrorStatus.INVALID_TIME_RANGE);
-                                    }
+                                if (start.isAfter(end) || start.equals(end)) {
+                                    throw new BaseException(ErrorStatus.INVALID_TIME_RANGE);
+                                }
 
-                                    validateNoOverlap(schedule.getTimeSlots(), start, end);
+                                validateNoOverlap(schedule.getTimeSlots(), start, end);
 
-                                    return TimeSlot.builder()
-                                            .schedule(schedule)
-                                            .startTimeOption(start)
-                                            .endTimeOption(end)
-                                            .build();
+                                return TimeSlot.builder()
+                                        .schedule(schedule)
+                                        .startTimeOption(start)
+                                        .endTimeOption(end)
+                                        .build();
                             }).toList();
 
                     schedule.getTimeSlots().addAll(timeSlots);
@@ -386,7 +356,7 @@ public class GuideMeService {
         List<ExperienceGroup> experienceGroups = guideExperienceRequestDTO.getGroups().stream()
                 .map(groupReq  -> {
                     GuideChatTopic guideChatTopic = guideChatTopicRepository.findById(groupReq.getGuideChatTopicId())
-                        .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC));
+                            .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC));
 
                     if (!guideChatTopic.getGuide().getId().equals(guide.getId())) {
                         throw new BaseException(ErrorStatus.FORBIDDEN);
