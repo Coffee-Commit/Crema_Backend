@@ -8,6 +8,7 @@ import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
 import coffeandcommit.crema.domain.guide.repository.*;
+import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.validation.Valid;
@@ -22,6 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Period;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +40,7 @@ public class GuideMeService {
     private final TimeSlotRepository timeSlotRepository;
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
+    private final ReviewRepository reviewRepository;
 
     /* 가이드 본인 프로필 조회 */
     @Transactional(readOnly = true)
@@ -431,5 +434,63 @@ public class GuideMeService {
         List<ExperienceGroup> remainingGroups = experienceGroupRepository.findByGuide(guide);
 
         return GuideExperienceResponseDTO.from(remainingGroups);
+    }
+
+    /* 가이드 커피챗 소개글 등록 */
+    @Transactional
+    public GuideCoffeeChatResponseDTO registerGuideCoffeeChat(String loginMemberId, @Valid GuideCoffeeChatRequestDTO requestDTO) {
+
+        // 1. 로그인 멤버의 가이드 조회
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 본인 검증 (보안상 이중 체크)
+        if (!guide.getMember().getId().equals(loginMemberId)) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 3. Guide 엔티티 업데이트 (제목/소개글) → updatedGuide로 새 변수 사용
+        Guide updatedGuide = guide.toBuilder()
+                .title(requestDTO.getTitle())
+                .chatDescription(requestDTO.getChatDescription())
+                .build();
+
+        guideRepository.save(updatedGuide);
+
+        // 4. 태그 조회 (GuideHashTagResponseDTO 리스트 변환)
+        List<GuideHashTagResponseDTO> tags = hashTagRepository.findByGuide(updatedGuide).stream()
+                .map(hashTag -> GuideHashTagResponseDTO.from(hashTag, updatedGuide.getId()))
+                .toList();
+
+        // 5. 리뷰 통계 조회 (평균 별점 / 리뷰 개수)
+        Double reviewScore = Optional.ofNullable(
+                        reviewRepository.getAverageScoreByGuideId(updatedGuide.getId())
+                ).map(score -> Math.round(score * 10.0) / 10.0) // 소수점 첫째 자리 반올림
+                .orElse(0.0);
+        Long reviewCount = reviewRepository.countByGuideId(updatedGuide.getId());
+
+        // 6. 경험 그룹 조회
+        GuideExperienceResponseDTO experiences =
+                GuideExperienceResponseDTO.from(experienceGroupRepository.findByGuide(updatedGuide));
+
+        // 7. 경험 상세 조회 (단건)
+        GuideExperienceDetailResponseDTO experienceDetail =
+                experienceDetailRepository.findByGuide(updatedGuide)
+                        .map(GuideExperienceDetailResponseDTO::from)
+                        .orElse(null);
+
+        // 7-1. 오픈 여부
+        boolean isOpened = true;
+
+        // 8. Response DTO 변환
+        return GuideCoffeeChatResponseDTO.from(
+                updatedGuide,
+                tags,
+                reviewScore,
+                reviewCount,
+                experiences,
+                experienceDetail,
+                isOpened
+        );
     }
 }

@@ -26,4 +26,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     List<Review> findByReservationIdIn(Collection<Long> reservationIds);
 
+    @Query("SELECT COALESCE(AVG(r.starReview), 0) FROM Review r WHERE r.reservation.guide.id = :guideId")
+    Double getAverageScoreByGuideId(@Param("guideId") Long guideId);
+
+    @Query("SELECT COUNT(r) FROM Review r WHERE r.reservation.guide.id = :guideId")
+    Long countByGuideId(@Param("guideId") Long guideId);
 }

@@ -3,6 +3,7 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
 import coffeandcommit.crema.domain.guide.repository.*;
+import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -26,6 +28,7 @@ public class GuideService {
     private final GuideScheduleRepository guideScheduleRepository;
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
+    private final ReviewRepository reviewRepository;
 
     private void validateAccess(Guide targetGuide, String loginMemberId) {
         if (!targetGuide.isOpened()) {
@@ -135,5 +138,52 @@ public class GuideService {
         List<ExperienceGroup> experienceGroups = experienceGroupRepository.findByGuide(targetGuide);
 
         return GuideExperienceResponseDTO.from(experienceGroups);
+    }
+
+    /* 가이드 커피챗 조회 */
+    public GuideCoffeeChatResponseDTO getGuideCoffeeChat(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 3. 태그 조회
+        List<GuideHashTagResponseDTO> tags = hashTagRepository.findByGuide(targetGuide).stream()
+                .map(hashTag -> GuideHashTagResponseDTO.from(hashTag, targetGuide.getId()))
+                .toList();
+
+        // 4. 리뷰 통계 조회
+        Double reviewScore = Optional.ofNullable(
+                        reviewRepository.getAverageScoreByGuideId(targetGuide.getId())
+                ).map(score -> Math.round(score * 10.0) / 10.0)
+                .orElse(0.0);
+
+        Long reviewCount = reviewRepository.countByGuideId(targetGuide.getId());
+
+        // 5. 경험 그룹 조회
+        GuideExperienceResponseDTO experiences =
+                GuideExperienceResponseDTO.from(experienceGroupRepository.findByGuide(targetGuide));
+
+        // 6. 경험 상세 조회
+        GuideExperienceDetailResponseDTO experienceDetail =
+                experienceDetailRepository.findByGuide(targetGuide)
+                        .map(GuideExperienceDetailResponseDTO::from)
+                        .orElse(null);
+
+        // 7. 오픈 여부 (본인일 경우 상관없이, 타인일 경우 validateAccess에서 이미 필터됨)
+        boolean isOpened = targetGuide.isOpened(); // Guide 엔티티에 boolean 필드 있다고 가정
+
+        // 8. Response DTO 변환
+        return GuideCoffeeChatResponseDTO.from(
+                targetGuide,
+                tags,
+                reviewScore,
+                reviewCount,
+                experiences,
+                experienceDetail,
+                isOpened
+        );
     }
 }
