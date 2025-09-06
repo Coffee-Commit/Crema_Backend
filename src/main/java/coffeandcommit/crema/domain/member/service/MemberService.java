@@ -352,9 +352,8 @@ public class MemberService {
                 .workingStart(request.getWorkingStart())
                 .workingEnd(request.getWorkingEnd())
                 .isCurrent(request.getIsCurrent())
-                // TODO: 회사명 공개 여부 필드 추가 필요 (Guide 엔티티에)
-                // .isCompanyNamePublic(request.getIsCompanyNamePublic())
-                // TODO: PDF 업로드 필드 추가 예정
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
+                // TODO: PDF 업로드 필드 연동 예정
                 // .certificationImageUrl(request.getCertificationPdfUrl())
                 .build();
     }
@@ -390,8 +389,7 @@ public class MemberService {
         return MemberUpgradeResponse.builder()
                 .guideId(guide.getId())
                 .companyName(guide.getCompanyName())
-                // TODO: 회사명 공개 여부 필드 추가 후 설정
-                // .isCompanyNamePublic(guide.getIsCompanyNamePublic())
+                .isCompanyNamePublic(guide.isCompanyNamePublic())
                 .jobPosition(guide.getJobPosition())
                 .isCurrent(guide.isCurrent())
                 .workingStart(guide.getWorkingStart())

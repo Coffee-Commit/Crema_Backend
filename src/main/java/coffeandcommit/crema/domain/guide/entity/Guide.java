@@ -53,6 +53,10 @@ public class Guide extends BaseEntity {
     @Column(name = "company_name")
     private String companyName;
 
+    @Column(name = "is_company_name_public", nullable = false)
+    @Builder.Default
+    private boolean isCompanyNamePublic = true;
+
     @Column(name = "job_position")
     private String jobPosition;
 
@@ -81,7 +85,6 @@ public class Guide extends BaseEntity {
     private List<ExperienceGroup> experienceGroups = new ArrayList<>();
 
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-
     private ExperienceDetail experienceDetail;
 
 }
