@@ -54,7 +54,7 @@ pipeline {
                         export RUN_GCS_IT='true'
 
                         chmod +x ./gradlew
-                        ./gradlew clean build
+                        ./gradlew clean build -Dspring.profiles.active=test
                     '''
                 }
             }
