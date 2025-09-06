@@ -1,12 +1,14 @@
 package coffeandcommit.crema.domain.review.service;
 
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ExperienceEvaluationRequestDTO;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
@@ -45,6 +47,9 @@ class ReviewServiceTest {
     @Mock
     private ExperienceGroupRepository experienceGroupRepository;
 
+    @Mock
+    private ReservationRepository reservationRepository;
+
     @InjectMocks
     private ReviewService reviewService;
 
@@ -55,6 +60,7 @@ class ReviewServiceTest {
     private final BigDecimal STAR_REVIEW = BigDecimal.valueOf(4.5);
 
     private Member testMember;
+    private Guide testGuide;
     private Reservation testReservation;
     private ExperienceGroup testExperienceGroup;
     private ReviewRequestDTO testReviewRequestDTO;
@@ -67,20 +73,25 @@ class ReviewServiceTest {
                 .id(LOGIN_MEMBER_ID)
                 .build();
 
-        // Create test time unit
-        TimeUnit timeUnit = TimeUnit.builder()
-                .timeType(TimeType.MINUTE_30)
+        // Create test_guide
+        testGuide = Guide.builder()
+                .id(100L)
+                .member(testMember)
                 .build();
 
-        // Create test_reservation
+        // Create test_reservation (먼저 생성!)
         testReservation = Reservation.builder()
                 .id(RESERVATION_ID)
                 .member(testMember)
+                .guide(testGuide)
                 .status(Status.COMPLETED)
-                .matchingTime(LocalDateTime.now().minusHours(1)) // Meeting ended 1 hour ago
+                .matchingTime(LocalDateTime.now().minusHours(1))
                 .build();
 
-        // Set time unit to reservation
+        // Create test time unit (reservation과 연결)
+        TimeUnit timeUnit = TimeUnit.builder()
+                .timeType(TimeType.MINUTE_30)
+                .build();
         timeUnit.setReservation(testReservation);
         testReservation.setTimeUnit(timeUnit);
 
@@ -110,6 +121,7 @@ class ReviewServiceTest {
                 .comment(COMMENT)
                 .build();
     }
+
 
     @Test
     @DisplayName("createReview - 성공 케이스: 리뷰 생성 성공")
@@ -289,5 +301,72 @@ class ReviewServiceTest {
         verify(reservationService, times(1)).getReservationOrThrow(RESERVATION_ID);
         verify(reviewRepository, never()).existsByReservation(any());
         verify(reviewRepository, never()).save(any(Review.class));
+    }
+
+    @Test
+    @DisplayName("getMyReviews - 성공 케이스: 완료된 예약 목록 조회 (리뷰 있음/없음 혼합)")
+    void getMyReviews_Success() {
+        // Given
+        // Create a second reservation without a review
+        Reservation secondReservation = Reservation.builder()
+                .id(2L)
+                .member(testMember)
+                .guide(testGuide)
+                .status(Status.COMPLETED)
+                .matchingTime(LocalDateTime.now().minusHours(2))
+                .build();
+
+        TimeUnit timeUnit2 = TimeUnit.builder()
+                .timeType(TimeType.MINUTE_30)
+                .build();
+        timeUnit2.setReservation(secondReservation);
+        secondReservation.setTimeUnit(timeUnit2);
+
+        // Setup mocks
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
+                .thenReturn(java.util.List.of(testReservation, secondReservation));
+
+        when(reviewRepository.findByReservationId(RESERVATION_ID))
+                .thenReturn(Optional.of(testReview));
+
+        when(reviewRepository.findByReservationId(2L))
+                .thenReturn(Optional.empty());
+
+        // When
+        var result = reviewService.getMyReviews(LOGIN_MEMBER_ID);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        assertEquals(RESERVATION_ID, result.get(0).getReservationId());
+        assertNotNull(result.get(0).getReview());
+        assertEquals(STAR_REVIEW.doubleValue(), result.get(0).getReview().getStar());
+        assertEquals(COMMENT, result.get(0).getReview().getComment());
+
+        assertEquals(2L, result.get(1).getReservationId());
+        assertNull(result.get(1).getReview());
+
+        // Verify interactions
+        verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
+        verify(reviewRepository, times(1)).findByReservationId(RESERVATION_ID);
+        verify(reviewRepository, times(1)).findByReservationId(2L);
+    }
+
+    @Test
+    @DisplayName("getMyReviews - 실패 케이스: 완료된 예약이 없는 경우")
+    void getMyReviews_NoReservationsFound() {
+        // Given
+        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED))
+                .thenReturn(Collections.emptyList());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reviewService.getMyReviews(LOGIN_MEMBER_ID);
+        });
+
+        assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED);
+        verify(reviewRepository, never()).findByReservationId(any());
     }
 }
