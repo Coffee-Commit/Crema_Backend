@@ -21,4 +21,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
         where r.id = :id
     """)
     Optional<Review> findByIdWithExperiences(@Param("id") Long id);
+
+    Optional<Review> findByReservationId(Long reservationId);
+
 }

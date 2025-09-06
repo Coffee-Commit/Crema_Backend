@@ -4,8 +4,10 @@ import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.repository.ExperienceGroupRepository;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
+import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReviewResponseDTO;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.entity.ReviewExperience;
@@ -19,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Slf4j
 @Service
@@ -26,6 +29,7 @@ import java.time.LocalDateTime;
 public class ReviewService {
 
     private final ReservationService reservationService;
+    private final ReservationRepository reservationRepository;
     private final ReviewRepository reviewRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
 
@@ -100,4 +104,25 @@ public class ReviewService {
         return ReviewResponseDTO.from(fullyLoaded);
     }
 
+    /* 내 리뷰 조회 */
+    @Transactional(readOnly = true)
+    public List<MyReviewResponseDTO> getMyReviews(String loginMemberId) {
+
+        // 1. 예약 조회 (예약 상태 = COMPLETED, 로그인한 멤버 기준)
+        List<Reservation> reservations = reservationRepository
+                .findByMember_IdAndStatus(loginMemberId, Status.COMPLETED);
+
+        if (reservations.isEmpty()) {
+            throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
+        }
+
+        // 2. 각 예약마다 리뷰 조회 후 DTO 변환
+        return reservations.stream()
+                .map(reservation -> {
+                    Review review = reviewRepository.findByReservationId(reservation.getId())
+                            .orElse(null); // 리뷰 없으면 null
+                    return MyReviewResponseDTO.from(reservation, review);
+                })
+                .toList();
+    }
 }
