@@ -25,6 +25,12 @@ public enum ErrorStatus implements BaseCode {
     INSUFFICIENT_POINTS(HttpStatus.BAD_REQUEST, "포인트가 부족합니다."),
     INVALID_POINT_AMOUNT(HttpStatus.BAD_REQUEST, "포인트 금액이 올바르지 않습니다."),
 
+    // Member to Guide Upgrade
+    ALREADY_GUIDE(HttpStatus.CONFLICT, "이미 가이드로 등록된 사용자입니다."),
+    INVALID_WORKING_PERIOD(HttpStatus.BAD_REQUEST, "근무 기간이 올바르지 않습니다."),
+    WORKING_END_REQUIRED_WHEN_NOT_CURRENT(HttpStatus.BAD_REQUEST, "재직중이 아닌 경우 근무 종료일이 필요합니다."),
+    WORKING_END_NOT_ALLOWED_WHEN_CURRENT(HttpStatus.BAD_REQUEST, "재직중인 경우 근무 종료일을 입력할 수 없습니다."),
+
     // JWT & Auth
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
     EXPIRED_TOKEN(HttpStatus.UNAUTHORIZED, "만료된 토큰입니다."),

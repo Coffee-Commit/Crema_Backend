@@ -47,8 +47,15 @@ public class Guide extends BaseEntity {
     @Column(name = "working_end")
     private LocalDate workingEnd;
 
-    @Column(name = "company_name")
+    @Column(name = "working_period")
+    private String workingPeriod;
+
+    @Column(name = "company_name", length = 16)
     private String companyName;
+
+    @Column(name = "is_company_name_public", nullable = false)
+    @Builder.Default
+    private boolean isCompanyNamePublic = true;
 
     @Column(name = "job_position")
     private String jobPosition;
@@ -66,16 +73,18 @@ public class Guide extends BaseEntity {
     private List<GuideChatTopic> guideChatTopics = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<HashTag> hashTags = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<GuideSchedule> guideSchedules = new ArrayList<>();
 
     @OneToMany(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<ExperienceGroup> experienceGroups = new ArrayList<>();
 
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-
     private ExperienceDetail experienceDetail;
 
 }

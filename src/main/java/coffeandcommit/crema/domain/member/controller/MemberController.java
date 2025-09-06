@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.member.controller;
 
+import coffeandcommit.crema.domain.member.dto.request.MemberUpgradeRequest;
+import coffeandcommit.crema.domain.member.dto.response.MemberUpgradeResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberPublicResponse;
 import coffeandcommit.crema.domain.member.service.MemberProfileService;
@@ -10,6 +12,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -88,6 +91,46 @@ public class MemberController {
 
         log.info("Profile image updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, updatedMember);
+    }
+
+    @Operation(summary = "가이드로 업그레이드", description = "루키에서 가이드로 업그레이드합니다.")
+    @SecurityRequirement(name = "JWT")
+    @PostMapping("/me/upgrade-to-guide")
+    public ApiResponse<MemberUpgradeResponse> upgradeToGuide(
+            @Valid @RequestBody MemberUpgradeRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.upgradeToGuide(memberId, request);
+
+        log.info("Member upgraded to guide: {}", memberId);
+        return ApiResponse.onSuccess(SuccessStatus.CREATED, result);
+    }
+
+    @Operation(summary = "가이드 업그레이드 정보 조회", description = "가이드 업그레이드 시 입력한 정보를 조회합니다.")
+    @SecurityRequirement(name = "JWT")
+    @GetMapping("/me/guide-upgrade-info")
+    public ApiResponse<MemberUpgradeResponse> getUpgradeInfo(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.getUpgradeInfo(memberId);
+
+        return ApiResponse.onSuccess(SuccessStatus.OK, result);
+    }
+
+    @Operation(summary = "가이드 업그레이드 정보 수정", description = "가이드 업그레이드 시 입력한 정보를 수정합니다.")
+    @SecurityRequirement(name = "JWT")
+    @PutMapping("/me/guide-upgrade-info")
+    public ApiResponse<MemberUpgradeResponse> updateUpgradeInfo(
+            @Valid @RequestBody MemberUpgradeRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.updateUpgradeInfo(memberId, request);
+
+        log.info("Guide upgrade info updated by member: {}", memberId);
+        return ApiResponse.onSuccess(SuccessStatus.OK, result);
     }
 
     @Operation(summary = "회원 탈퇴", description = "현재 로그인한 사용자가 회원 탈퇴를 진행합니다.")

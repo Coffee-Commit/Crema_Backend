@@ -16,7 +16,7 @@ import java.util.List;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
