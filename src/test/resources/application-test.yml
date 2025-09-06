@@ -19,7 +19,7 @@ spring:
     # port: ${REDIS_PORT}
 
 jwt:
-  secret: "YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0K"
+  secret: "YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0="
 
 security:
   oauth2:

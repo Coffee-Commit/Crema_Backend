@@ -24,7 +24,8 @@ import org.springframework.test.context.TestPropertySource;
         "spring.datasource.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa",
-        "spring.datasource.password="
+        "spring.datasource.password=",
+        "jwt.secret=YS1zdXBlci1sb25nLWFuZC1zZWN1cmUtc2VjcmV0LWtleS1mb3ItdGVzdGluZy1oczI1Ni1hbGdvcml0aG0="
 })
 public class StorageServiceIntegrationTest {
 
