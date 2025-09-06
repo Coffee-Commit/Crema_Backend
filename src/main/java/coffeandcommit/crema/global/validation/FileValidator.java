@@ -9,7 +9,9 @@ import org.springframework.web.multipart.MultipartFile;
 public class FileValidator {
 
     // 확장자
-    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList("image/jpeg", "image/png", "image/jpg");
+    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"
+    );
     private static final String ALLOWED_PDF_TYPE = "application/pdf";
 
     // 사이즈
@@ -32,6 +34,13 @@ public class FileValidator {
 
     public void validateProfileImage(MultipartFile file) {
         validateImageBasics(file);
+
+        final String ct = file.getContentType();
+        if (ct == null || !(ct.equalsIgnoreCase("image/jpeg")
+                    || ct.equalsIgnoreCase("image/jpg")
+                    || ct.equalsIgnoreCase("image/png"))) {
+            throw new IllegalArgumentException("프로필 이미지는 JPEG/PNG만 업로드할 수 있습니다.");
+        }
 
         if (file.getSize() > MAX_PROFILE_IMAGE_SIZE) {
             throw new IllegalArgumentException("프로필 이미지 크기는 2MB를 초과할 수 없습니다.");
@@ -99,24 +108,41 @@ public class FileValidator {
     }
 
     private boolean isValidImageHeader(byte[] header) {
-        if (header == null || header.length < 8) return false;
-
-        // PNG: 89 50 4E 47 0D 0A 1A 0A
-        if (header[0] == (byte)0x89 &&
-                header[1] == (byte)0x50 &&
-                header[2] == (byte)0x4E &&
-                header[3] == (byte)0x47 &&
-                header[4] == (byte)0x0D &&
-                header[5] == (byte)0x0A &&
-                header[6] == (byte)0x1A &&
-                header[7] == (byte)0x0A) {
-            return true;
+        if (header == null || header.length < 3) {
+            return false;
         }
 
         // JPEG / JPG: FF D8 FF
-        if (header[0] == (byte)0xFF &&
-                header[1] == (byte)0xD8 &&
-                header[2] == (byte)0xFF) {
+        if (header.length >= 3 &&
+                header[0] == (byte) 0xFF &&
+                header[1] == (byte) 0xD8 &&
+                header[2] == (byte) 0xFF) {
+            return true;
+        }
+        // PNG: 89 50 4E 47 0D 0 A 1A 0A
+        if (header.length >= 8 &&
+                header[0] == (byte) 0x89 &&
+                header[1] == (byte) 0x50 &&
+                header[2] == (byte) 0x4E &&
+                header[3] == (byte) 0x47 &&
+                header[4] == (byte) 0x0D &&
+                header[5] == (byte) 0x0A &&
+                header[6] == (byte) 0x1A &&
+                header[7] == (byte) 0x0A) {
+            return true;
+        }
+        // GIF: "GIF87a" or "GIF89a"
+        if (header.length >= 6 &&
+                header[0] == 'G' && header[1] == 'I' && header[2] == 'F' &&
+                header[3] == '8' && (header[4] == '7' || header[4] == '9') &&
+                header[5] == 'a') {
+            return true;
+        }
+
+        // WEBP: "RIFF"...."WEBP"
+        if (header.length >= 12 &&
+                header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F' &&
+                header[8] == 'W' && header[9] == 'E' && header[10] == 'B' && header[11] == 'P') {
             return true;
         }
 
