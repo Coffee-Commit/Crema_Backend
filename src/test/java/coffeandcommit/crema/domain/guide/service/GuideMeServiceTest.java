@@ -21,9 +21,7 @@ import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailRespo
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuidePendingReservationResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.MemberInfo;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
