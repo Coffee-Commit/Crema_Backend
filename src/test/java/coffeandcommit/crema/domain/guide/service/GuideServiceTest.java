@@ -1184,9 +1184,6 @@ public class GuideServiceTest {
         guide3 = guide3.toBuilder()
                 .guideJobField(guideJobField3)
                 .build();
-        guideJobField3 = guideJobField3.toBuilder()
-                .guide(guide3)
-                .build();
 
         // 페이지 객체 생성 (순서는 중요하지 않음, 서비스에서 재정렬됨)
         Page<Guide> guidePage = new PageImpl<>(List.of(guide1, guide3));
