@@ -416,6 +416,7 @@ public class MemberService {
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriod(workingPeriod)
+                .certificationPdfUrl(guide.getCertificationImageUrl())
                 .build();
     }
 
