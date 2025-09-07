@@ -35,6 +35,7 @@ public class MemberUpgradeRequest {
 
     private LocalDate workingEnd; // 재직중이면 null
 
-    // TODO: PDF 업로드 필드 추가 예정
+    // PDF 업로드는 MultipartFile로 Controller에서 별도 처리
+    // DTO에는 URL만 저장하는 필드가 필요한 경우를 위해 주석으로 남김
     // private String certificationPdfUrl;
 }

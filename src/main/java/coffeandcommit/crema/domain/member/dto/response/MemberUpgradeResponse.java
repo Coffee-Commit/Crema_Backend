@@ -17,10 +17,11 @@ public class MemberUpgradeResponse {
     private Boolean isCompanyNamePublic;
     private String jobPosition;
     private Boolean isCurrent;
+
     private LocalDate workingStart;
     private LocalDate workingEnd;
-
     private String workingPeriod; // "2년 3개월" 또는 "2021.07 ~ 재직중"
     private int workingPeriodYears;
-    private int workingPeriodMonths;
+
+    private String certificationPdfUrl;
 }
