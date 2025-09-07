@@ -12,6 +12,7 @@ import coffeandcommit.crema.domain.reservation.dto.request.SurveyFileRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.request.SurveyRequestDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.CoffeeChatSummaryResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationApplyResponseDTO;
+import coffeandcommit.crema.domain.reservation.dto.response.ReservationCompletionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationDecisionResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationResponseDTO;
 import coffeandcommit.crema.domain.reservation.dto.response.ReservationSurveyResponseDTO;
@@ -620,5 +621,78 @@ class ReservationServiceTest {
         verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.PENDING);
         verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.CONFIRMED);
         verify(reservationRepository, times(1)).countByMember_IdAndStatus(MEMBER_ID, Status.COMPLETED);
+    }
+
+    @Test
+    @DisplayName("getReservationCompletion - 성공 케이스: 예약 완료 정보 조회")
+    void getReservationCompletion_Success() {
+        // Given
+        LocalDateTime preferredDateTime = LocalDateTime.of(2023, 10, 15, 14, 0); // 2023-10-15 14:00
+        TimeType timeType = TimeType.MINUTE_30;
+
+        // Update survey with preferred date
+        Survey surveyWithDate = testReservation.getSurvey().toBuilder()
+                .preferredDate(preferredDateTime)
+                .build();
+
+        // Update time unit with time type
+        TimeUnit timeUnitWithType = testReservation.getTimeUnit().toBuilder()
+                .timeType(timeType)
+                .build();
+
+        // Create reservation with updated survey and time unit
+        Reservation reservationWithDetails = testReservation.toBuilder()
+                .survey(surveyWithDate)
+                .build();
+
+        reservationWithDetails.setTimeUnit(timeUnitWithType);
+        timeUnitWithType.setReservation(reservationWithDetails);
+
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(reservationWithDetails));
+
+        // When
+        ReservationCompletionResponseDTO result = reservationService.getReservationCompletion(MEMBER_ID, RESERVATION_ID);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(RESERVATION_ID, result.getReservationId());
+        assertEquals("2023-10-15", result.getPreferredDateOnly());
+        assertEquals("일", result.getPreferredDayOfWeek());
+        assertTrue(result.getPreferredTimeRange().startsWith("14:00"));
+        assertEquals(timeType.getPrice(), result.getPrice());
+
+        // Verify repository calls
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getReservationCompletion - 실패 케이스: 예약이 존재하지 않는 경우")
+    void getReservationCompletion_ReservationNotFound() {
+        // Given
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getReservationCompletion(MEMBER_ID, RESERVATION_ID);
+        });
+
+        assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
+    }
+
+    @Test
+    @DisplayName("getReservationCompletion - 실패 케이스: 권한이 없는 사용자가 조회하는 경우")
+    void getReservationCompletion_Forbidden() {
+        // Given
+        String unauthorizedUserId = "unauthorized-user-id";
+        when(reservationRepository.findById(RESERVATION_ID)).thenReturn(Optional.of(testReservation));
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> {
+            reservationService.getReservationCompletion(unauthorizedUserId, RESERVATION_ID);
+        });
+
+        assertEquals(ErrorStatus.FORBIDDEN, exception.getErrorCode());
+        verify(reservationRepository, times(1)).findById(RESERVATION_ID);
     }
 }

@@ -1,14 +1,10 @@
 package coffeandcommit.crema.domain.guide.dto.response;
 
-import coffeandcommit.crema.domain.guide.enums.DayType;
-import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.format.DateTimeFormatter;
 
 @Getter
 @NoArgsConstructor

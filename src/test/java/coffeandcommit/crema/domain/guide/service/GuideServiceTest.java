@@ -3,13 +3,20 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
+import coffeandcommit.crema.domain.guide.dto.response.CoffeeChatStatsResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceEvaluationResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideReviewResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuideThisWeekCoffeeChatResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.MemberInfo;
+import coffeandcommit.crema.domain.guide.dto.response.TimeSlotResponseDTO;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.entity.Guide;
@@ -580,14 +587,14 @@ public class GuideServiceTest {
         // 첫 번째 스케줄 검증
         assertEquals(DayType.MONDAY, result.getSchedules().get(0).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
-        assertEquals("09:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
-        assertEquals("10:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
+        assertTrue(result.getSchedules().get(0).getTimeSlots().get(0).getPreferredTimeRange().startsWith("09:00"));
+        assertTrue(result.getSchedules().get(0).getTimeSlots().get(0).getPreferredTimeRange().contains("10:00"));
 
         // 두 번째 스케줄 검증
         assertEquals(DayType.WEDNESDAY, result.getSchedules().get(1).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(1).getTimeSlots().size());
-        assertEquals("14:00", result.getSchedules().get(1).getTimeSlots().get(0).getStartTime());
-        assertEquals("15:00", result.getSchedules().get(1).getTimeSlots().get(0).getEndTime());
+        assertTrue(result.getSchedules().get(1).getTimeSlots().get(0).getPreferredTimeRange().startsWith("14:00"));
+        assertTrue(result.getSchedules().get(1).getTimeSlots().get(0).getPreferredTimeRange().contains("15:00"));
 
         // 메서드 호출 검증
         verify(guideRepository).findById(1L);
@@ -663,8 +670,8 @@ public class GuideServiceTest {
         assertEquals(1, result.getSchedules().size());
         assertEquals(DayType.FRIDAY, result.getSchedules().get(0).getDayOfWeek());
         assertEquals(1, result.getSchedules().get(0).getTimeSlots().size());
-        assertEquals("16:00", result.getSchedules().get(0).getTimeSlots().get(0).getStartTime());
-        assertEquals("17:00", result.getSchedules().get(0).getTimeSlots().get(0).getEndTime());
+        assertTrue(result.getSchedules().get(0).getTimeSlots().get(0).getPreferredTimeRange().startsWith("16:00"));
+        assertTrue(result.getSchedules().get(0).getTimeSlots().get(0).getPreferredTimeRange().contains("17:00"));
 
         // 메서드 호출 검증
         verify(guideRepository).findById(2L);

@@ -33,7 +33,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     Double getAverageScoreByGuideId(@Param("guideId") Long guideId);
 
     @Query("""
-            SELECT COUNT(r) 
+            SELECT COUNT(r)
             FROM Review r
             WHERE r.reservation.guide.id = :guideId
     """)
@@ -41,14 +41,14 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
 
     @Query("""
-            SELECT COUNT(r) 
+            SELECT COUNT(r)
             FROM Review r
             WHERE r.reservation.guide = :guide
     """)
     Long countByGuide(@Param("guide") Guide guide);
 
     @Query("""
-            SELECT COALESCE(AVG(r.starReview), 0.0) 
+            SELECT COALESCE(AVG(r.starReview), 0.0)
             FROM Review r
             WHERE r.reservation.guide = :guide
     """)

@@ -481,7 +481,7 @@ public class GuideMeService {
 
         return pendingReservations.stream()
                 .map(reservation -> {
-                    String createdAt = reservation.getCreatedAt().toString();
+                    String createdAt = reservation.getCreatedAt() != null ? reservation.getCreatedAt().toString() : null;
 
                     LocalDateTime preferredDateTime = reservation.getSurvey().getPreferredDate();
                     TimeType timeType = reservation.getTimeUnit().getTimeType();
