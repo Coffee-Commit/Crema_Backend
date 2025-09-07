@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.reservation.dto.response;
 
 import coffeandcommit.crema.domain.reservation.entity.SurveyFile;
+import coffeandcommit.crema.global.storage.StorageService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -13,12 +14,12 @@ import lombok.NoArgsConstructor;
 public class SurveyFileResponseDTO {
 
     private Long id;
-    private String fileUploadUrl;
+    private String fileUrl;
 
-    public static SurveyFileResponseDTO from(SurveyFile file) {
+    public static SurveyFileResponseDTO from(SurveyFile file, StorageService storageService) {
         return SurveyFileResponseDTO.builder()
                 .id(file.getId())
-                .fileUploadUrl(file.getFileUploadUrl())
+                .fileUrl(storageService.generateViewUrl(file.getFileKey()))
                 .build();
     }
 }

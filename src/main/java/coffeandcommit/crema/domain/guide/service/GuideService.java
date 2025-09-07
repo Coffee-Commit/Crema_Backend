@@ -14,6 +14,7 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -373,5 +374,59 @@ public class GuideService {
                 targetGuide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
                 jobFieldDTO
         );
+    }
+
+    /* 가이드 목록 조회 */
+    @Transactional(readOnly = true)
+    public Page<GuideListResponseDTO> getGuides(List<Long> jobFieldIds, List<Long> chatTopicIds, String keyword, Pageable pageable, String loginMemberId, String sort) {
+
+        // 1. 조건에 맞는 가이드 목록 조회 (DB 필터링)
+        Page<Guide> guides = guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+
+        // 2. 엔티티 → DTO 변환
+        List<GuideListResponseDTO> dtoList = guides.stream()
+                .map(guide -> {
+                    // 직무분야 DTO
+                    GuideJobFieldResponseDTO jobField = GuideJobFieldResponseDTO.from(guide.getGuideJobField());
+
+                    // 해시태그 DTO
+                    List<GuideHashTagResponseDTO> hashTags = guide.getHashTags().stream()
+                            .map(tag -> GuideHashTagResponseDTO.from(tag, guide.getId()))
+                            .toList();
+
+                    // 통계 DTO (Optional + 반올림 방식 적용)
+                    Long totalCoffeeChats = reservationRepository.countByGuideAndStatus(guide, Status.COMPLETED);
+                    Double averageStar = Optional.ofNullable(reviewRepository.calculateAverageStarByGuide(guide))
+                            .map(bd -> bd.setScale(1, RoundingMode.HALF_UP).doubleValue())
+                            .orElse(0.0);
+                    Long totalReviews = reviewRepository.countByGuide(guide);
+                    Long thumbsUpCount = reviewExperienceRepository.countThumbsUpByGuide(guide);
+
+                    CoffeeChatStatsResponseDTO stats = CoffeeChatStatsResponseDTO.from(
+                            totalCoffeeChats, averageStar, totalReviews, thumbsUpCount
+                    );
+
+                    return GuideListResponseDTO.from(
+                            guide,
+                            guide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
+                            jobField,
+                            hashTags,
+                            stats
+                    );
+                })
+                .toList();
+
+        // 3. 정렬 조건 적용
+        if ("popular".equalsIgnoreCase(sort)) {
+            dtoList = dtoList.stream()
+                    .sorted(Comparator.comparing(
+                            (GuideListResponseDTO dto) -> dto.getStats().getTotalReviews()
+                    ).reversed())
+                    .toList();
+        }
+        // sort = latest 는 기본적으로 pageable 정렬(modifiedAt DESC) 적용됨
+
+        // 4. Page 객체로 다시 래핑
+        return new PageImpl<>(dtoList, pageable, guides.getTotalElements());
     }
 }

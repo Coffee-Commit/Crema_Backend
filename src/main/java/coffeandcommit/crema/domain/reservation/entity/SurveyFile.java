@@ -28,6 +28,6 @@ public class SurveyFile extends BaseEntity {
     @JoinColumn(name = "survey_id", nullable = false)
     private Survey survey;
 
-    @Column(name = "file_upload_url", length = 2048)
-    private String fileUploadUrl; // 파일 업로드 URL (S3 경로)
+    @Column(name = "file_Key", length = 2048)
+    private String fileKey; // 스토리지에 저장된 파일 Key
 }

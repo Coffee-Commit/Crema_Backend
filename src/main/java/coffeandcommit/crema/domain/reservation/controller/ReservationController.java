@@ -14,9 +14,13 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @Slf4j
 @RestController
@@ -28,10 +32,11 @@ public class ReservationController {
     private final ReservationService reservationService;
 
     @Operation(summary = "커피챗 예약 신청", description = "커피챗 예약을 신청합니다.")
-    @PostMapping
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<Response<ReservationResponseDTO>> createReservation(
             @AuthenticationPrincipal CustomUserDetails userDetails,
-            @Valid @RequestBody ReservationRequestDTO reservationRequestDTO) {
+            @Valid @RequestPart("reservation") ReservationRequestDTO reservationRequestDTO,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
 
         if(userDetails == null){
             throw new BaseException(ErrorStatus.UNAUTHORIZED);
@@ -39,7 +44,7 @@ public class ReservationController {
 
         String loginMemberId = userDetails.getMemberId();
 
-        ReservationResponseDTO result = reservationService.createReservation(loginMemberId, reservationRequestDTO);
+        ReservationResponseDTO result = reservationService.createReservation(loginMemberId, reservationRequestDTO, files);
 
         Response<ReservationResponseDTO> response = Response.<ReservationResponseDTO>builder()
                 .message("커피챗 예약 신청 성공")

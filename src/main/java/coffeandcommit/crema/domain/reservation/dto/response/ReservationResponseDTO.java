@@ -1,6 +1,7 @@
 package coffeandcommit.crema.domain.reservation.dto.response;
 
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.global.storage.StorageService;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -21,13 +22,13 @@ public class ReservationResponseDTO {
     private SurveyResponseDTO survey;
     private LocalDateTime createdAt;
 
-    public static ReservationResponseDTO from(Reservation reservation) {
+    public static ReservationResponseDTO from(Reservation reservation, StorageService storageService) {
         return ReservationResponseDTO.builder()
                 .reservationId(reservation.getId())
                 .guideId(reservation.getGuide().getId())
                 .status(reservation.getStatus().name())
                 .timeUnit(reservation.getTimeUnit().getTimeType().name())
-                .survey(SurveyResponseDTO.from(reservation.getSurvey()))
+                .survey(SurveyResponseDTO.from(reservation.getSurvey(), storageService))
                 .createdAt(reservation.getCreatedAt())
                 .build();
     }

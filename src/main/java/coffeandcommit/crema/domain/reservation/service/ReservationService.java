@@ -17,11 +17,16 @@ import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import coffeandcommit.crema.global.file.FileService;
+import coffeandcommit.crema.global.storage.StorageService;
+import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
+import coffeandcommit.crema.global.validation.FileType;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
@@ -35,6 +40,8 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final MemberRepository memberRepository;
     private final GuideRepository guideRepository;
+    private final FileService fileService;
+    private final StorageService storageService;
 
     /* 예약 존재 여부 확인 */
     @Transactional(readOnly = true)
@@ -48,7 +55,7 @@ public class ReservationService {
 
     /* 커피챗 예약 신청 */
     @Transactional
-    public ReservationResponseDTO createReservation(String loginMemberId, @Valid ReservationRequestDTO reservationRequestDTO) {
+    public ReservationResponseDTO createReservation(String loginMemberId, @Valid ReservationRequestDTO reservationRequestDTO, List<MultipartFile> files) {
 
         // 1. 로그인한 사용자의 Guide 조회
         Member member = memberRepository.findById(loginMemberId)
@@ -64,15 +71,26 @@ public class ReservationService {
                 .preferredDate(reservationRequestDTO.getSurvey().getPreferredDate())
                 .build();
 
-        // SurveyFile 엔티티 리스트 생성
-        List<SurveyFile> files = reservationRequestDTO.getSurvey().getFiles().stream()
-                .map(fileDto -> SurveyFile.builder()
-                        .survey(survey)
-                        .fileUploadUrl(fileDto.getFileUploadUrl())
-                        .build())
-                .toList();
+        // 3-1. 파일 업로드 처리 (files가 존재하는 경우만)
+        if (files != null && !files.isEmpty()) {
+            List<SurveyFile> surveyFiles = files.stream()
+                    .map(file -> {
+                        FileUploadResponse uploaded = fileService.uploadFile(
+                                file,
+                                FileType.PDF,        // 파일 타입 (PDF / IMAGE 등 필요에 맞게)
+                                "survey-files",      // 저장 폴더명
+                                member.getId()       // 업로드한 사용자
+                        );
 
-        survey.getFiles().addAll(files);
+                        return SurveyFile.builder()
+                                .survey(survey)
+                                .fileKey(uploaded.getFileKey())
+                                .build();
+                    })
+                    .toList();
+
+            survey.getFiles().addAll(surveyFiles);
+        }
 
 
         // 4. Reservation 엔티티 생성
@@ -93,7 +111,7 @@ public class ReservationService {
 
         Reservation saved = reservationRepository.save(reservation);
 
-        return ReservationResponseDTO.from(saved);
+        return ReservationResponseDTO.from(saved, storageService);
     }
 
     /* 커피챗 예약 승인/거절 */
@@ -195,7 +213,7 @@ public class ReservationService {
 
         // 4. 파일 매핑
         List<SurveyFileResponseDTO> fileDTOs = survey.getFiles().stream()
-                .map(SurveyFileResponseDTO::from)
+                .map(file -> SurveyFileResponseDTO.from(file, storageService))
                 .toList();
 
         // 5. 멤버 매핑
