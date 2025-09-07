@@ -18,7 +18,6 @@ import coffeandcommit.crema.global.storage.StorageService;
 import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
 import coffeandcommit.crema.global.validation.FileType;
 import coffeandcommit.crema.global.validation.FileValidator;
-import coffeandcommit.crema.global.validation.ValidatedFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -407,7 +406,6 @@ public class MemberService {
      * MemberUpgradeResponse 생성
      */
     private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
-        int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
         String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
@@ -418,20 +416,7 @@ public class MemberService {
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriod(workingPeriod)
-                .workingPeriodYears(workingPeriodYears)
                 .build();
-    }
-
-    /**
-     * 근무 기간 연차 계산
-     */
-    private int calculateWorkingPeriodYears(LocalDate workingStart, LocalDate workingEnd) {
-        if (workingStart == null) {
-            return 0;
-        }
-        LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
-        int years = Period.between(workingStart, endDate).getYears();
-        return Math.max(0, years);
     }
 
     /**

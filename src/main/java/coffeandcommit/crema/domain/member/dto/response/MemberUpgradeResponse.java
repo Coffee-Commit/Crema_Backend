@@ -21,7 +21,6 @@ public class MemberUpgradeResponse {
     private LocalDate workingStart;
     private LocalDate workingEnd;
     private String workingPeriod; // "2년 3개월" 또는 "2021.07 ~ 재직중"
-    private int workingPeriodYears;
 
     private String certificationPdfUrl;
 }
