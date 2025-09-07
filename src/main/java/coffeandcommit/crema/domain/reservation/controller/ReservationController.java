@@ -137,4 +137,26 @@ public class ReservationController {
 
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "커피챗 신청 완료 조회", description = "특정 예약의 신청 완료 페이지 정보를 조회합니다.")
+    @GetMapping("/{reservationId}/completion")
+    public ResponseEntity<Response<ReservationCompletionResponseDTO>> getReservationCompletion(
+            @PathVariable Long reservationId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        ReservationCompletionResponseDTO result = reservationService.getReservationCompletion(loginMemberId, reservationId);
+
+        Response<ReservationCompletionResponseDTO> response = Response.<ReservationCompletionResponseDTO>builder()
+                .message("커피챗 신청 완료 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
 }

@@ -3,15 +3,28 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
 import coffeandcommit.crema.domain.guide.repository.*;
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
+import coffeandcommit.crema.domain.review.entity.Review;
+import coffeandcommit.crema.domain.review.repository.ReviewExperienceRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.TextStyle;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -29,6 +42,8 @@ public class GuideService {
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
     private final ReviewRepository reviewRepository;
+    private final ReservationRepository reservationRepository;
+    private final ReviewExperienceRepository reviewExperienceRepository;
 
     private void validateAccess(Guide targetGuide, String loginMemberId) {
         if (!targetGuide.isOpened()) {
@@ -185,6 +200,152 @@ public class GuideService {
                 experiences,
                 experienceDetail,
                 isOpened
+        );
+    }
+
+    /* 이번 주 커피챗 예약 현황 조회 (가이드 본인만) */
+    @Transactional(readOnly = true)
+    public Page<GuideThisWeekCoffeeChatResponseDTO> getThisWeekCoffeeChats(Long guideId, String loginMemberId, Pageable pageable) {
+
+        // 1. 로그인 멤버의 가이드 조회
+        Guide guide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 2. 본인 검증 (보안상 이중 체크)
+        if (!guide.getMember().getId().equals(loginMemberId)) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 3. 이번 주 월요일 ~ 일요일 계산
+        LocalDate today = LocalDate.now();
+        LocalDate monday = today.with(DayOfWeek.MONDAY);
+        LocalDate sunday = today.with(DayOfWeek.SUNDAY);
+
+        LocalDateTime startOfWeek = monday.atStartOfDay();
+        LocalDateTime endOfWeek = sunday.atTime(LocalTime.MAX);
+
+        // 4. 예약 조회 (기간 + 상태 필터링)
+        Page<Reservation> reservations = reservationRepository
+                .findByGuideAndMatchingTimeBetweenAndStatusIn(
+                        guide,
+                        startOfWeek,
+                        endOfWeek,
+                        List.of(Status.CONFIRMED, Status.COMPLETED),
+                        pageable
+                );
+
+        // 5. DTO 변환
+        return reservations.map(reservation ->
+                GuideThisWeekCoffeeChatResponseDTO.from(
+                        reservation,
+                        MemberInfo.from(reservation.getMember()),
+                        reservation.getMatchingTime().toLocalDate().toString(),
+                        reservation.getMatchingTime().getDayOfWeek()
+                                .getDisplayName(TextStyle.SHORT, Locale.KOREAN),
+                        reservation.getMatchingTime().toLocalTime() + "~" +
+                                reservation.getMatchingTime()
+                                        .plusMinutes(reservation.getTimeUnit().getTimeType().getMinutes())
+                                        .toLocalTime().toString()
+                )
+        );
+    }
+
+    /* 가이드 커피챗 통계 조회 (가이드 본인만) */
+    @Transactional(readOnly = true)
+    public CoffeeChatStatsResponseDTO getCoffeeChatStats(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 3. 총 커피챗 완료 횟수
+        Long totalCoffeeChats = reservationRepository.countByGuideAndStatus(targetGuide, Status.COMPLETED);
+
+        // 4. 평균 별점 & 리뷰 개수
+        Double averageStar = reviewRepository.calculateAverageStarByGuide(targetGuide); // 평균
+        Long totalReviews = reviewRepository.countByGuide(targetGuide);                 // 갯수
+
+        // 5. 따봉 수 (ReviewExperience 기준)
+        Long thumbsUpCount = reviewExperienceRepository.countThumbsUpByGuide(targetGuide);
+
+        // 6. DTO 변환
+        return CoffeeChatStatsResponseDTO.from(totalCoffeeChats, averageStar, totalReviews, thumbsUpCount);
+    }
+
+    /* 가이드 경험별 따봉 비율 조회 */
+    @Transactional(readOnly = true)
+    public List<GuideExperienceEvaluationResponseDTO> getGuideExperienceEvaluations(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 2. 가이드의 경험 대주제 목록 조회
+        List<ExperienceGroup> experienceGroups = experienceGroupRepository.findByGuide(targetGuide);
+
+        // 3. 경험별 따봉 비율 계산
+        return experienceGroups.stream()
+                .map(group -> {
+                    Long totalCount = reviewExperienceRepository.countByExperienceGroup(group);
+                    Long thumbsUpCount = reviewExperienceRepository.countByExperienceGroupAndIsThumbsUpTrue(group);
+
+                    double rate = (totalCount == 0) ? 0.0 : (double) thumbsUpCount / totalCount;
+
+                    return GuideExperienceEvaluationResponseDTO.of(
+                            group.getId(),
+                            group.getExperienceTitle(),
+                            rate
+                    );
+                })
+                .toList();
+    }
+
+    /* 가이드 리뷰 목록 조회 */
+    @Transactional(readOnly = true)
+    public Page<GuideReviewResponseDTO> getGuideReviews(Long guideId, String loginMemberId, Pageable pageable) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 2. 리뷰 페이징 조회
+        Page<Review> reviewPage = reviewRepository.findByReservation_GuideOrderByCreatedAtDesc(targetGuide, pageable);
+
+        // 3. DTO 변환
+        return reviewPage.map(review ->
+                GuideReviewResponseDTO.from(review, review.getReservation().getMember())
+        );
+    }
+
+    /* 가이드 프로필 조회 */
+    @Transactional(readOnly = true)
+    public GuideProfileResponseDTO getGuideProfile(Long guideId, String loginMemberId) {
+
+        // 1. 조회 대상 가이드 조회
+        Guide targetGuide = guideRepository.findById(guideId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        validateAccess(targetGuide, loginMemberId);
+
+        // 2. 직무분야 → GuideJobFieldResponseDTO 변환
+        GuideJobField guideJobField = targetGuide.getGuideJobField();
+        if (guideJobField == null) {
+            throw new BaseException(ErrorStatus.GUIDE_JOB_FIELD_NOT_FOUND);
+        }
+
+        GuideJobFieldResponseDTO jobFieldDTO = GuideJobFieldResponseDTO.from(guideJobField);
+
+        // 3. DTO 변환 후 반환
+        return GuideProfileResponseDTO.from(
+                targetGuide,
+                targetGuide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
+                jobFieldDTO
         );
     }
 }

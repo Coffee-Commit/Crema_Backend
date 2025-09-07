@@ -2,6 +2,8 @@ package coffeandcommit.crema.domain.reservation.service;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
+import coffeandcommit.crema.domain.guide.enums.DayType;
+import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
@@ -21,6 +23,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -218,5 +222,61 @@ public class ReservationService {
         int completedCount = reservationRepository.countByMember_IdAndStatus(loginMemberId, Status.COMPLETED);
 
         return CoffeeChatSummaryResponseDTO.of(pendingCount, confirmedCount, completedCount);
+    }
+
+    /* 커피챗 신청 완료 정보 조회 */
+    @Transactional(readOnly = true)
+    public ReservationCompletionResponseDTO getReservationCompletion(String loginMemberId, Long reservationId) {
+
+        // 1. 예약 조회
+        Reservation reservation = reservationRepository.findById(reservationId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.RESERVATION_NOT_FOUND));
+
+        // 2. 본인 예약 검증
+        if (!reservation.getMember().getId().equals(loginMemberId)) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 3. 날짜/시간/요일 가공
+        LocalDateTime preferredDateTime = reservation.getSurvey().getPreferredDate();
+        TimeType timeType = reservation.getTimeUnit().getTimeType();
+
+        String preferredDateOnly = null;
+        String preferredTimeRange = null;
+        String preferredDayOfWeek = null;
+
+        if (preferredDateTime != null && timeType != null) {
+            preferredDateOnly = preferredDateTime.toLocalDate().toString();
+
+            LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
+            preferredTimeRange = preferredDateTime.toLocalTime().toString()
+                    + "~" + endDateTime.toLocalTime().toString();
+
+            DayType dayType = convertToDayType(preferredDateTime.getDayOfWeek());
+            preferredDayOfWeek = dayType.getDescription();
+        }
+
+        // 4. 가격 (예: timeType 내부 price 사용)
+        Integer price = timeType != null ? timeType.getPrice() : 0;
+
+        // 5. DTO 변환
+        return ReservationCompletionResponseDTO.from(
+                reservation,
+                preferredDateOnly,
+                preferredDayOfWeek,
+                preferredTimeRange,
+                price
+        );
+    }
+    private DayType convertToDayType(DayOfWeek dayOfWeek) {
+        return switch (dayOfWeek) {
+            case MONDAY -> DayType.MONDAY;
+            case TUESDAY -> DayType.TUESDAY;
+            case WEDNESDAY -> DayType.WEDNESDAY;
+            case THURSDAY -> DayType.THURSDAY;
+            case FRIDAY -> DayType.FRIDAY;
+            case SATURDAY -> DayType.SATURDAY;
+            case SUNDAY -> DayType.SUNDAY;
+        };
     }
 }

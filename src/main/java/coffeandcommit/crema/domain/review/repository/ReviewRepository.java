@@ -1,7 +1,10 @@
 package coffeandcommit.crema.domain.review.repository;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.review.entity.Review;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -29,6 +32,28 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("SELECT COALESCE(AVG(r.starReview), 0.0) FROM Review r WHERE r.reservation.guide.id = :guideId")
     Double getAverageScoreByGuideId(@Param("guideId") Long guideId);
 
-    @Query("SELECT COUNT(r) FROM Review r WHERE r.reservation.guide.id = :guideId")
+    @Query("""
+            SELECT COUNT(r) 
+            FROM Review r
+            WHERE r.reservation.guide.id = :guideId
+    """)
     Long countByGuideId(@Param("guideId") Long guideId);
+
+
+    @Query("""
+            SELECT COUNT(r) 
+            FROM Review r
+            WHERE r.reservation.guide = :guide
+    """)
+    Long countByGuide(@Param("guide") Guide guide);
+
+    @Query("""
+            SELECT COALESCE(AVG(r.starReview), 0.0) 
+            FROM Review r
+            WHERE r.reservation.guide = :guide
+    """)
+    Double calculateAverageStarByGuide(@Param("guide") Guide guide);
+
+
+    Page<Review> findByReservation_GuideOrderByCreatedAtDesc(Guide targetGuide, Pageable pageable);
 }

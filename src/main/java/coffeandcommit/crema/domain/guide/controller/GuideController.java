@@ -3,11 +3,15 @@ package coffeandcommit.crema.domain.guide.controller;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -154,5 +158,119 @@ public class GuideController {
 
     }
 
+    @Operation(summary = "이번주 커피챗 조회", description = "특정 가이드의 이번주 커피챗을 조회합니다.")
+    @GetMapping("/{guideId}/coffeechats/this-week")
+    public ResponseEntity<Response<Page<GuideThisWeekCoffeeChatResponseDTO>>> getThisWeekCoffeeChats(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long guideId,
+            Pageable pageable) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        Page<GuideThisWeekCoffeeChatResponseDTO> result = guideService.getThisWeekCoffeeChats(guideId, loginMemberId, pageable);
+
+        Response<Page<GuideThisWeekCoffeeChatResponseDTO>> response = Response.<Page<GuideThisWeekCoffeeChatResponseDTO>>builder()
+                .message("이번주 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 커피챗 통계 조회", description = "특정 가이드의 커피챗 통계를 조회합니다.")
+    @GetMapping("/{guideId}/coffeechat-stats")
+    public ResponseEntity<Response<CoffeeChatStatsResponseDTO>> getCoffeeChatStats(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long guideId) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        CoffeeChatStatsResponseDTO result = guideService.getCoffeeChatStats(guideId, loginMemberId);
+
+        Response<CoffeeChatStatsResponseDTO> response = Response.<CoffeeChatStatsResponseDTO>builder()
+                .message("가이드 커피챗 통계 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 경험 평가 조회", description = "특정 가이드의 경험 평가를 조회합니다.")
+    @GetMapping("/{guideId}/experience-evaluations")
+    public ResponseEntity<Response<List<GuideExperienceEvaluationResponseDTO>>> getGuideExperienceEvaluations(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long guideId) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideExperienceEvaluationResponseDTO> result =
+                guideService.getGuideExperienceEvaluations(guideId, loginMemberId);
+
+        Response<List<GuideExperienceEvaluationResponseDTO>> response =
+                Response.<List<GuideExperienceEvaluationResponseDTO>>builder()
+                        .message("가이드 경험 평가 조회 성공")
+                        .data(result)
+                        .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 리뷰 조회", description = "특정 가이드의 리뷰를 조회합니다.")
+    @GetMapping("/{guideId}/reviews")
+    public ResponseEntity<Response<Page<GuideReviewResponseDTO>>> getGuideReviews(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @PathVariable Long guideId,
+            Pageable pageable) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        Page<GuideReviewResponseDTO> result = guideService.getGuideReviews(guideId, loginMemberId, pageable);
+
+        // 4. 응답 Wrapping
+        Response<Page<GuideReviewResponseDTO>> response = Response.<Page<GuideReviewResponseDTO>>builder()
+                .message("가이드 리뷰 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 프로필 조회", description = "특정 가이드의 프로필을 조회합니다.")
+    @GetMapping("/{guideId}/profile")
+    public ResponseEntity<Response<GuideProfileResponseDTO>> getGuideProfile(
+            @PathVariable Long guideId,
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideProfileResponseDTO result = guideService.getGuideProfile(guideId, loginMemberId);
+
+        Response<GuideProfileResponseDTO> response = Response.<GuideProfileResponseDTO>builder()
+                .message("가이드 프로필 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
 
 }

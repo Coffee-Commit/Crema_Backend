@@ -13,14 +13,14 @@ import lombok.NoArgsConstructor;
 public class TimeSlotResponseDTO {
 
     private Long id;
-    private String startTime; // 시작 시간 (예: "09:00")
-    private String endTime;   // 종료 시간 (예: "10:00")
+    private String preferredTimeRange;
 
     public static TimeSlotResponseDTO from(TimeSlot timeSlot) {
         return TimeSlotResponseDTO.builder()
                 .id(timeSlot.getId())
-                .startTime(timeSlot.getStartTimeOption().toString())
-                .endTime(timeSlot.getEndTimeOption().toString())
+                .preferredTimeRange(
+                        timeSlot.getStartTimeOption().toString() + " ~ " + timeSlot.getEndTimeOption().toString()
+                )
                 .build();
     }
 }

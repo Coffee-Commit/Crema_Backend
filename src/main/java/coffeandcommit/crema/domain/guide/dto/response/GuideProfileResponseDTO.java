@@ -13,31 +13,21 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @Builder
 public class GuideProfileResponseDTO {
-    private Long guideId;              // Guide PK (Long)
-    private String memberId;           // Member PK (UUID String, CHAR(8))
-    private String nickname;           // member.nickname
-    private String profileImageUrl;    // member.profile_image_url
-    private String companyName;        // guide.company_name
-    private String jobPosition;           // guide.job_position
-    private LocalDate workingStart;  // 근무 시작일
-    private LocalDate workingEnd;    // 근무 종료일 (null이면 현재 재직 중)
-    private int workingPeriodYears;      // 연차
-    private boolean isOpened;              // 가이드 프로필 노출 여부
-    private GuideJobFieldResponseDTO guideJobField;
+    private Long guideId;              // 가이드 ID
+    private String nickname;           // 닉네임 (member.nickname)
+    private String profileImageUrl;    // 프로필 이미지 URL
+    private String companyName;        // 회사명
+    private String workingPeriod;      // "n년 n개월" 형태의 근무기간
+    private GuideJobFieldResponseDTO guideJobField; // 직무분야 정보
 
-    public static GuideProfileResponseDTO from(Guide guide, int workingPeriodYears, GuideJobFieldResponseDTO guideJobFieldResponseDTO) {
+    public static GuideProfileResponseDTO from(Guide guide, String workingPeriod, GuideJobFieldResponseDTO guideJobField) {
         return GuideProfileResponseDTO.builder()
                 .guideId(guide.getId())
-                .memberId(guide.getMember().getId())
                 .nickname(guide.getMember().getNickname())
                 .profileImageUrl(guide.getMember().getProfileImageUrl())
                 .companyName(guide.getCompanyName())
-                .jobPosition(guide.getJobPosition())
-                .workingStart(guide.getWorkingStart())
-                .workingEnd(guide.getWorkingEnd())
-                .workingPeriodYears(workingPeriodYears)
-                .isOpened(guide.isOpened())
-                .guideJobField(guideJobFieldResponseDTO)
+                .workingPeriod(workingPeriod)
+                .guideJobField(guideJobField)
                 .build();
     }
 

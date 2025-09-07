@@ -306,5 +306,26 @@ public class GuideMeController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "가이드 대기중 커피챗 조회", description = "가이드 본인의 가이드 대기중 커피챗 목록을 조회합니다.")
+    @GetMapping("/reservations/pending")
+    public ResponseEntity<Response<List<GuidePendingReservationResponseDTO>>> getPendingReservations(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuidePendingReservationResponseDTO> result = guideMeService.getPendingReservations(loginMemberId);
+
+        Response<List<GuidePendingReservationResponseDTO>> response = Response.<List<GuidePendingReservationResponseDTO>>builder()
+                .message("가이드 대기중 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
 
 }
