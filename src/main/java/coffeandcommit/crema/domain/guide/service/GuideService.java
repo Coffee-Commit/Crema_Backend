@@ -23,10 +23,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.TextStyle;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -331,10 +328,24 @@ public class GuideService {
         // 2. 리뷰 페이징 조회
         Page<Review> reviewPage = reviewRepository.findByReservation_GuideOrderByCreatedAtDesc(targetGuide, pageable);
 
-        // 3. DTO 변환
-        return reviewPage.map(review ->
-                GuideReviewResponseDTO.from(review, review.getReservation().getMember())
-        );
+        // 2단계 로딩: Page 안에 있는 리뷰 ID 목록 추출
+        List<Long> reviewIds = reviewPage.getContent().stream()
+                .map(Review::getId)
+                .toList();
+
+        // fetch join 으로 경험평가까지 로딩
+        List<Review> reviewsWithExperiences = reviewRepository.findAllWithExperiencesByIdIn(reviewIds);
+
+        // ID 기준으로 매핑 (리뷰 → 경험평가 붙인 리뷰 찾기)
+        Map<Long, Review> reviewMap = reviewsWithExperiences.stream()
+                .collect(Collectors.toMap(Review::getId, r -> r));
+
+        // Page → DTO 변환 시 경험평가 포함된 리뷰 사용
+        return reviewPage.map(review -> {
+            Review fullReview = reviewMap.getOrDefault(review.getId(), review);
+            return GuideReviewResponseDTO.from(fullReview, review.getReservation().getMember());
+        });
+
     }
 
     /* 가이드 프로필 조회 */

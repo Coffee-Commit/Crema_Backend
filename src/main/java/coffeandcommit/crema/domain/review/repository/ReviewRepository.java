@@ -57,9 +57,15 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     @EntityGraph(attributePaths = {
             "reservation",
-            "reservation.member",
-            "experienceEvaluations",
-            "experienceEvaluations.experienceGroup"
+            "reservation.member"
     })
     Page<Review> findByReservation_GuideOrderByCreatedAtDesc(Guide targetGuide, Pageable pageable);
+
+    @Query("""
+        select distinct r from Review r
+        left join fetch r.experienceEvaluations re
+        left join fetch re.experienceGroup eg
+        where r.id in :ids
+    """)
+    List<Review> findAllWithExperiencesByIdIn(@Param("ids") Collection<Long> ids);
 }
