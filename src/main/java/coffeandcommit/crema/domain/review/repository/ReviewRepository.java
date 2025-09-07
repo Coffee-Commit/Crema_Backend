@@ -1,12 +1,17 @@
 package coffeandcommit.crema.domain.review.repository;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.review.entity.Review;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +34,35 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     @Query("SELECT COALESCE(AVG(r.starReview), 0.0) FROM Review r WHERE r.reservation.guide.id = :guideId")
     Double getAverageScoreByGuideId(@Param("guideId") Long guideId);
 
-    @Query("SELECT COUNT(r) FROM Review r WHERE r.reservation.guide.id = :guideId")
+    @Query("""
+            SELECT COUNT(r)
+            FROM Review r
+            WHERE r.reservation.guide.id = :guideId
+    """)
     Long countByGuideId(@Param("guideId") Long guideId);
+
+
+    @Query("""
+            SELECT COUNT(r)
+            FROM Review r
+            WHERE r.reservation.guide = :guide
+    """)
+    Long countByGuide(@Param("guide") Guide guide);
+
+    @Query("SELECT AVG(r.starReview) FROM Review r WHERE r.reservation.guide = :guide")
+    BigDecimal calculateAverageStarByGuide(@Param("guide") Guide guide);
+
+    @EntityGraph(attributePaths = {
+            "reservation",
+            "reservation.member"
+    })
+    Page<Review> findByReservation_GuideOrderByCreatedAtDesc(Guide targetGuide, Pageable pageable);
+
+    @Query("""
+        select distinct r from Review r
+        left join fetch r.experienceEvaluations re
+        left join fetch re.experienceGroup eg
+        where r.id in :ids
+    """)
+    List<Review> findAllWithExperiencesByIdIn(@Param("ids") Collection<Long> ids);
 }

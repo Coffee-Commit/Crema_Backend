@@ -20,8 +20,10 @@ import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.GuidePendingReservationResponseDTO;
 import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.entity.TimeUnit;
+import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.entity.Guide;
@@ -39,6 +41,10 @@ import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
 import coffeandcommit.crema.domain.guide.repository.TimeSlotRepository;
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.entity.Survey;
+import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -52,6 +58,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -93,6 +100,9 @@ public class GuideMeServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;
+
+    @Mock
+    private ReservationRepository reservationRepository;
 
     @InjectMocks
     private GuideMeService guideMeService;
@@ -1757,5 +1767,89 @@ public class GuideMeServiceTest {
         verify(guideRepository).findByMember_Id(loginMemberId);
         verifyNoMoreInteractions(guideRepository);
         verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
+    }
+
+    @Test
+    @DisplayName("getPendingReservations 성공 테스트")
+    void getPendingReservations_Success() {
+        // Given
+        String loginMemberId = memberId;
+
+        // Create test survey
+        Survey survey = Survey.builder()
+                .id(1L)
+                .messageToGuide("I would like to discuss career opportunities")
+                .preferredDate(LocalDateTime.now().plusDays(7))
+                .build();
+
+        // Create test time unit
+        TimeUnit timeUnit = TimeUnit.builder()
+                .id(1L)
+                .timeType(TimeType.MINUTE_30)
+                .build();
+
+        // Create test reservation
+        Reservation reservation = Reservation.builder()
+                .id(1L)
+                .guide(guide)
+                .member(member)
+                .status(Status.PENDING)
+                .survey(survey)
+                .build();
+
+        reservation.setTimeUnit(timeUnit);
+        timeUnit.setReservation(reservation);
+
+        // Set createdAt field using reflection (fail-fast)
+        LocalDateTime now = LocalDateTime.now();
+
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Field createdAtField =
+                    coffeandcommit.crema.global.common.entity.BaseEntity.class.getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(reservation, now);
+        });
+
+        assertNotNull(reservation.getCreatedAt(), "createdAt 설정 실패");
+
+        List<Reservation> pendingReservations = List.of(reservation);
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.of(guide));
+        when(reservationRepository.findByGuideAndStatus(guide, Status.PENDING)).thenReturn(pendingReservations);
+
+        // When
+        List<GuidePendingReservationResponseDTO> result = guideMeService.getPendingReservations(loginMemberId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getReservationId());
+        assertEquals(Status.PENDING, result.get(0).getStatus());
+        assertNotNull(result.get(0).getMember());
+        assertEquals(member.getNickname(), result.get(0).getMember().getNickname());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verify(reservationRepository).findByGuideAndStatus(guide, Status.PENDING);
+    }
+
+    @Test
+    @DisplayName("getPendingReservations 가이드 없음 테스트")
+    void getPendingReservations_GuideNotFound() {
+        // Given
+        String loginMemberId = "nonexistent-member-id";
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException exception = assertThrows(BaseException.class, () -> 
+            guideMeService.getPendingReservations(loginMemberId)
+        );
+
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verifyNoInteractions(reservationRepository);
     }
 }

@@ -7,7 +7,13 @@ import coffeandcommit.crema.domain.globalTag.repository.ChatTopicRepository;
 import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
+import coffeandcommit.crema.domain.guide.enums.DayType;
+import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.*;
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.entity.Survey;
+import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -19,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
 
+import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +47,7 @@ public class GuideMeService {
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
     private final ReviewRepository reviewRepository;
+    private final ReservationRepository reservationRepository;
 
     /* 가이드 직무 분야 등록 */
     @Transactional
@@ -461,4 +470,69 @@ public class GuideMeService {
                 updatedGuide.isOpened()
         );
     }
+
+    /* 가이드 대기중인 예약 조회 */
+    @Transactional(readOnly = true)
+    public List<GuidePendingReservationResponseDTO> getPendingReservations(String loginMemberId) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        List<Reservation> pendingReservations = reservationRepository.findByGuideAndStatus(guide, Status.PENDING);
+
+        return pendingReservations.stream()
+                .map(reservation -> {
+                    String createdAt = reservation.getCreatedAt() != null
+                            ? reservation.getCreatedAt().toString()
+                            : null;
+
+                    // survey, timeUnit null 안전하게 처리
+                    Survey survey = reservation.getSurvey();
+                    LocalDateTime preferredDateTime = (survey != null) ? survey.getPreferredDate() : null;
+
+                    TimeUnit timeUnit = reservation.getTimeUnit();
+                    TimeType timeType = (timeUnit != null) ? timeUnit.getTimeType() : null;
+
+                    String preferredDateOnly = null;
+                    String preferredTimeRange = null;
+                    String preferredDayOfWeek = null;
+
+                    if (preferredDateTime != null) {
+                        preferredDateOnly = preferredDateTime.toLocalDate().toString();
+
+                        DayType dayType = convertToDayType(preferredDateTime.getDayOfWeek());
+                        preferredDayOfWeek = dayType.getDescription();
+
+                        if (timeType != null) {
+                            LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
+                            preferredTimeRange = preferredDateTime.toLocalTime().toString()
+                                    + "~" + endDateTime.toLocalTime().toString();
+                        }
+                    }
+
+                    return GuidePendingReservationResponseDTO.builder()
+                            .reservationId(reservation.getId())
+                            .member(MemberInfo.from(reservation.getMember()))
+                            .createdAt(createdAt)
+                            .preferredDateOnly(preferredDateOnly)
+                            .preferredDayOfWeek(preferredDayOfWeek)
+                            .preferredTimeRange(preferredTimeRange)
+                            .status(reservation.getStatus())
+                            .build();
+                })
+                .toList();
+    }
+
+    private DayType convertToDayType(DayOfWeek dayOfWeek) {
+        return switch (dayOfWeek) {
+            case MONDAY -> DayType.MONDAY;
+            case TUESDAY -> DayType.TUESDAY;
+            case WEDNESDAY -> DayType.WEDNESDAY;
+            case THURSDAY -> DayType.THURSDAY;
+            case FRIDAY -> DayType.FRIDAY;
+            case SATURDAY -> DayType.SATURDAY;
+            case SUNDAY -> DayType.SUNDAY;
+        };
+    }
+
 }

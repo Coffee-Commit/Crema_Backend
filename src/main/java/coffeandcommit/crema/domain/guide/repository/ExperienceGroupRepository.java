@@ -12,6 +12,6 @@ import java.util.List;
 public interface ExperienceGroupRepository extends JpaRepository<ExperienceGroup, Long> {
     long countByGuide(Guide guide);
 
-    @EntityGraph(attributePaths = {"guideChatTopic", "guideChatTopic.chatTopic"})
+    @EntityGraph(attributePaths = {"guide", "guideChatTopic", "guideChatTopic.chatTopic"})
     List<ExperienceGroup> findByGuide(Guide guide);
 }

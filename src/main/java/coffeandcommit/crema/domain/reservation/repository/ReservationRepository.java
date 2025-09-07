@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.reservation.repository;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import org.springframework.data.domain.Page;
@@ -9,6 +10,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+
+import java.time.LocalDateTime;
+import java.util.Collection;
+import java.util.List;
 
 @Repository
 public interface ReservationRepository extends JpaRepository<Reservation, Long> {
@@ -42,4 +47,12 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("memberId") String memberId,
             @Param("status") Status status,
             Pageable pageable);
+
+    @EntityGraph(attributePaths = {"member", "survey", "timeUnit"})
+    List<Reservation> findByGuideAndStatus(Guide guide, Status status);
+
+    @EntityGraph(attributePaths = {"member", "timeUnit", "timeUnit.timeType"})
+    Page<Reservation> findByGuideAndMatchingTimeBetweenAndStatusIn(Guide guide, LocalDateTime matchingTimeAfter, LocalDateTime matchingTimeBefore, Collection<Status> statuses, Pageable pageable);
+
+    Long countByGuideAndStatus(Guide guide, Status status);
 }
