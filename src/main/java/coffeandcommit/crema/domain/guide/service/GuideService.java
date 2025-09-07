@@ -274,8 +274,12 @@ public class GuideService {
         Long totalCoffeeChats = reservationRepository.countByGuideAndStatus(targetGuide, Status.COMPLETED);
 
         // 4. 평균 별점 & 리뷰 개수
-        Double averageStar = reviewRepository.calculateAverageStarByGuide(targetGuide); // 평균
-        Long totalReviews = reviewRepository.countByGuide(targetGuide);                 // 갯수
+        Double averageStar = Optional.ofNullable(reviewRepository.calculateAverageStarByGuide(targetGuide))
+                .map(avg -> Math.round(avg * 10.0) / 10.0) // 소수점 첫째 자리 반올림
+                .orElse(0.0);
+
+        Long totalReviews = reviewRepository.countByGuide(targetGuide);
+
 
         // 5. 따봉 수 (ReviewExperience 기준)
         Long thumbsUpCount = reviewExperienceRepository.countThumbsUpByGuide(targetGuide);

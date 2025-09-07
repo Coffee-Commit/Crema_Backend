@@ -55,6 +55,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     """)
     Double calculateAverageStarByGuide(@Param("guide") Guide guide);
 
-    @EntityGraph(attributePaths = {"reservation", "reservation.member"})
+    @EntityGraph(attributePaths = {
+            "reservation",
+            "reservation.member",
+            "experienceEvaluations",
+            "experienceEvaluations.experienceGroup"
+    })
     Page<Review> findByReservation_GuideOrderByCreatedAtDesc(Guide targetGuide, Pageable pageable);
 }

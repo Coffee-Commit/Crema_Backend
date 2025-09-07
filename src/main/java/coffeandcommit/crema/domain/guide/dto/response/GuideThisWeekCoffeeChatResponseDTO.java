@@ -27,7 +27,11 @@ public class GuideThisWeekCoffeeChatResponseDTO {
         return GuideThisWeekCoffeeChatResponseDTO.builder()
                 .reservationId(reservation.getId())
                 .member(memberInfo)
-                .createdAt(reservation.getCreatedAt() != null ? reservation.getCreatedAt().toString() : null)
+                .createdAt(reservation.getCreatedAt() != null
+                        ? reservation.getCreatedAt()
+                        .atZone(java.time.ZoneId.of("Asia/Seoul"))
+                        .format(java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME)
+                        : null)
                 .preferredDateOnly(preferredDateOnly)
                 .preferredDayOfWeek(preferredDayOfWeek)
                 .preferredTimeRange(preferredTimeRange)
