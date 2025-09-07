@@ -9,7 +9,6 @@ import coffeandcommit.crema.domain.member.service.MemberCoffeeChatService;
 import coffeandcommit.crema.global.common.exception.response.ApiResponse;
 import coffeandcommit.crema.global.common.exception.code.SuccessStatus;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -32,29 +31,15 @@ public class MemberCoffeeChatController {
 
     // === 관심 주제 관리 ===
 
-    @Operation(summary = "관심 커피챗 주제 등록", description = "멤버의 관심 커피챗 주제를 등록합니다. 여러개 선택 가능하며, 아무것도 선택하지 않으면 UNDEFINED로 설정됩니다.")
+    @Operation(summary = "관심 커피챗 주제 설정", description = "멤버의 관심 커피챗 주제를 설정합니다. 여러개 선택 가능하며, 아무것도 선택하지 않으면 UNDEFINED로 설정됩니다.")
     @SecurityRequirement(name = "JWT")
-    @PostMapping("/interests/topics")
+    @PutMapping("/interests/topics")
     public ApiResponse<List<MemberChatTopicResponse>> registerChatTopics(
             @Valid @RequestBody MemberChatTopicRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         String memberId = userDetails.getUsername();
         List<MemberChatTopicResponse> result = memberCoffeeChatService.registerChatTopics(memberId, request);
-
-        log.info("Chat topics registered by member: {}", memberId);
-        return ApiResponse.onSuccess(SuccessStatus.CREATED, result);
-    }
-
-    @Operation(summary = "관심 커피챗 주제 수정", description = "멤버의 관심 커피챗 주제를 수정합니다. 여러개 선택 가능하며, 아무것도 선택하지 않으면 UNDEFINED로 설정됩니다.")
-    @SecurityRequirement(name = "JWT")
-    @PutMapping("/interests/topics")
-    public ApiResponse<List<MemberChatTopicResponse>> updateChatTopics(
-            @Valid @RequestBody MemberChatTopicRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        String memberId = userDetails.getUsername();
-        List<MemberChatTopicResponse> result = memberCoffeeChatService.updateChatTopics(memberId, request);
 
         log.info("Chat topics updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, result);
@@ -74,29 +59,15 @@ public class MemberCoffeeChatController {
 
     // === 관심 분야 관리 ===
 
-    @Operation(summary = "관심 커피챗 분야 등록", description = "멤버의 관심 커피챗 분야를 등록합니다. 하나만 선택 가능하며, 미선택시 UNDEFINED로 설정됩니다.")
+    @Operation(summary = "관심 커피챗 분야 설정", description = "멤버의 관심 커피챗 분야를 설정합니다. 하나만 선택 가능하며, 미선택시 UNDEFINED로 설정됩니다.")
     @SecurityRequirement(name = "JWT")
-    @PostMapping("/interests/fields")
+    @PutMapping("/interests/fields")
     public ApiResponse<MemberJobFieldResponse> registerJobField(
             @Valid @RequestBody MemberJobFieldRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         String memberId = userDetails.getUsername();
         MemberJobFieldResponse result = memberCoffeeChatService.registerJobField(memberId, request);
-
-        log.info("Job field registered by member: {}", memberId);
-        return ApiResponse.onSuccess(SuccessStatus.CREATED, result);
-    }
-
-    @Operation(summary = "관심 커피챗 분야 수정", description = "멤버의 관심 커피챗 분야를 수정합니다. 하나만 선택 가능하며, 미선택시 UNDEFINED로 설정됩니다.")
-    @SecurityRequirement(name = "JWT")
-    @PutMapping("/interests/fields")
-    public ApiResponse<MemberJobFieldResponse> updateJobField(
-            @Valid @RequestBody MemberJobFieldRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        String memberId = userDetails.getUsername();
-        MemberJobFieldResponse result = memberCoffeeChatService.updateJobField(memberId, request);
 
         log.info("Job field updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, result);

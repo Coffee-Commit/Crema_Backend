@@ -73,11 +73,6 @@ public class MemberCoffeeChatService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional
-    public List<MemberChatTopicResponse> updateChatTopics(String memberId, MemberChatTopicRequest request) {
-        return registerChatTopics(memberId, request); // 등록과 동일한 로직
-    }
-
     public List<MemberChatTopicResponse> getChatTopics(String memberId) {
         Member member = findActiveMemberById(memberId);
 
@@ -119,11 +114,6 @@ public class MemberCoffeeChatService {
         memberRepository.save(member);
 
         return MemberJobFieldResponse.from(memberJobField);
-    }
-
-    @Transactional
-    public MemberJobFieldResponse updateJobField(String memberId, MemberJobFieldRequest request) {
-        return registerJobField(memberId, request); // 등록과 동일한 로직
     }
 
     public MemberJobFieldResponse getJobField(String memberId) {
