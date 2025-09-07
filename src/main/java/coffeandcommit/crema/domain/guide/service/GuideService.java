@@ -18,6 +18,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -272,7 +273,7 @@ public class GuideService {
 
         // 4. 평균 별점 & 리뷰 개수
         Double averageStar = Optional.ofNullable(reviewRepository.calculateAverageStarByGuide(targetGuide))
-                .map(avg -> Math.round(avg * 10.0) / 10.0) // 소수점 첫째 자리 반올림
+                .map(bd -> bd.setScale(1, RoundingMode.HALF_UP).doubleValue()) // 소수점 첫째자리 반올림
                 .orElse(0.0);
 
         Long totalReviews = reviewRepository.countByGuide(targetGuide);

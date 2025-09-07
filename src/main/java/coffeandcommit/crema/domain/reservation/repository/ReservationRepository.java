@@ -51,6 +51,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @EntityGraph(attributePaths = {"member", "survey", "timeUnit"})
     List<Reservation> findByGuideAndStatus(Guide guide, Status status);
 
+    @EntityGraph(attributePaths = {"member", "timeUnit", "timeUnit.timeType"})
     Page<Reservation> findByGuideAndMatchingTimeBetweenAndStatusIn(Guide guide, LocalDateTime matchingTimeAfter, LocalDateTime matchingTimeBefore, Collection<Status> statuses, Pageable pageable);
 
     Long countByGuideAndStatus(Guide guide, Status status);

@@ -11,6 +11,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -48,12 +49,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     """)
     Long countByGuide(@Param("guide") Guide guide);
 
-    @Query("""
-            SELECT COALESCE(AVG(r.starReview), 0.0)
-            FROM Review r
-            WHERE r.reservation.guide = :guide
-    """)
-    Double calculateAverageStarByGuide(@Param("guide") Guide guide);
+    @Query("SELECT AVG(r.starReview) FROM Review r WHERE r.reservation.guide = :guide")
+    BigDecimal calculateAverageStarByGuide(@Param("guide") Guide guide);
 
     @EntityGraph(attributePaths = {
             "reservation",
