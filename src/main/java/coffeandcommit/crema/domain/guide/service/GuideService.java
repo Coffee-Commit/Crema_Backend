@@ -235,19 +235,29 @@ public class GuideService {
                 );
 
         // 5. DTO 변환
-        return reservations.map(reservation ->
-                GuideThisWeekCoffeeChatResponseDTO.from(
-                        reservation,
-                        MemberInfo.from(reservation.getMember()),
-                        reservation.getMatchingTime().toLocalDate().toString(),
-                        reservation.getMatchingTime().getDayOfWeek()
-                                .getDisplayName(TextStyle.SHORT, Locale.KOREAN),
-                        reservation.getMatchingTime().toLocalTime() + "~" +
-                                reservation.getMatchingTime()
-                                        .plusMinutes(reservation.getTimeUnit().getTimeType().getMinutes())
-                                        .toLocalTime().toString()
-                )
-        );
+        return reservations.map(reservation -> {
+            LocalDateTime matchingTime = reservation.getMatchingTime();
+            String dateOnly = matchingTime != null ? matchingTime.toLocalDate().toString() : null;
+            String dayOfWeek = matchingTime != null
+                    ? matchingTime.getDayOfWeek().getDisplayName(TextStyle.SHORT, Locale.KOREAN)
+                    : null;
+
+            String timeRange = null;
+            TimeUnit timeUnit = reservation.getTimeUnit();
+            if (matchingTime != null && timeUnit != null && timeUnit.getTimeType() != null) {
+                LocalDateTime endTime = matchingTime.plusMinutes(timeUnit.getTimeType().getMinutes());
+                timeRange = matchingTime.toLocalTime().toString() + "-" + endTime.toLocalTime().toString();
+            }
+
+            return GuideThisWeekCoffeeChatResponseDTO.from(
+                    reservation,
+                    MemberInfo.from(reservation.getMember()),
+                    dateOnly,
+                    dayOfWeek,
+                    timeRange
+            );
+        });
+
     }
 
     /* 가이드 커피챗 통계 조회 (가이드 본인만) */

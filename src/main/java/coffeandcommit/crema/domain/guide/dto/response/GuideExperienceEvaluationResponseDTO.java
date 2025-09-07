@@ -16,8 +16,14 @@ public class GuideExperienceEvaluationResponseDTO {
     private String thumbsUpRate;    // 따봉 비율 (예: "80%")
 
     public static GuideExperienceEvaluationResponseDTO of(Long experienceId, String experienceTitle, double rate) {
-        // 소수점 버리고 정수 + % 붙여서 반환
-        String formattedRate = String.format("%.0f%%", rate * 100);
+        // [0,1] 범위로 클램핑
+        double clamped = Math.max(0.0, Math.min(1.0, rate));
+
+        // 내림 처리 후 정수 변환
+        int percent = (int) Math.floor(clamped * 100.0);
+
+        // 퍼센트 문자열 생성
+        String formattedRate = percent + "%";
         return GuideExperienceEvaluationResponseDTO.builder()
                 .experienceId(experienceId)
                 .experienceTitle(experienceTitle)

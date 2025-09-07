@@ -27,7 +27,7 @@ public class GuideThisWeekCoffeeChatResponseDTO {
         return GuideThisWeekCoffeeChatResponseDTO.builder()
                 .reservationId(reservation.getId())
                 .member(memberInfo)
-                .createdAt(reservation.getCreatedAt().toString())
+                .createdAt(reservation.getCreatedAt() != null ? reservation.getCreatedAt().toString() : null)
                 .preferredDateOnly(preferredDateOnly)
                 .preferredDayOfWeek(preferredDayOfWeek)
                 .preferredTimeRange(preferredTimeRange)

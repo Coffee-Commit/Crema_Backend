@@ -48,6 +48,7 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("status") Status status,
             Pageable pageable);
 
+    @EntityGraph(attributePaths = {"member", "survey", "timeUnit"})
     List<Reservation> findByGuideAndStatus(Guide guide, Status status);
 
     Page<Reservation> findByGuideAndMatchingTimeBetweenAndStatusIn(Guide guide, LocalDateTime matchingTimeAfter, LocalDateTime matchingTimeBefore, Collection<Status> statuses, Pageable pageable);

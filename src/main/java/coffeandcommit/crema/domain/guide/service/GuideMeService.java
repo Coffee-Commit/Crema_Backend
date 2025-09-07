@@ -11,6 +11,7 @@ import coffeandcommit.crema.domain.guide.enums.DayType;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.repository.*;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
@@ -481,23 +482,32 @@ public class GuideMeService {
 
         return pendingReservations.stream()
                 .map(reservation -> {
-                    String createdAt = reservation.getCreatedAt() != null ? reservation.getCreatedAt().toString() : null;
+                    String createdAt = reservation.getCreatedAt() != null
+                            ? reservation.getCreatedAt().toString()
+                            : null;
 
-                    LocalDateTime preferredDateTime = reservation.getSurvey().getPreferredDate();
-                    TimeType timeType = reservation.getTimeUnit().getTimeType();
+                    // survey, timeUnit null 안전하게 처리
+                    Survey survey = reservation.getSurvey();
+                    LocalDateTime preferredDateTime = (survey != null) ? survey.getPreferredDate() : null;
+
+                    TimeUnit timeUnit = reservation.getTimeUnit();
+                    TimeType timeType = (timeUnit != null) ? timeUnit.getTimeType() : null;
 
                     String preferredDateOnly = null;
                     String preferredTimeRange = null;
                     String preferredDayOfWeek = null;
 
-                    if (preferredDateTime != null && timeType != null) {
+                    if (preferredDateTime != null) {
                         preferredDateOnly = preferredDateTime.toLocalDate().toString();
-                        LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
-                        preferredTimeRange = preferredDateTime.toLocalTime().toString()
-                                + "~" + endDateTime.toLocalTime().toString();
 
                         DayType dayType = convertToDayType(preferredDateTime.getDayOfWeek());
                         preferredDayOfWeek = dayType.getDescription();
+
+                        if (timeType != null) {
+                            LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
+                            preferredTimeRange = preferredDateTime.toLocalTime().toString()
+                                    + "~" + endDateTime.toLocalTime().toString();
+                        }
                     }
 
                     return GuidePendingReservationResponseDTO.builder()
@@ -512,6 +522,7 @@ public class GuideMeService {
                 })
                 .toList();
     }
+
     private DayType convertToDayType(DayOfWeek dayOfWeek) {
         return switch (dayOfWeek) {
             case MONDAY -> DayType.MONDAY;

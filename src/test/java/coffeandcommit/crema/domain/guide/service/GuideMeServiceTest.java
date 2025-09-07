@@ -1800,14 +1800,17 @@ public class GuideMeServiceTest {
         reservation.setTimeUnit(timeUnit);
         timeUnit.setReservation(reservation);
 
-        // Set createdAt field using reflection
-        try {
-            java.lang.reflect.Field createdAtField = coffeandcommit.crema.global.common.entity.BaseEntity.class.getDeclaredField("createdAt");
+        // Set createdAt field using reflection (fail-fast)
+        LocalDateTime now = LocalDateTime.now();
+
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Field createdAtField =
+                    coffeandcommit.crema.global.common.entity.BaseEntity.class.getDeclaredField("createdAt");
             createdAtField.setAccessible(true);
-            createdAtField.set(reservation, LocalDateTime.now());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+            createdAtField.set(reservation, now);
+        });
+
+        assertNotNull(reservation.getCreatedAt(), "createdAt 설정 실패");
 
         List<Reservation> pendingReservations = List.of(reservation);
 
