@@ -380,21 +380,22 @@ public class GuideService {
     @Transactional(readOnly = true)
     public Page<GuideListResponseDTO> getGuides(List<Long> jobFieldIds, List<Long> chatTopicIds, String keyword, Pageable pageable, String loginMemberId, String sort) {
 
-        // 1. 조건에 맞는 가이드 목록 조회 (DB 필터링)
-        Page<Guide> guides = guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        boolean isPopular = "popular".equalsIgnoreCase(sort);
 
-        // 2. 엔티티 → DTO 변환
+        // 1. popular는 전체 데이터 조회 (unpaged), latest는 DB에서 페이징
+        Page<Guide> guides = isPopular
+                ? guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, Pageable.unpaged())
+                : guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+
+        // 2. DTO 변환
         List<GuideListResponseDTO> dtoList = guides.stream()
                 .map(guide -> {
-                    // 직무분야 DTO
                     GuideJobFieldResponseDTO jobField = GuideJobFieldResponseDTO.from(guide.getGuideJobField());
 
-                    // 해시태그 DTO
                     List<GuideHashTagResponseDTO> hashTags = guide.getHashTags().stream()
                             .map(tag -> GuideHashTagResponseDTO.from(tag, guide.getId()))
                             .toList();
 
-                    // 통계 DTO (Optional + 반올림 방식 적용)
                     Long totalCoffeeChats = reservationRepository.countByGuideAndStatus(guide, Status.COMPLETED);
                     Double averageStar = Optional.ofNullable(reviewRepository.calculateAverageStarByGuide(guide))
                             .map(bd -> bd.setScale(1, RoundingMode.HALF_UP).doubleValue())
@@ -408,7 +409,7 @@ public class GuideService {
 
                     return GuideListResponseDTO.from(
                             guide,
-                            guide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
+                            guide.getWorkingPeriod(),
                             jobField,
                             hashTags,
                             stats
@@ -416,17 +417,22 @@ public class GuideService {
                 })
                 .toList();
 
-        // 3. 정렬 조건 적용
-        if ("popular".equalsIgnoreCase(sort)) {
+        // 3. popular일 경우 전체 정렬 후 다시 페이징
+        if (isPopular) {
             dtoList = dtoList.stream()
                     .sorted(Comparator.comparing(
                             (GuideListResponseDTO dto) -> dto.getStats().getTotalReviews()
                     ).reversed())
                     .toList();
-        }
-        // sort = latest 는 기본적으로 pageable 정렬(modifiedAt DESC) 적용됨
 
-        // 4. Page 객체로 다시 래핑
+            int start = (int) pageable.getOffset();
+            int end = Math.min(start + pageable.getPageSize(), dtoList.size());
+            List<GuideListResponseDTO> pagedList = dtoList.subList(start, end);
+
+            return new PageImpl<>(pagedList, pageable, dtoList.size());
+        }
+
+        // 4. latest는 DB 페이징 그대로 반환
         return new PageImpl<>(dtoList, pageable, guides.getTotalElements());
     }
 }

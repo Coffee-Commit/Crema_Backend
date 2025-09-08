@@ -8,6 +8,9 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -277,9 +280,9 @@ public class GuideController {
             @RequestParam(required = false) List<Long> jobFieldIds,
             @RequestParam(required = false) List<Long> chatTopicIds,
             @RequestParam(required = false) String keyword,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(defaultValue = "latest") String sort,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "latest") @Pattern(regexp = "latest|popular") String sort,
             @AuthenticationPrincipal CustomUserDetails userDetails
     ) {
 
@@ -294,10 +297,6 @@ public class GuideController {
 
         Page<GuideListResponseDTO> guides =
                 guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
-
-        if (guides.isEmpty()) {
-            throw new BaseException(ErrorStatus.NO_GUIDES_FOUND);
-        }
 
         Response<Page<GuideListResponseDTO>> response = Response.<Page<GuideListResponseDTO>>builder()
                 .message("가이드 목록 조회 성공")
