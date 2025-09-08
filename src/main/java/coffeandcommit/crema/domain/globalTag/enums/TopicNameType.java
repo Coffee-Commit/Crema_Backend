@@ -8,6 +8,7 @@ import lombok.ToString;
 @AllArgsConstructor
 @ToString
 public enum TopicNameType {
+    UNDEFINED("미정"),
 
     RESUME("이력서"),
     COVER_LETTER("자소서"),

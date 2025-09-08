@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.member.controller;
 
+import coffeandcommit.crema.domain.member.dto.request.MemberUpgradeRequest;
+import coffeandcommit.crema.domain.member.dto.response.MemberUpgradeResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberPublicResponse;
 import coffeandcommit.crema.domain.member.service.MemberProfileService;
@@ -10,13 +12,17 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.time.LocalDate;
 
 @Slf4j
 @RestController
@@ -88,6 +94,78 @@ public class MemberController {
 
         log.info("Profile image updated by member: {}", memberId);
         return ApiResponse.onSuccess(SuccessStatus.OK, updatedMember);
+    }
+
+    @Operation(summary = "가이드로 업그레이드", description = "루키에서 가이드로 업그레이드합니다. PDF 첨부파일이 필요합니다.")
+    @SecurityRequirement(name = "JWT")
+    @PostMapping(value = "/me/upgrade-to-guide", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<MemberUpgradeResponse> upgradeToGuide(
+            @Parameter(description = "회사명", required = true) @RequestParam String companyName,
+            @Parameter(description = "회사명 공개 여부", required = true) @RequestParam Boolean isCompanyNamePublic,
+            @Parameter(description = "직무명", required = true) @RequestParam String jobPosition,
+            @Parameter(description = "재직중 여부", required = true) @RequestParam Boolean isCurrent,
+            @Parameter(description = "근무 시작일", required = true) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workingStart,
+            @Parameter(description = "근무 종료일") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workingEnd,
+            @Parameter(description = "재직 증명서 PDF", required = true) @RequestPart("certificationPdf") MultipartFile certificationPdf,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // MemberUpgradeRequest 객체 생성
+        MemberUpgradeRequest request = MemberUpgradeRequest.builder()
+                .companyName(companyName)
+                .isCompanyNamePublic(isCompanyNamePublic)
+                .jobPosition(jobPosition)
+                .isCurrent(isCurrent)
+                .workingStart(workingStart)
+                .workingEnd(workingEnd)
+                .build();
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.upgradeToGuide(memberId, request, certificationPdf);
+
+        log.info("Member upgraded to guide: {}", memberId);
+        return ApiResponse.onSuccess(SuccessStatus.CREATED, result);
+    }
+
+    @Operation(summary = "가이드 업그레이드 정보 조회", description = "가이드 업그레이드 시 입력한 정보를 조회합니다.")
+    @SecurityRequirement(name = "JWT")
+    @GetMapping("/me/guide-upgrade-info")
+    public ApiResponse<MemberUpgradeResponse> getUpgradeInfo(
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.getUpgradeInfo(memberId);
+
+        return ApiResponse.onSuccess(SuccessStatus.OK, result);
+    }
+
+    @Operation(summary = "가이드 업그레이드 정보 수정", description = "가이드 업그레이드 시 입력한 정보를 수정합니다. PDF 파일은 선택사항입니다.")
+    @SecurityRequirement(name = "JWT")
+    @PutMapping(value = "/me/guide-upgrade-info", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<MemberUpgradeResponse> updateUpgradeInfo(
+            @Parameter(description = "회사명", required = true) @RequestParam String companyName,
+            @Parameter(description = "회사명 공개 여부", required = true) @RequestParam Boolean isCompanyNamePublic,
+            @Parameter(description = "직무명", required = true) @RequestParam String jobPosition,
+            @Parameter(description = "재직중 여부", required = true) @RequestParam Boolean isCurrent,
+            @Parameter(description = "근무 시작일", required = true) @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workingStart,
+            @Parameter(description = "근무 종료일") @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate workingEnd,
+            @Parameter(description = "재직 증명서 PDF (선택사항)") @RequestPart(value = "certificationPdf", required = false) MultipartFile certificationPdf,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // MemberUpgradeRequest 객체 생성
+        MemberUpgradeRequest request = MemberUpgradeRequest.builder()
+                .companyName(companyName)
+                .isCompanyNamePublic(isCompanyNamePublic)
+                .jobPosition(jobPosition)
+                .isCurrent(isCurrent)
+                .workingStart(workingStart)
+                .workingEnd(workingEnd)
+                .build();
+
+        String memberId = userDetails.getUsername();
+        MemberUpgradeResponse result = memberService.updateUpgradeInfo(memberId, request, certificationPdf);
+
+        log.info("Guide upgrade info updated by member: {}", memberId);
+        return ApiResponse.onSuccess(SuccessStatus.OK, result);
     }
 
     @Operation(summary = "회원 탈퇴", description = "현재 로그인한 사용자가 회원 탈퇴를 진행합니다.")

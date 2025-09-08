@@ -1,7 +1,7 @@
 # dev 서버환경 전용 설정
 app:
   oauth2:
-    authorized-redirect-uri: ${FRONTEND_URL}/login/oauth2/redirect  # 프론트엔드로 리다이렉트
+    authorized-redirect-uri: ${FRONTEND_URL}/oauth2/redirect  # 프론트엔드로 리다이렉트
   cookie:
     domain: ${COOKIE_DOMAIN:.coffeechat.kro.kr}  # .coffeechat.kro.kr로 설정하여 모든 서브도메인에서 쿠키 공유
     same-site: ${COOKIE_SAMESITE:None}  # HTTPS 환경에서 cross-site 요청을 위해 None으로 변경

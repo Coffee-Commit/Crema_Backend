@@ -9,11 +9,14 @@ import lombok.*;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
-@Builder
+@Builder(toBuilder = true)
 @SQLRestriction("is_deleted = false") // 회원탈퇴 하지 않은 member만 조회가능하게 설정
 @EntityListeners(AuditingEntityListener.class)
 @Table(name = "member", indexes = {
@@ -60,8 +63,15 @@ public class Member extends BaseEntity {
     @Builder.Default
     private Boolean isDeleted = false;
 
-    @OneToOne(mappedBy = "member", fetch = FetchType.LAZY)
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Guide guide;
+
+    @OneToOne(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private MemberJobField jobField;
+
+    @OneToMany(mappedBy = "member", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<MemberChatTopic> chatTopics = new ArrayList<>();
 
     // 프로필 업데이트 (이메일 추가)
     public void updateProfile(String nickname, String description, String profileImageUrl, String email) {

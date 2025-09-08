@@ -1,19 +1,34 @@
 package coffeandcommit.crema.domain.member.service;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.repository.GuideRepository;
+import coffeandcommit.crema.domain.member.dto.request.MemberUpgradeRequest;
+import coffeandcommit.crema.domain.member.dto.response.MemberUpgradeResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberPublicResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberResponse;
 import coffeandcommit.crema.domain.member.entity.Member;
+import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.domain.member.mapper.MemberMapper;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import coffeandcommit.crema.global.file.FileService;
+import coffeandcommit.crema.global.storage.StorageService;
+import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
+import coffeandcommit.crema.global.validation.FileType;
+import coffeandcommit.crema.global.validation.FileValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Period;
+import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -24,8 +39,13 @@ import java.util.function.Supplier;
 public class MemberService {
 
     private final MemberRepository memberRepository;
+    private final GuideRepository guideRepository;
     private final MemberMapper memberMapper;
     private final MemberProfileService memberProfileService;
+    private final FileValidator fileValidator;
+    private final StorageService storageService;
+    private final FileService fileService;
+
 
     /**
      * 8글자 UUID 생성 (중복 체크 포함)
@@ -33,7 +53,7 @@ public class MemberService {
     public String generateId() {
         String id;
         int attempts = 0;
-        final int maxAttempts = 10; // 무한 루프 방지
+        final int maxAttempts = 10;
 
         do {
             id = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toLowerCase();
@@ -51,8 +71,6 @@ public class MemberService {
 
     /**
      * Member 저장 시 ID 충돌을 자동으로 재시도하는 안전한 저장 메서드
-     * @param memberSupplier Member 객체를 생성하는 Supplier (ID 포함)
-     * @return 저장된 Member
      */
     @Transactional
     public Member saveWithRetry(Supplier<Member> memberSupplier) {
@@ -63,8 +81,8 @@ public class MemberService {
             attempts++;
 
             try {
-                Member member = memberSupplier.get(); // Member 객체 생성 (ID 포함)
-                Member savedMember = memberRepository.saveAndFlush(member); // 즉시 DB 반영하여 제약조건 검증
+                Member member = memberSupplier.get();
+                Member savedMember = memberRepository.saveAndFlush(member);
 
                 log.debug("Member saved successfully: {} (attempts: {})", member.getId(), attempts);
                 return savedMember;
@@ -76,7 +94,6 @@ public class MemberService {
                     log.error("Failed to save member after {} attempts due to ID collisions", maxAttempts);
                     throw new BaseException(ErrorStatus.INTERNAL_SERVER_ERROR);
                 }
-                // 다시 시도 (memberSupplier가 새로운 ID로 Member 생성)
             }
         }
 
@@ -88,7 +105,7 @@ public class MemberService {
      */
     public MemberResponse getMyInfo(String id) {
         Member member = findActiveMemberById(id);
-        return memberMapper.memberToMemberResponse(member);
+        return convertToMemberResponse(member);
     }
 
     /**
@@ -136,8 +153,119 @@ public class MemberService {
         Member savedMember = memberRepository.save(member);
 
         log.info("Member profile info updated: {}", id);
-        return memberMapper.memberToMemberResponse(savedMember);
+        return convertToMemberResponse(savedMember);
     }
+
+    /**
+     * 가이드로 업그레이드
+     */
+    @Transactional
+    public MemberUpgradeResponse upgradeToGuide(String memberId, MemberUpgradeRequest request, MultipartFile certificationPdf) {
+        Member member = findActiveMemberById(memberId);
+
+        // 이미 가이드인지 확인
+        if (member.getRole() == MemberRole.GUIDE) {
+            throw new BaseException(ErrorStatus.ALREADY_GUIDE);
+        }
+
+        // 이미 Guide 엔티티가 존재하는지 확인
+        if (guideRepository.findByMember_Id(memberId).isPresent()) {
+            throw new BaseException(ErrorStatus.ALREADY_GUIDE);
+        }
+
+        // 유효성 검사
+        validateWorkingPeriod(request);
+        validateCertificationPdf(certificationPdf, true); // 필수 파일
+
+        // PDF 파일 업로드
+        String certificationPdfUrl = uploadCertificationPdf(memberId, certificationPdf);
+
+        // Member 역할 변경
+        member = member.toBuilder()
+                .role(MemberRole.GUIDE)
+                .build();
+        member = memberRepository.save(member);
+
+        // Guide 엔티티 생성
+        Guide guide = createGuideEntity(member, request, certificationPdfUrl);
+        guide = guideRepository.save(guide);
+
+        // 응답 생성
+        return createUpgradeResponse(guide);
+    }
+
+    /**
+     * 가이드 업그레이드 정보 조회
+     */
+    @Transactional(readOnly = true)
+    public MemberUpgradeResponse getUpgradeInfo(String memberId) {
+        Member member = findActiveMemberById(memberId);
+
+        // 가이드인지 확인
+        if (member.getRole() != MemberRole.GUIDE) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        Guide guide = guideRepository.findByMember_Id(memberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        return createUpgradeResponse(guide);
+    }
+
+    /**
+     * 가이드 업그레이드 정보 수정 (PDF 업로드 포함)
+     */
+    @Transactional
+    public MemberUpgradeResponse updateUpgradeInfo(String memberId, MemberUpgradeRequest request, MultipartFile certificationPdf) {
+        Member member = findActiveMemberById(memberId);
+
+        // 가이드인지 확인
+        if (member.getRole() != MemberRole.GUIDE) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        Guide guide = guideRepository.findByMember_Id(memberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        // 유효성 검사
+        validateWorkingPeriod(request);
+
+        String certificationPdfUrl = guide.getCertificationImageUrl(); // 기존 URL 유지
+
+        // 새로운 PDF가 제공된 경우 업로드
+        if (certificationPdf != null && !certificationPdf.isEmpty()) {
+            validateCertificationPdf(certificationPdf, false); // 선택사항
+
+            // 기존 파일 삭제
+            if (certificationPdfUrl != null) {
+                try {
+                    storageService.deleteFile(certificationPdfUrl);
+                } catch (Exception e) {
+                    log.warn("Failed to delete existing certification PDF for member: {} - Error: {}",
+                            memberId, e.getMessage());
+                }
+            }
+
+            // 새 파일 업로드
+            certificationPdfUrl = uploadCertificationPdf(memberId, certificationPdf);
+        }
+
+        // Guide 정보 업데이트
+        guide = guide.toBuilder()
+                .companyName(request.getCompanyName())
+                .jobPosition(request.getJobPosition())
+                .workingStart(request.getWorkingStart())
+                .workingEnd(request.getWorkingEnd())
+                .isCurrent(request.getIsCurrent())
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
+                .certificationImageUrl(certificationPdfUrl)
+                .build();
+
+        guide = guideRepository.save(guide);
+
+        return createUpgradeResponse(guide);
+    }
+
 
     /**
      * 회원 삭제 (소프트 삭제)
@@ -152,11 +280,10 @@ public class MemberService {
                 memberProfileService.deleteProfileImage(id);
             } catch (Exception e) {
                 log.error("Failed to delete profile image for member: {} - Error: {}", id, e.getMessage(), e);
-                // 프로필 이미지 삭제 실패해도 회원 탈퇴는 계속 진행
             }
         }
 
-        member.softDelete(); // isDeleted = true로 변경
+        member.softDelete();
         memberRepository.save(member);
         log.info("Member soft deleted: {}", id);
     }
@@ -206,7 +333,6 @@ public class MemberService {
      */
     public CustomUserDetails createUserDetails(String memberId) {
         Member member = findActiveMemberById(memberId);
-        // 탈퇴하지 않은 회원만 enabled=true
         boolean enabled = !Boolean.TRUE.equals(member.getIsDeleted());
         return new CustomUserDetails(memberId, enabled, member.getRole());
     }
@@ -219,6 +345,113 @@ public class MemberService {
     private Member findActiveMemberById(String id) {
         return memberRepository.findByIdAndIsDeletedFalse(id)
                 .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+    }
+
+    /**
+     * Member를 MemberResponse로 변환 (기본 멤버 정보만)
+     */
+    private MemberResponse convertToMemberResponse(Member member) {
+        return memberMapper.memberToMemberResponse(member);
+    }
+
+    /**
+     * 근무 기간 유효성 검사
+     */
+    private void validateWorkingPeriod(MemberUpgradeRequest request) {
+        // 재직중인 경우 근무 끝 날짜는 null이어야 함
+        if (request.getIsCurrent() && request.getWorkingEnd() != null) {
+            throw new BaseException(ErrorStatus.WORKING_END_NOT_ALLOWED_WHEN_CURRENT);
+        }
+
+        // 재직중이 아닌 경우 근무 끝 날짜가 필요
+        if (!request.getIsCurrent() && request.getWorkingEnd() == null) {
+            throw new BaseException(ErrorStatus.WORKING_END_REQUIRED_WHEN_NOT_CURRENT);
+        }
+
+        // 근무 시작일이 끝날보다 늦을 수 없음
+        if (request.getWorkingEnd() != null && request.getWorkingStart().isAfter(request.getWorkingEnd())) {
+            throw new BaseException(ErrorStatus.INVALID_WORKING_PERIOD);
+        }
+    }
+
+    /**
+     * Guide 엔티티 생성
+     */
+    private Guide createGuideEntity(Member member, MemberUpgradeRequest request, String certificationPdfUrl) {
+        // 근무 기간 계산
+        String workingPeriod = calculateWorkingPeriodDisplay(
+                request.getWorkingStart(),
+                request.getWorkingEnd(),
+                request.getIsCurrent()
+        );
+
+        return Guide.builder()
+                .member(member)
+                .isOpened(false) // 처음엔 비공개
+                .title("") // 빈 제목으로 시작
+                .chatDescription("") // 빈 설명으로 시작
+                .approvedDate(LocalDateTime.now())
+                .companyName(request.getCompanyName())
+                .jobPosition(request.getJobPosition())
+                .workingStart(request.getWorkingStart())
+                .workingEnd(request.getWorkingEnd())
+                .workingPeriod(workingPeriod)
+                .isCurrent(request.getIsCurrent())
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
+                .certificationImageUrl(certificationPdfUrl) // PDF URL 설정
+                .build();
+    }
+
+    /**
+     * MemberUpgradeResponse 생성
+     */
+    private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
+        String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
+
+        return MemberUpgradeResponse.builder()
+                .companyName(guide.getCompanyName())
+                .isCompanyNamePublic(guide.isCompanyNamePublic())
+                .jobPosition(guide.getJobPosition())
+                .isCurrent(guide.isCurrent())
+                .workingStart(guide.getWorkingStart())
+                .workingEnd(guide.getWorkingEnd())
+                .workingPeriod(workingPeriod)
+                .certificationPdfUrl(guide.getCertificationImageUrl())
+                .build();
+    }
+
+    /**
+     * 근무 기간 표시 문자열 생성
+     */
+    private String calculateWorkingPeriodDisplay(LocalDate workingStart, LocalDate workingEnd, boolean isCurrent) {
+        if (workingStart == null) {
+            return "정보 없음";
+        }
+
+        // 시작일 포맷팅 (2022.03 형식)
+        String startFormatted = workingStart.format(DateTimeFormatter.ofPattern("yyyy.MM"));
+
+        if (isCurrent) {
+            // 재직중인 경우: "2022.03 ~ 재직중"
+            return startFormatted + " ~ 재직중";
+        } else {
+            // 퇴사한 경우: 기간 계산해서 "2년 3개월" 형식
+            LocalDate endDate = workingEnd != null ? workingEnd : LocalDate.now();
+            Period period = Period.between(workingStart, endDate);
+
+            int years = period.getYears();
+            int months = period.getMonths();
+
+            if (years > 0 && months > 0) {
+                return years + "년 " + months + "개월";
+            } else if (years > 0) {
+                return years + "년";
+            } else if (months > 0) {
+                return months + "개월";
+            } else {
+                return "1개월 미만";
+            }
+        }
     }
 
     /**
@@ -269,5 +502,44 @@ public class MemberService {
 
         // 영문, 숫자, 일부 특수문자(.-_)만 허용, 도메인은 2-8자 제한
         return trimmed.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9-]+\\.[a-zA-Z]{2,8}$");
+    }
+
+    /**
+     * PDF 파일 유효성 검사
+     */
+    private void validateCertificationPdf(MultipartFile pdfFile, boolean isRequired) {
+        if (pdfFile == null || pdfFile.isEmpty()) {
+            if (isRequired) {
+                throw new BaseException(ErrorStatus.FILE_REQUIRED);
+            }
+            return;
+        }
+
+        try {
+            fileValidator.validate(pdfFile, FileType.PDF);
+        } catch (IllegalArgumentException e) {
+            throw new BaseException(ErrorStatus.INVALID_FILE_FORMAT);
+        }
+    }
+
+    /**
+     * 재직증명서 PDF 업로드
+     */
+    private String uploadCertificationPdf(String memberId, MultipartFile pdfFile) {
+        try {
+            // FileService를 사용해서 PDF 업로드 (내부적으로 ValidatedFile로 변환됨)
+            FileUploadResponse uploadResponse = fileService.uploadFile(
+                    pdfFile,
+                    FileType.PDF,
+                    "certifications",
+                    memberId
+            );
+            return uploadResponse.getFileUrl();
+
+        } catch (Exception e) {
+            log.error("Failed to upload certification PDF for member: {} - Error: {}",
+                    memberId, e.getMessage(), e);
+            throw new BaseException(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
     }
 }

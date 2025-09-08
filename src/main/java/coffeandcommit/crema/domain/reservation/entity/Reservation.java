@@ -1,14 +1,17 @@
 package coffeandcommit.crema.domain.reservation.entity;
 
 import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
-import coffeandcommit.crema.domain.survey.entity.Survey;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.util.Objects;
 
 
 @Entity
@@ -37,9 +40,33 @@ public class Reservation extends BaseEntity{
     private LocalDateTime matchingTime;
 
     @Enumerated(EnumType.STRING)
-    private Status status; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
-
-    private String reason;
+    @Builder.Default
+    private Status status = Status.PENDING; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
     private LocalDateTime reservedAt;
+
+    @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private TimeUnit timeUnit;
+
+    public void setTimeUnit(TimeUnit timeUnit) {
+        if (Objects.equals(this.timeUnit, timeUnit)) return;
+
+        if (timeUnit == null) {
+            throw new BaseException(ErrorStatus.INVALID_TIME_UNIT);
+        }
+
+        this.timeUnit = timeUnit;
+
+        if (timeUnit.getReservation() != this) {
+            timeUnit.setReservation(this);
+        }
+    }
+
+
+    public void setStatus(Status status) {
+        this.status = status;
+    }
+
+
+
 }

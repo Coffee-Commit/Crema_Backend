@@ -38,6 +38,9 @@ public class GuideJobField extends BaseEntity{
     private JobNameType jobName; // 직무 분야 이름
 
     public void updateJobName(JobNameType jobName) {
+        if (jobName == null) {
+            throw new IllegalArgumentException("직무 분야는 null일 수 없습니다.");
+        }
         this.jobName = jobName;
     }
 }
