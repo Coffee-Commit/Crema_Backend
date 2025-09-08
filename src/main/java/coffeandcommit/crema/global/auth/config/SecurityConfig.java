@@ -46,7 +46,7 @@ public class SecurityConfig {
                                 "/api/auth/status",
                                 "/api/auth/refresh",
                                 "/api/member/check/**",
-                                "/api/test/auth/**",
+                                "/api/test/**", // 테스트 API 전체 허용
                                 "/api/debug/**", // 디버그 엔드포인트 추가
                                 "/oauth2/**",
                                 "/login/oauth2/**",
@@ -88,23 +88,8 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 개발 환경과 프로덕션 환경의 모든 도메인 포함
-        configuration.setAllowedOriginPatterns(List.of(
-                // 로컬 개발 환경
-                "http://localhost:3000",
-                "http://localhost:3001",
-                "http://localhost:8080",
-                // dev 서버 환경 (API 서버)
-                "https://dev-api-coffeechat.kro.kr",
-                // dev 서버 환경 (프론트엔드 서버 - 예상)
-                "https://dev-coffeechat.kro.kr",
-                "https://dev.coffeechat.kro.kr",
-                // 프로덕션 환경
-                "https://coffeechat.kro.kr",
-                "https://api.coffeechat.kro.kr",
-                // 모든 coffeechat.kro.kr 서브도메인 허용
-                "https://*.coffeechat.kro.kr"
-        ));
+        // 개발 환경: 모든 주소 허용
+        configuration.setAllowedOriginPatterns(List.of("*"));
 
         configuration.setAllowedMethods(Arrays.asList(
                 "GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"

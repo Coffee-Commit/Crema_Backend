@@ -48,7 +48,6 @@ public enum ErrorStatus implements BaseCode {
     MAX_HASHTAG_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "해시태그는 최대 5개까지 등록할 수 있습니다."),
     DUPLICATE_HASHTAG(HttpStatus.CONFLICT, "이미 등록된 해시태그입니다."),
     HASHTAG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 해시태그를 찾을 수 없습니다."),
-    PROFILE_IMAGE_DIMENSION_INVALID(HttpStatus.BAD_REQUEST, "이미지 크기가 올바르지 않습니다. (100x100 ~ 1024x1024 권장)"),
 
     // openvidu
     SESSION_CREATE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR , "openvidu session 생성에 실패했습니다."),
@@ -63,7 +62,12 @@ public enum ErrorStatus implements BaseCode {
 
     // Chat
     CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 기록을 찾을 수 없습니다."),
-    CHAT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채팅 기록 저장에 실패했습니다.");
+    CHAT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채팅 기록 저장에 실패했습니다."),
+    
+    // Shared File
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    FILE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 파일입니다."),
+    SESSION_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "비활성 상태의 세션입니다.");
 
     public static final String PREFIX = "[ERROR]";
 
