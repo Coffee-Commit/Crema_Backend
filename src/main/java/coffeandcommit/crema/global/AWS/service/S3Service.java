@@ -109,6 +109,29 @@ public class S3Service {
         }
     }
 
+    /* 5. 파일 존재 여부 확인 */
+    public boolean fileExists(String keyName) {
+        try {
+            HeadObjectRequest headObjectRequest = HeadObjectRequest.builder()
+                    .bucket(bucket)
+                    .key(keyName)
+                    .build();
+            
+            s3Client.headObject(headObjectRequest);
+            return true;
+            
+        } catch (NoSuchKeyException e) {
+            log.debug("S3 object not found: {}", keyName);
+            return false;
+        } catch (S3Exception e) {
+            log.error("S3 error while checking object existence: {} - Error: {}", keyName, e.getMessage());
+            return false;
+        } catch (Exception e) {
+            log.error("Unexpected error while checking object existence: {} - {}", keyName, e.getMessage());
+            return false;
+        }
+    }
+
     /**
      * SDK를 사용한 안전한 직접 URL 생성
      */

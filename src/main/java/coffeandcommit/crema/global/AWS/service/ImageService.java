@@ -36,7 +36,8 @@ public class ImageService {
             "profile-images",
             "guide-posts",
             "chat-images",
-            "test-images"
+            "test-images",
+            "shared-materials"
     );
 
     /**
