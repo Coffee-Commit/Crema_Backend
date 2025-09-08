@@ -13,9 +13,7 @@ import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -409,7 +407,7 @@ public class GuideService {
 
                     return GuideListResponseDTO.from(
                             guide,
-                            guide.getWorkingPeriod(),
+                            guide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
                             jobField,
                             hashTags,
                             stats
@@ -425,11 +423,17 @@ public class GuideService {
                     ).reversed())
                     .toList();
 
-            int start = (int) pageable.getOffset();
-            int end = Math.min(start + pageable.getPageSize(), dtoList.size());
+            // pageable이 unpaged일 수 있으므로 방어적으로 처리
+            int page = pageable.isPaged() ? pageable.getPageNumber() : 0;
+            int size = pageable.isPaged() ? pageable.getPageSize() : 20; // 기본값 20
+
+            int start = page * size;
+            int end = Math.min(start + size, dtoList.size());
             List<GuideListResponseDTO> pagedList = dtoList.subList(start, end);
 
-            return new PageImpl<>(pagedList, pageable, dtoList.size());
+            Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "modifiedAt"));
+
+            return new PageImpl<>(pagedList, pageRequest, dtoList.size());
         }
 
         // 4. latest는 DB 페이징 그대로 반환
