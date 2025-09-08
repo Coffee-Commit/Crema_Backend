@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.videocall.service;
 
+import coffeandcommit.crema.domain.reservation.entity.Reservation;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.videocall.dto.response.QuickJoinResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.SessionConfigResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.SessionStatusResponse;
@@ -15,6 +17,7 @@ import io.openvidu.java.client.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,23 +42,31 @@ public class VideoCallService {
     
     private final VideoSessionRepository videoSessionRepository;
 
-    public QuickJoinResponse quickJoin(String sessionName, String username, Boolean autoCreateSession) {
+    private final ReservationRepository reservationRepository;
+
+    public QuickJoinResponse quickJoin(Long reservationId, UserDetails userDetails) {
         try {
+            Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(SessionNotFoundException::new);
+
             VideoSession session;
             try {   //세션이 없으면 새로 만듦
+                if(reservation.getVideoSession() == null)
+                    throw new SessionNotFoundException();
+
                 session = videoSessionRepository
-                        .findBySessionNameAndIsActiveTrue(sessionName)
+                        .findBySessionNameAndIsActiveTrue(reservation.getVideoSession().getSessionName())
                         .orElseThrow(SessionNotFoundException::new);
             }catch (SessionNotFoundException e) {
-                session = basicVideoCallService.createVideoSession(sessionName != null ? sessionName : "Auto-Session-" + System.currentTimeMillis());
+                String sessionName = "reservation_" + reservation.getId() + "_" + reservation.getReservedAt();
+                session = basicVideoCallService.createVideoSession(sessionName);
             }
             
-            String token = basicVideoCallService.joinSession(session.getSessionId(), username);
+            String token = basicVideoCallService.joinSession(session.getSessionId(), userDetails.getUsername());
             
             return QuickJoinResponse.builder()
                     .sessionId(session.getSessionId())
                     .sessionName(session.getSessionName())
-                    .username(username)
+                    .username(userDetails.getUsername())
                     .token(token)
                     .openviduServerUrl("https://" + openviduDomain)
                     .apiBaseUrl("https://" + openviduDomain)

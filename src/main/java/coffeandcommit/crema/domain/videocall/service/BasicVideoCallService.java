@@ -36,10 +36,6 @@ public class BasicVideoCallService {
     @Value("${openvidu.secret}")
     private String openviduSecret;
 
-    /** OpenVidu domain */
-    @Value("${openvidu.domain}")
-    private String openviduDomain;
-
     private OpenVidu openVidu;
 
     private final VideoSessionRepository videoSessionRepository;
@@ -52,9 +48,76 @@ public class BasicVideoCallService {
     //세션 연결
     @PostConstruct
     private void init() {
-        String openviduUrl = "https://" + openviduDomain;
-        this.openVidu = new OpenVidu(openviduUrl, openviduSecret);
-        log.info("Openvidu server connected to: {}", openviduUrl);
+        long initStartTime = System.currentTimeMillis();
+        log.info("[OPENVIDU-INIT] OpenVidu 초기화 시작 (운영)");
+        
+        try {
+            // 환경 변수 확인
+            log.info("[OPENVIDU-INIT] 환경 설정 확인 - domain: {}, secret: {}", 
+                    openviduDomain, openviduSecret != null ? "***설정됨***" : "null");
+            
+            if (openviduDomain == null || openviduDomain.trim().isEmpty()) {
+                log.error("[OPENVIDU-INIT] OpenVidu 도메인이 설정되지 않았습니다 - domain: {}", openviduDomain);
+                throw new IllegalStateException("OpenVidu 도메인이 설정되지 않았습니다.");
+            }
+            
+            if (openviduSecret == null || openviduSecret.trim().isEmpty()) {
+                log.error("[OPENVIDU-INIT] OpenVidu 시크릿이 설정되지 않았습니다 - secret: {}", 
+                         openviduSecret != null ? "빈문자열" : "null");
+                throw new IllegalStateException("OpenVidu 시크릿이 설정되지 않았습니다.");
+            }
+            
+            String openviduUrl = "https://" + openviduDomain;
+            log.info("[OPENVIDU-INIT] OpenVidu URL 구성 완료 - url: {}", openviduUrl);
+            
+            // OpenVidu 객체 생성
+            long openviduCreateStartTime = System.currentTimeMillis();
+            log.info("[OPENVIDU-INIT] OpenVidu 객체 생성 시작 - url: {}", openviduUrl);
+            
+            try {
+                this.openVidu = new OpenVidu(openviduUrl, openviduSecret);
+            } catch (Exception openViduError) {
+                long openviduCreateTime = System.currentTimeMillis() - openviduCreateStartTime;
+                log.error("[OPENVIDU-INIT] OpenVidu 객체 생성 실패 - url: {}, 시도시간: {}ms, " +
+                         "errorType: {}, error: {}", openviduUrl, openviduCreateTime, 
+                         openViduError.getClass().getSimpleName(), openViduError.getMessage(), openViduError);
+                throw openViduError;
+            }
+            
+            long openviduCreateTime = System.currentTimeMillis() - openviduCreateStartTime;
+            log.info("[OPENVIDU-INIT] OpenVidu 객체 생성 성공 - 생성시간: {}ms", openviduCreateTime);
+            
+            // 연결 테스트 (선택적)
+            long connectionTestStartTime = System.currentTimeMillis();
+            log.info("[OPENVIDU-INIT] OpenVidu 서버 연결 상태 테스트 시작");
+            
+            try {
+                // getActiveSessions 호출로 서버 연결 상태 확인
+                this.openVidu.getActiveSessions();
+                long connectionTestTime = System.currentTimeMillis() - connectionTestStartTime;
+                log.info("[OPENVIDU-INIT] OpenVidu 서버 연결 상태 테스트 성공 - 테스트시간: {}ms", connectionTestTime);
+            } catch (Exception connectionTestError) {
+                long connectionTestTime = System.currentTimeMillis() - connectionTestStartTime;
+                log.warn("[OPENVIDU-INIT] OpenVidu 서버 연결 상태 테스트 실패 (객체는 생성됨) - " +
+                        "테스트시간: {}ms, errorType: {}, error: {}", connectionTestTime, 
+                        connectionTestError.getClass().getSimpleName(), connectionTestError.getMessage());
+                // 연결 테스트 실패는 경고만 하고 초기화는 계속 진행
+            }
+            
+            long totalInitTime = System.currentTimeMillis() - initStartTime;
+            log.info("[OPENVIDU-INIT] OpenVidu 초기화 완료 (운영) - server: {}, 전체초기화시간: {}ms", 
+                    openviduUrl, totalInitTime);
+            
+        } catch (Exception e) {
+            long totalInitTime = System.currentTimeMillis() - initStartTime;
+            log.error("[OPENVIDU-INIT] OpenVidu 초기화 실패 (운영) - domain: {}, 전체시도시간: {}ms, " +
+                     "errorType: {}, error: {}", openviduDomain, totalInitTime, 
+                     e.getClass().getSimpleName(), e.getMessage(), e);
+            
+            // 초기화 실패는 애플리케이션 시작을 막지 않고 경고만 출력
+            // 런타임에 다시 시도할 수 있도록 openVidu는 null로 유지
+            this.openVidu = null;
+        }
     }
 
     /**
@@ -137,8 +200,6 @@ public class BasicVideoCallService {
             participantRepository.save(participant);
 
             return token;
-
-
         }catch (Exception e){
             log.error("join session failed {}", e.getMessage());
             throw new SessionCreationException();
@@ -222,29 +283,41 @@ public class BasicVideoCallService {
     }
 
     public void endSession(String sessionId) {
+    try {
+        VideoSession videoSession = videoSessionRepository
+                .findBySessionId(sessionId)
+                .orElseThrow(SessionNotFoundException::new);
+
+        // 세션 종료 전 채팅 기록 자동 저장 시도
         try {
-            VideoSession videoSession = videoSessionRepository
-                    .findBySessionId(sessionId)
-                    .orElseThrow(SessionNotFoundException::new);
-
-            videoSession.endSession();
-            videoSessionRepository.save(videoSession);
-
-            List<Participant> participants = participantRepository
-                    .findByVideoSessionAndIsConnectedTrue(videoSession);
-            
-            participants.forEach(Participant::leaveSession);
-            participantRepository.saveAll(participants);
-
-            Session openviduSession = openVidu.getActiveSession(sessionId);
-            if (openviduSession != null) {
-                openviduSession.close();
-            }
-
-        } catch (Exception e) {
-            log.error("세션 종료 실패: {}", e.getMessage());
+            // 현재는 자동 저장 기능을 비활성화 (프론트엔드에서 명시적으로 저장하는 방식 사용)
+            log.info("세션 종료: sessionId={}, 채팅 기록은 별도 API로 저장됩니다", sessionId);
+        } catch (Exception chatSaveException) {
+            log.error("채팅 기록 자동 저장 실패: sessionId={}, error={}", 
+                     sessionId, chatSaveException.getMessage());
+            // 채팅 저장 실패가 세션 종료를 막지 않도록 함
         }
+
+        videoSession.endSession();
+        videoSessionRepository.save(videoSession);
+
+        List<Participant> participants = participantRepository
+                .findByVideoSessionAndIsConnectedTrue(videoSession);
+        
+        participants.forEach(Participant::leaveSession);
+        participantRepository.saveAll(participants);
+
+        Session openviduSession = openVidu.getActiveSession(sessionId);
+        if (openviduSession != null) {
+            openviduSession.close();
+        }
+
+        log.info("세션 종료 완료: sessionId={}", sessionId);
+
+    } catch (Exception e) {
+        log.error("세션 종료 실패: sessionId={}, error={}", sessionId, e.getMessage());
     }
+}
 
     @Transactional(readOnly = true)
     public VideoSession getSession(String sessionId) {

@@ -30,9 +30,11 @@ public class VideoSession extends BaseEntity {
 
     private LocalDateTime endedAt;
 
+    @Builder.Default
     private Boolean isActive = true;
 
     @OneToMany(mappedBy = "videoSession", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @Builder.Default
     private List<Participant> participants = new ArrayList<>();
 
     @OneToOne
@@ -45,6 +47,22 @@ public class VideoSession extends BaseEntity {
     }
 
     public void endSession() {
+        this.isActive = false;
+        this.endedAt = LocalDateTime.now();
+    }
+
+    /**
+     * 세션을 활성 상태로 설정 (재생성 시 사용)
+     */
+    public void activateSession() {
+        this.isActive = true;
+        this.endedAt = null;
+    }
+
+    /**
+     * 세션을 비활성 상태로 설정
+     */
+    public void deactivateSession() {
         this.isActive = false;
         this.endedAt = LocalDateTime.now();
     }
