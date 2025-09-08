@@ -16,7 +16,14 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "session_chat_log")
+@Table(name = "session_chat_log", 
+       uniqueConstraints = {
+           @UniqueConstraint(name = "uk_session_chat_log_session_id", columnNames = "session_id")
+       },
+       indexes = {
+           @Index(name = "idx_session_chat_log_session_id", columnList = "session_id"),
+           @Index(name = "idx_session_chat_log_created_at", columnList = "created_at")
+       })
 public class SessionChatLog extends BaseEntity {
 
     @Id
@@ -24,7 +31,7 @@ public class SessionChatLog extends BaseEntity {
     @Column(name = "session_chat_log_id")
     private Long id;
 
-    @Column(name = "session_id", nullable = false)
+    @Column(name = "session_id", nullable = false, unique = true)
     private String sessionId;
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -40,6 +47,12 @@ public class SessionChatLog extends BaseEntity {
     @Column(name = "session_end_time")
     private LocalDateTime sessionEndTime;
 
+    @Column(name = "saved_by", length = 50)
+    private String savedBy;
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @OneToOne
     @JoinColumn(name = "video_session_id")
     private VideoSession videoSession;
@@ -48,5 +61,13 @@ public class SessionChatLog extends BaseEntity {
         this.chatMessages = chatMessages;
         this.totalMessages = totalMessages;
         this.sessionEndTime = sessionEndTime;
+    }
+
+    public void updateChatHistoryWithMetadata(String chatMessages, Integer totalMessages, 
+                                             LocalDateTime sessionEndTime, String savedBy) {
+        this.chatMessages = chatMessages;
+        this.totalMessages = totalMessages;
+        this.sessionEndTime = sessionEndTime;
+        this.savedBy = savedBy;
     }
 }
