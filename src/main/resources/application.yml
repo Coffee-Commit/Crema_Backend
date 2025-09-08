@@ -1,9 +1,6 @@
 # 메인 설정 파일 - 프로필 선택
 spring:
   profiles:
-    # 여기서 원하는 프로필을 활성화
-    # local: 로컬 개발용 (OAuth -> Swagger 리다이렉트)
-    # dev: dev 서버용 (OAuth -> 프론트엔드 리다이렉트)
     active: local  # 기본값: local, dev 서버에서는 환경변수로 오버라이드
 
 ---
