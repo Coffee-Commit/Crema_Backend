@@ -22,6 +22,9 @@ import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import coffeandcommit.crema.global.file.FileService;
+import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
+import coffeandcommit.crema.global.validation.FileType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,9 +32,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +55,9 @@ class ReservationServiceTest {
 
     @Mock
     private GuideRepository guideRepository;
+
+    @Mock
+    private FileService fileService;
 
     @InjectMocks
     private ReservationService reservationService;
@@ -176,15 +184,30 @@ class ReservationServiceTest {
         when(guideRepository.findById(GUIDE_ID)).thenReturn(Optional.of(testGuide));
         when(reservationRepository.save(any(Reservation.class))).thenReturn(testReservation);
 
+        // 파일 업로드 Mock 설정
+        MultipartFile mockFile = mock(MultipartFile.class);
+        List<MultipartFile> files = List.of(mockFile);
+
+        FileUploadResponse mockUploadResponse = FileUploadResponse.builder()
+                .fileKey("survey-files/" + MEMBER_ID + "_test.pdf")
+                .fileUrl("https://storage.googleapis.com/bucket/survey-files/" + MEMBER_ID + "_test.pdf")
+                .build();
+
+        when(fileService.uploadFile(eq(mockFile), eq(FileType.PDF), eq("survey-files"), eq(MEMBER_ID)))
+                .thenReturn(mockUploadResponse);
+
         // When
-        ReservationResponseDTO result = reservationService.createReservation(MEMBER_ID, testReservationRequestDTO);
+        ReservationResponseDTO result =
+                reservationService.createReservation(MEMBER_ID, testReservationRequestDTO, files);
 
         // Then
         assertNotNull(result);
         assertEquals(RESERVATION_ID, result.getReservationId());
+
         verify(memberRepository, times(1)).findById(MEMBER_ID);
         verify(guideRepository, times(1)).findById(GUIDE_ID);
         verify(reservationRepository, times(1)).save(any(Reservation.class));
+        verify(fileService, times(1)).uploadFile(eq(mockFile), eq(FileType.PDF), eq("survey-files"), eq(MEMBER_ID));
     }
 
     @Test
@@ -195,7 +218,7 @@ class ReservationServiceTest {
 
         // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
-            reservationService.createReservation(MEMBER_ID, testReservationRequestDTO);
+            reservationService.createReservation(MEMBER_ID, testReservationRequestDTO,null);
         });
 
         assertEquals(ErrorStatus.MEMBER_NOT_FOUND, exception.getErrorCode());
@@ -213,7 +236,7 @@ class ReservationServiceTest {
 
         // When & Then
         BaseException exception = assertThrows(BaseException.class, () -> {
-            reservationService.createReservation(MEMBER_ID, testReservationRequestDTO);
+            reservationService.createReservation(MEMBER_ID, testReservationRequestDTO, Collections.emptyList());
         });
 
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());

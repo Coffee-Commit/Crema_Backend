@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.globalTag.enums;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -18,4 +19,9 @@ public enum JobNameType {
     RESEARCH_RND("연구/R&D");
 
     private final String description;
+
+    @JsonValue
+    public String getDescription() {
+        return description;
+    }
 }

@@ -13,8 +13,7 @@ import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -373,5 +372,71 @@ public class GuideService {
                 targetGuide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
                 jobFieldDTO
         );
+    }
+
+    /* 가이드 목록 조회 */
+    @Transactional(readOnly = true)
+    public Page<GuideListResponseDTO> getGuides(List<Long> jobFieldIds, List<Long> chatTopicIds, String keyword, Pageable pageable, String loginMemberId, String sort) {
+
+        boolean isPopular = "popular".equalsIgnoreCase(sort);
+
+        // 1. popular는 전체 데이터 조회 (unpaged), latest는 DB에서 페이징
+        Page<Guide> guides = isPopular
+                ? guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, Pageable.unpaged())
+                : guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+
+        // 2. DTO 변환
+        List<GuideListResponseDTO> dtoList = guides.stream()
+                .map(guide -> {
+                    GuideJobFieldResponseDTO jobField = GuideJobFieldResponseDTO.from(guide.getGuideJobField());
+
+                    List<GuideHashTagResponseDTO> hashTags = guide.getHashTags().stream()
+                            .map(tag -> GuideHashTagResponseDTO.from(tag, guide.getId()))
+                            .toList();
+
+                    Long totalCoffeeChats = reservationRepository.countByGuideAndStatus(guide, Status.COMPLETED);
+                    Double averageStar = Optional.ofNullable(reviewRepository.calculateAverageStarByGuide(guide))
+                            .map(bd -> bd.setScale(1, RoundingMode.HALF_UP).doubleValue())
+                            .orElse(0.0);
+                    Long totalReviews = reviewRepository.countByGuide(guide);
+                    Long thumbsUpCount = reviewExperienceRepository.countThumbsUpByGuide(guide);
+
+                    CoffeeChatStatsResponseDTO stats = CoffeeChatStatsResponseDTO.from(
+                            totalCoffeeChats, averageStar, totalReviews, thumbsUpCount
+                    );
+
+                    return GuideListResponseDTO.from(
+                            guide,
+                            guide.getWorkingPeriod(), // 엔티티 필드 그대로 사용
+                            jobField,
+                            hashTags,
+                            stats
+                    );
+                })
+                .toList();
+
+        // 3. popular일 경우 전체 정렬 후 다시 페이징
+        if (isPopular) {
+            dtoList = dtoList.stream()
+                    .sorted(Comparator.comparing(
+                            (GuideListResponseDTO dto) -> dto.getStats().getTotalReviews()
+                    ).reversed())
+                    .toList();
+
+            // pageable이 unpaged일 수 있으므로 방어적으로 처리
+            int page = pageable.isPaged() ? pageable.getPageNumber() : 0;
+            int size = pageable.isPaged() ? pageable.getPageSize() : 20; // 기본값 20
+
+            int start = page * size;
+            int end = Math.min(start + size, dtoList.size());
+            List<GuideListResponseDTO> pagedList = dtoList.subList(start, end);
+
+            Pageable pageRequest = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "modifiedAt"));
+
+            return new PageImpl<>(pagedList, pageRequest, dtoList.size());
+        }
+
+        // 4. latest는 DB 페이징 그대로 반환
+        return new PageImpl<>(dtoList, pageable, guides.getTotalElements());
     }
 }

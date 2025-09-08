@@ -3,13 +3,7 @@ package coffeandcommit.crema.domain.guide.service;
 import coffeandcommit.crema.domain.globalTag.entity.ChatTopic;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
 import coffeandcommit.crema.domain.guide.entity.ExperienceGroup;
 import coffeandcommit.crema.domain.guide.entity.Guide;
@@ -26,6 +20,9 @@ import coffeandcommit.crema.domain.guide.repository.GuideJobFieldRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideRepository;
 import coffeandcommit.crema.domain.guide.repository.GuideScheduleRepository;
 import coffeandcommit.crema.domain.guide.repository.HashTagRepository;
+import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
+import coffeandcommit.crema.domain.review.repository.ReviewExperienceRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -37,6 +34,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -75,6 +75,12 @@ public class GuideServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;
+
+    @Mock
+    private ReservationRepository reservationRepository;
+
+    @Mock
+    private ReviewExperienceRepository reviewExperienceRepository;
 
     private Member member1;
     private Member member2;
@@ -1053,4 +1059,172 @@ public class GuideServiceTest {
         verify(experienceGroupRepository).findByGuide(guide2);
         verify(experienceDetailRepository).findByGuide(guide2);
     }
+    @Test
+    @DisplayName("가이드 목록 조회 - 성공")
+    void getGuides_Success() {
+        // 테스트 데이터 준비
+        List<Long> jobFieldIds = List.of(1L);
+        List<Long> chatTopicIds = List.of(1L, 2L);
+        String keyword = "Java";
+        Pageable pageable = Pageable.unpaged();
+        String loginMemberId = "member1";
+        String sort = "latest";
+
+        guide1 = guide1.toBuilder()
+                .guideJobField(guideJobField)
+                .hashTags(List.of(hashTag1, hashTag2))
+                .build();
+        guideJobField = guideJobField.toBuilder()
+                .guide(guide1)
+                .build();
+
+        // 페이지 객체 생성
+        Page<Guide> guidePage = new PageImpl<>(List.of(guide1));
+
+        // Mock 설정
+        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+                .thenReturn(guidePage);
+        when(reservationRepository.countByGuideAndStatus(guide1, Status.COMPLETED)).thenReturn(5L);
+        when(reviewRepository.calculateAverageStarByGuide(guide1)).thenReturn(java.math.BigDecimal.valueOf(4.5));
+        when(reviewRepository.countByGuide(guide1)).thenReturn(10L);
+        when(reviewExperienceRepository.countThumbsUpByGuide(guide1)).thenReturn(7L);
+
+        // 테스트 실행
+        Page<GuideListResponseDTO> result = guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+
+        GuideListResponseDTO dto = result.getContent().get(0);
+        assertEquals(guide1.getId(), dto.getGuideId());
+        assertEquals(guide1.getTitle(), dto.getTitle());
+        assertEquals(JobNameType.DESIGN, dto.getJobField().getJobName());
+        assertEquals(2, dto.getHashTags().size());
+        assertEquals(5L, dto.getStats().getTotalCoffeeChats());
+        assertEquals(4.5, dto.getStats().getAverageStar());
+        assertEquals(10L, dto.getStats().getTotalReviews());
+        assertEquals(7L, dto.getStats().getThumbsUpCount());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        verify(reservationRepository).countByGuideAndStatus(guide1, Status.COMPLETED);
+        verify(reviewRepository).calculateAverageStarByGuide(guide1);
+        verify(reviewRepository).countByGuide(guide1);
+        verify(reviewExperienceRepository).countThumbsUpByGuide(guide1);
+    }
+
+    @Test
+    @DisplayName("가이드 목록 조회 - 빈 결과")
+    void getGuides_EmptyResult() {
+        // 테스트 데이터 준비
+        List<Long> jobFieldIds = List.of(999L); // 존재하지 않는 ID
+        List<Long> chatTopicIds = null;
+        String keyword = null;
+        Pageable pageable = Pageable.unpaged();
+        String loginMemberId = "member1";
+        String sort = "latest";
+
+        // 빈 페이지 객체 생성
+        Page<Guide> emptyPage = new PageImpl<>(List.of());
+
+        // Mock 설정
+        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+                .thenReturn(emptyPage);
+
+        // 테스트 실행
+        Page<GuideListResponseDTO> result = guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(0, result.getTotalElements());
+        assertTrue(result.getContent().isEmpty());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        verifyNoInteractions(reservationRepository, reviewRepository, reviewExperienceRepository);
+    }
+
+    @Test
+    @DisplayName("가이드 목록 조회 - 인기순 정렬")
+    void getGuides_SortByPopularity() {
+        // 테스트 데이터 준비
+        List<Long> jobFieldIds = null;
+        List<Long> chatTopicIds = null;
+        String keyword = null;
+        Pageable pageable = Pageable.unpaged();
+        String loginMemberId = "member1";
+        String sort = "popular";
+
+        // guide1에 jobField, hashTags 연결
+        guide1 = guide1.toBuilder()
+                .guideJobField(guideJobField)
+                .hashTags(List.of(hashTag1, hashTag2))
+                .build();
+        guideJobField = guideJobField.toBuilder()
+                .guide(guide1)
+                .build();
+
+        // 두 번째 가이드 생성 (더 많은 리뷰를 가진 가이드)
+        Guide guide3 = Guide.builder()
+                .id(3L)
+                .member(member1)
+                .isOpened(true)
+                .title("Guide 3")
+                .build();
+
+        GuideJobField guideJobField3 = GuideJobField.builder()
+                .id(3L)
+                .guide(guide3)
+                .jobName(JobNameType.IT_DEVELOPMENT_DATA)
+                .build();
+
+        // guide3에 jobField 연결
+        guide3 = guide3.toBuilder()
+                .guideJobField(guideJobField3)
+                .build();
+
+        // 페이지 객체 생성 (순서는 중요하지 않음, 서비스에서 재정렬됨)
+        Page<Guide> guidePage = new PageImpl<>(List.of(guide1, guide3));
+
+        // Mock 설정
+        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+                .thenReturn(guidePage);
+
+        // guide1 설정
+        when(reservationRepository.countByGuideAndStatus(guide1, Status.COMPLETED)).thenReturn(5L);
+        when(reviewRepository.calculateAverageStarByGuide(guide1)).thenReturn(java.math.BigDecimal.valueOf(4.5));
+        when(reviewRepository.countByGuide(guide1)).thenReturn(10L); // 리뷰 10개
+        when(reviewExperienceRepository.countThumbsUpByGuide(guide1)).thenReturn(7L);
+
+        // guide3 설정
+        when(reservationRepository.countByGuideAndStatus(guide3, Status.COMPLETED)).thenReturn(15L);
+        when(reviewRepository.calculateAverageStarByGuide(guide3)).thenReturn(java.math.BigDecimal.valueOf(4.8));
+        when(reviewRepository.countByGuide(guide3)).thenReturn(20L); // 리뷰 20개
+        when(reviewExperienceRepository.countThumbsUpByGuide(guide3)).thenReturn(12L);
+
+        // 테스트 실행
+        Page<GuideListResponseDTO> result = guideService.getGuides(
+                jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+
+        // 검증
+        assertNotNull(result);
+        assertEquals(2, result.getTotalElements());
+        assertEquals(2, result.getContent().size());
+
+        // 인기순 정렬이므로 리뷰가 많은 guide3가 먼저 나와야 함
+        GuideListResponseDTO first = result.getContent().get(0);
+        GuideListResponseDTO second = result.getContent().get(1);
+
+        assertEquals(3L, first.getGuideId());
+        assertEquals(20L, first.getStats().getTotalReviews());
+
+        assertEquals(1L, second.getGuideId());
+        assertEquals(10L, second.getStats().getTotalReviews());
+
+        // 메서드 호출 검증
+        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+    }
+
 }
