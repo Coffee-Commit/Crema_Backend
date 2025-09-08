@@ -47,4 +47,34 @@ public class Reservation extends BaseEntity{
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "video_session_id")
     private VideoSession videoSession;
+    /**
+ * 예약 상태를 완료로 변경 (멱등성 보장)
+ */
+public void completeReservation() {
+    if (this.status == Status.COMPLETED) {
+        // 이미 완료된 경우 - 멱등성
+        return;
+    }
+    
+    if (this.status == Status.CANCELLED) {
+        throw new IllegalStateException("취소된 예약은 완료할 수 없습니다.");
+    }
+    
+    this.status = Status.COMPLETED;
+}
+    
+    /**
+     * 예약 상태를 확정으로 변경
+     */
+    public void confirmReservation() {
+        this.status = Status.CONFIRMED;
+    }
+    
+    /**
+     * 예약 상태를 취소로 변경
+     */
+    public void cancelReservation(String reason) {
+        this.status = Status.CANCELLED;
+        this.reason = reason;
+    }
 }
