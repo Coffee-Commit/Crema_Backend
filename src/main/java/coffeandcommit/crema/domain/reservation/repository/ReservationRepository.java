@@ -22,6 +22,14 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     @EntityGraph(attributePaths = {"guide", "guide.member", "timeUnit"})
     Page<Reservation> findByMember_IdAndStatus(String memberId, Status status, Pageable pageable);
 
+    // 멤버의 모든 예약 조회
+    @EntityGraph(attributePaths = {"guide", "guide.member", "timeUnit"})
+    List<Reservation> findByMember_Id(String memberId);
+
+    // 기존 메서드는 Page를 반환하므로 List 버전도 추가
+    @EntityGraph(attributePaths = {"guide", "guide.member", "timeUnit"})
+    List<Reservation> findByMember_IdAndStatus(String memberId, Status status);
+
     // WRITTEN → 리뷰가 존재하는 예약
     @EntityGraph(attributePaths = {"guide", "guide.member", "timeUnit"})
     @Query("""

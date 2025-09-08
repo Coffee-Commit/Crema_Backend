@@ -13,11 +13,17 @@ import coffeandcommit.crema.domain.member.repository.MemberRepository;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import coffeandcommit.crema.global.file.FileService;
+import coffeandcommit.crema.global.storage.StorageService;
+import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
+import coffeandcommit.crema.global.validation.FileType;
+import coffeandcommit.crema.global.validation.FileValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -36,6 +42,10 @@ public class MemberService {
     private final GuideRepository guideRepository;
     private final MemberMapper memberMapper;
     private final MemberProfileService memberProfileService;
+    private final FileValidator fileValidator;
+    private final StorageService storageService;
+    private final FileService fileService;
+
 
     /**
      * 8글자 UUID 생성 (중복 체크 포함)
@@ -150,7 +160,7 @@ public class MemberService {
      * 가이드로 업그레이드
      */
     @Transactional
-    public MemberUpgradeResponse upgradeToGuide(String memberId, MemberUpgradeRequest request) {
+    public MemberUpgradeResponse upgradeToGuide(String memberId, MemberUpgradeRequest request, MultipartFile certificationPdf) {
         Member member = findActiveMemberById(memberId);
 
         // 이미 가이드인지 확인
@@ -165,6 +175,10 @@ public class MemberService {
 
         // 유효성 검사
         validateWorkingPeriod(request);
+        validateCertificationPdf(certificationPdf, true); // 필수 파일
+
+        // PDF 파일 업로드
+        String certificationPdfUrl = uploadCertificationPdf(memberId, certificationPdf);
 
         // Member 역할 변경
         member = member.toBuilder()
@@ -173,7 +187,7 @@ public class MemberService {
         member = memberRepository.save(member);
 
         // Guide 엔티티 생성
-        Guide guide = createGuideEntity(member, request);
+        Guide guide = createGuideEntity(member, request, certificationPdfUrl);
         guide = guideRepository.save(guide);
 
         // 응답 생성
@@ -199,10 +213,10 @@ public class MemberService {
     }
 
     /**
-     * 가이드 업그레이드 정보 수정
+     * 가이드 업그레이드 정보 수정 (PDF 업로드 포함)
      */
     @Transactional
-    public MemberUpgradeResponse updateUpgradeInfo(String memberId, MemberUpgradeRequest request) {
+    public MemberUpgradeResponse updateUpgradeInfo(String memberId, MemberUpgradeRequest request, MultipartFile certificationPdf) {
         Member member = findActiveMemberById(memberId);
 
         // 가이드인지 확인
@@ -216,6 +230,26 @@ public class MemberService {
         // 유효성 검사
         validateWorkingPeriod(request);
 
+        String certificationPdfUrl = guide.getCertificationImageUrl(); // 기존 URL 유지
+
+        // 새로운 PDF가 제공된 경우 업로드
+        if (certificationPdf != null && !certificationPdf.isEmpty()) {
+            validateCertificationPdf(certificationPdf, false); // 선택사항
+
+            // 기존 파일 삭제
+            if (certificationPdfUrl != null) {
+                try {
+                    storageService.deleteFile(certificationPdfUrl);
+                } catch (Exception e) {
+                    log.warn("Failed to delete existing certification PDF for member: {} - Error: {}",
+                            memberId, e.getMessage());
+                }
+            }
+
+            // 새 파일 업로드
+            certificationPdfUrl = uploadCertificationPdf(memberId, certificationPdf);
+        }
+
         // Guide 정보 업데이트
         guide = guide.toBuilder()
                 .companyName(request.getCompanyName())
@@ -223,14 +257,15 @@ public class MemberService {
                 .workingStart(request.getWorkingStart())
                 .workingEnd(request.getWorkingEnd())
                 .isCurrent(request.getIsCurrent())
-                // TODO: 회사명 공개 여부 필드 추가 후 설정
-                // .isCompanyNamePublic(request.getIsCompanyNamePublic())
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
+                .certificationImageUrl(certificationPdfUrl)
                 .build();
 
         guide = guideRepository.save(guide);
 
         return createUpgradeResponse(guide);
     }
+
 
     /**
      * 회원 삭제 (소프트 삭제)
@@ -342,7 +377,7 @@ public class MemberService {
     /**
      * Guide 엔티티 생성
      */
-    private Guide createGuideEntity(Member member, MemberUpgradeRequest request) {
+    private Guide createGuideEntity(Member member, MemberUpgradeRequest request, String certificationPdfUrl) {
         // 근무 기간 계산
         String workingPeriod = calculateWorkingPeriodDisplay(
                 request.getWorkingStart(),
@@ -363,8 +398,7 @@ public class MemberService {
                 .workingPeriod(workingPeriod)
                 .isCurrent(request.getIsCurrent())
                 .isCompanyNamePublic(request.getIsCompanyNamePublic())
-                // TODO: PDF 업로드 필드 연동 예정
-                // .certificationImageUrl(request.getCertificationPdfUrl())
+                .certificationImageUrl(certificationPdfUrl) // PDF URL 설정
                 .build();
     }
 
@@ -372,7 +406,6 @@ public class MemberService {
      * MemberUpgradeResponse 생성
      */
     private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
-        int workingPeriodYears = calculateWorkingPeriodYears(guide.getWorkingStart(), guide.getWorkingEnd());
         String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
 
         return MemberUpgradeResponse.builder()
@@ -383,20 +416,8 @@ public class MemberService {
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
                 .workingPeriod(workingPeriod)
-                .workingPeriodYears(workingPeriodYears)
+                .certificationPdfUrl(guide.getCertificationImageUrl())
                 .build();
-    }
-
-    /**
-     * 근무 기간 연차 계산
-     */
-    private int calculateWorkingPeriodYears(LocalDate workingStart, LocalDate workingEnd) {
-        if (workingStart == null) {
-            return 0;
-        }
-        LocalDate endDate = (workingEnd != null) ? workingEnd : LocalDate.now();
-        int years = Period.between(workingStart, endDate).getYears();
-        return Math.max(0, years);
     }
 
     /**
@@ -481,5 +502,44 @@ public class MemberService {
 
         // 영문, 숫자, 일부 특수문자(.-_)만 허용, 도메인은 2-8자 제한
         return trimmed.matches("^[a-zA-Z0-9._-]+@[a-zA-Z0-9-]+\\.[a-zA-Z]{2,8}$");
+    }
+
+    /**
+     * PDF 파일 유효성 검사
+     */
+    private void validateCertificationPdf(MultipartFile pdfFile, boolean isRequired) {
+        if (pdfFile == null || pdfFile.isEmpty()) {
+            if (isRequired) {
+                throw new BaseException(ErrorStatus.FILE_REQUIRED);
+            }
+            return;
+        }
+
+        try {
+            fileValidator.validate(pdfFile, FileType.PDF);
+        } catch (IllegalArgumentException e) {
+            throw new BaseException(ErrorStatus.INVALID_FILE_FORMAT);
+        }
+    }
+
+    /**
+     * 재직증명서 PDF 업로드
+     */
+    private String uploadCertificationPdf(String memberId, MultipartFile pdfFile) {
+        try {
+            // FileService를 사용해서 PDF 업로드 (내부적으로 ValidatedFile로 변환됨)
+            FileUploadResponse uploadResponse = fileService.uploadFile(
+                    pdfFile,
+                    FileType.PDF,
+                    "certifications",
+                    memberId
+            );
+            return uploadResponse.getFileUrl();
+
+        } catch (Exception e) {
+            log.error("Failed to upload certification PDF for member: {} - Error: {}",
+                    memberId, e.getMessage(), e);
+            throw new BaseException(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
     }
 }
