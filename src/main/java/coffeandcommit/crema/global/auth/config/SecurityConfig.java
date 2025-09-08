@@ -6,6 +6,7 @@ import coffeandcommit.crema.global.auth.jwt.JwtAuthenticationEntryPoint;
 import coffeandcommit.crema.global.auth.jwt.JwtAuthenticationFilter;
 import coffeandcommit.crema.global.auth.service.CustomOAuth2UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.EndpointRequest;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -41,6 +42,8 @@ public class SecurityConfig {
                 .securityContext(context -> context.requireExplicitSave(false)) // 보안 컨텍스트 자동 저장 비활성화
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
+                        // Prometheus Actuator Endpoint
+                        .requestMatchers(EndpointRequest.to("prometheus")).permitAll()
                         // Public endpoints (인증 불필요)
                         .requestMatchers(
                                 "/api/auth/status",
@@ -48,8 +51,8 @@ public class SecurityConfig {
                                 "/api/member/check/**",
                                 "/api/test/**", // 테스트 API 전체 허용
                                 "/api/debug/**", // 디버그 엔드포인트 추가
-                                "/oauth2/**",
-                                "/login/oauth2/**",
+                                "/api/oauth2/**",
+                                "/api/login/oauth2/**",
                                 // Swagger UI
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -71,7 +74,6 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        // loginPage 제거 - Spring Security가 기본 OAuth2 엔드포인트를 자동으로 처리하도록 함
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)

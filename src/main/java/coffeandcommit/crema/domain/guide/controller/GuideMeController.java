@@ -1,12 +1,7 @@
 package coffeandcommit.crema.domain.guide.controller;
 
-import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideJobFieldResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideProfileResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.request.*;
+import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -33,27 +28,6 @@ import java.util.List;
 public class GuideMeController {
 
     private final GuideMeService guideMeService;
-
-    @Operation(summary = "가이드 본인 프로필 조회", description = "현재 로그인한 가이드의 프로필을 조회합니다.")
-    @GetMapping
-    public ResponseEntity<Response<GuideProfileResponseDTO>> getGuideMeProfile(
-            @AuthenticationPrincipal CustomUserDetails userDetails) {
-
-        if(userDetails == null){
-            throw new BaseException(ErrorStatus.UNAUTHORIZED);
-        }
-
-        GuideProfileResponseDTO result = guideMeService.getGuideMeProfile(userDetails.getMemberId());
-
-        Response<GuideProfileResponseDTO> response = Response.<GuideProfileResponseDTO>builder()
-                .message("조회 완료")
-                .data(result)
-                .build();
-
-        return ResponseEntity.status(HttpStatus.OK).body(response);
-
-
-    }
 
     @Operation(summary = "가이드 직무 분야 등록", description = "가이드의 직무 분야를 등록합니다.")
     @PostMapping("/job-field")
@@ -171,6 +145,186 @@ public class GuideMeController {
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
 
+    }
+
+    @Operation(summary = "가이드 스케줄 등록", description = "가이드의 스케줄을 등록합니다.")
+    @PostMapping("/schedules")
+    public ResponseEntity<Response<GuideScheduleResponseDTO>> registerGuideSchedules(
+            @Valid @RequestBody GuideScheduleRequestDTO guideScheduleRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideScheduleResponseDTO result = guideMeService.registerGuideSchedules(loginMemberId, guideScheduleRequestDTO);
+
+        Response<GuideScheduleResponseDTO> response = Response.<GuideScheduleResponseDTO>builder()
+                .message("가이드 스케줄 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 스케줄 삭제", description = "가이드의 스케줄을 삭제합니다.")
+    @DeleteMapping("/schedules/{timeSlotId}")
+    public ResponseEntity<Response<GuideScheduleResponseDTO>> deleteGuideSchedule(
+            @PathVariable Long timeSlotId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideScheduleResponseDTO result = guideMeService.deleteGuideSchedule(loginMemberId, timeSlotId);
+
+        Response<GuideScheduleResponseDTO> response = Response.<GuideScheduleResponseDTO>builder()
+                .message("가이드 스케줄 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "가이드 경험 소주제 등록", description = "가이드의 경험 소주제를 등록합니다.")
+    @PostMapping("/experiences/details")
+    public ResponseEntity<Response<GuideExperienceDetailResponseDTO>> registerExperienceDetail(
+            @Valid @RequestBody GuideExperienceDetailRequestDTO guideExperienceDetailRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceDetailResponseDTO result = guideMeService.registerExperienceDetail(loginMemberId, guideExperienceDetailRequestDTO);
+
+        Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
+                .message("가이드 경험 소주제 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 소주제 삭제", description = "가이드의 경험 소주제를 삭제합니다.")
+    @DeleteMapping("/experiences/details/{experienceDetailId}")
+    public ResponseEntity<Response<GuideExperienceDetailResponseDTO>> deleteExperienceDetail(
+            @PathVariable Long experienceDetailId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceDetailResponseDTO result = guideMeService.deleteExperienceDetail(loginMemberId, experienceDetailId);
+
+        Response<GuideExperienceDetailResponseDTO> response = Response.<GuideExperienceDetailResponseDTO>builder()
+                .message("가이드 경험 소주제 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 목록 등록", description = "가이드의 경험 목록을 등록합니다.")
+    @PostMapping("/experiences")
+    public ResponseEntity<Response<GuideExperienceResponseDTO>> registerGuideExperience(
+            @Valid @RequestBody GuideExperienceRequestDTO guideExperienceRequestDTO,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceResponseDTO result = guideMeService.registerGuideExperience(loginMemberId, guideExperienceRequestDTO);
+
+        Response<GuideExperienceResponseDTO> response = Response.<GuideExperienceResponseDTO>builder()
+                .message("가이드 경험 목록 등록 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+
+    }
+
+    @Operation(summary = "가이드 경험 목록 삭제", description = "가이드의 경험 목록을 삭제합니다.")
+    @DeleteMapping("/experiences/{experienceId}")
+    public ResponseEntity<Response<GuideExperienceResponseDTO>> deleteGuideExperience(
+            @PathVariable Long experienceId,
+            @AuthenticationPrincipal CustomUserDetails userDetails){
+
+        if(userDetails == null){
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideExperienceResponseDTO result = guideMeService.deleteGuideExperience(loginMemberId, experienceId);
+
+        Response<GuideExperienceResponseDTO> response = Response.<GuideExperienceResponseDTO>builder()
+                .message("가이드 경험 목록 삭제 완료")
+                .data(result)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+
+    }
+
+    @Operation(summary = "가이드 커피챗 등록", description = "가이드의 커피챗을 등록합니다.")
+    @PostMapping("/coffeechat")
+    public ResponseEntity<Response<GuideCoffeeChatResponseDTO>> registerGuideCoffeeChat(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @Valid @RequestBody GuideCoffeeChatRequestDTO requestDTO) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        GuideCoffeeChatResponseDTO result = guideMeService.registerGuideCoffeeChat(loginMemberId, requestDTO);
+
+        Response<GuideCoffeeChatResponseDTO> response = Response.<GuideCoffeeChatResponseDTO>builder()
+                .message("가이드 커피챗 등록 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "가이드 대기중 커피챗 조회", description = "가이드 본인의 가이드 대기중 커피챗 목록을 조회합니다.")
+    @GetMapping("/reservations/pending")
+    public ResponseEntity<Response<List<GuidePendingReservationResponseDTO>>> getPendingReservations(
+            @AuthenticationPrincipal CustomUserDetails userDetails) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuidePendingReservationResponseDTO> result = guideMeService.getPendingReservations(loginMemberId);
+
+        Response<List<GuidePendingReservationResponseDTO>> response = Response.<List<GuidePendingReservationResponseDTO>>builder()
+                .message("가이드 대기중 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
 

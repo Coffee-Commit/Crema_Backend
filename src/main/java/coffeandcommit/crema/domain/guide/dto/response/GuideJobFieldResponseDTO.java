@@ -19,7 +19,11 @@ public class GuideJobFieldResponseDTO {
     public static GuideJobFieldResponseDTO from(GuideJobField guideJobField) {
         return GuideJobFieldResponseDTO.builder()
                 .guideId(guideJobField.getGuide().getId())
-                .jobName(guideJobField.getJobName())
+                .jobName(
+                        guideJobField.getJobName() != null
+                                ? guideJobField.getJobName()
+                                : JobNameType.UNDEFINED
+                )
                 .build();
     }
 

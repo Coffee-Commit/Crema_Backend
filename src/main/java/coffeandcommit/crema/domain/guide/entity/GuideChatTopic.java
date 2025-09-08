@@ -33,4 +33,7 @@ public class GuideChatTopic extends BaseEntity{
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chat_topic_id", nullable = false)
     private ChatTopic chatTopic; // FK, 챗 토픽 ID
+
+    @OneToOne(mappedBy = "guideChatTopic")
+    private ExperienceGroup experienceGroup;
 }

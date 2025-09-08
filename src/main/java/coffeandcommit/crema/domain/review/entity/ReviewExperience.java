@@ -37,6 +37,11 @@ public class ReviewExperience extends BaseEntity {
     @JoinColumn(name = "experience_group_id", nullable = false)
     private ExperienceGroup experienceGroup; // FK, 경험 대주제 ID
 
-    @Column(name = "thumbs_up", nullable = false)
-    private boolean thumbsUp; // 좋아요 여부
+    @Column(name = "is_thumbs_up", nullable = false)
+    @Builder.Default
+    private boolean isThumbsUp = false; // 좋아요 여부
+
+    public void setReview(Review review) {
+        this.review = review;
+    }
 }

@@ -1,0 +1,151 @@
+package coffeandcommit.crema.global.validation;
+
+import java.util.Arrays;
+import java.util.List;
+import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
+
+@Component
+public class FileValidator {
+
+    // 확장자
+    private static final List<String> ALLOWED_IMAGE_TYPES = Arrays.asList(
+            "image/jpeg", "image/png", "image/jpg", "image/gif", "image/webp"
+    );
+    private static final String ALLOWED_PDF_TYPE = "application/pdf";
+
+    // 사이즈
+    private static final long MAX_SIZE = 10 * 1024 * 1024; // 10MB
+    private static final long MAX_PROFILE_IMAGE_SIZE = 2 * 1024 * 1024; // 2MB
+
+
+    public void validate(MultipartFile file, FileType fileType) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("파일이 비어있습니다.");
+        }
+
+        switch (fileType) {
+            case IMAGE -> validateImage(file);
+            case PDF -> validatePdf(file);
+            case PROFILE_IMAGE -> validateProfileImage(file);
+            default -> throw new IllegalArgumentException("지원하지 않는 파일 타입입니다.");
+        }
+    }
+
+    public void validateProfileImage(MultipartFile file) {
+        validateImageBasics(file);
+
+        final String ct = file.getContentType();
+        if (ct == null || !(ct.equalsIgnoreCase("image/jpeg")
+                    || ct.equalsIgnoreCase("image/jpg")
+                    || ct.equalsIgnoreCase("image/png"))) {
+            throw new IllegalArgumentException("프로필 이미지는 JPEG/PNG만 업로드할 수 있습니다.");
+        }
+
+        if (file.getSize() > MAX_PROFILE_IMAGE_SIZE) {
+            throw new IllegalArgumentException("프로필 이미지 크기는 2MB를 초과할 수 없습니다.");
+        }
+    }
+
+    public void validateImage(MultipartFile file) {
+        validateImageBasics(file);
+        if (file.getSize() > MAX_SIZE) {
+            throw new IllegalArgumentException("이미지 파일 크기가 너무 큽니다.");
+        }
+    }
+
+    public void validatePdf(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            throw new IllegalArgumentException("PDF 파일이 비어있습니다.");
+        }
+        final String contentType = file.getContentType();
+        if (!ALLOWED_PDF_TYPE.equalsIgnoreCase(contentType)) {
+            throw new IllegalArgumentException("PDF 파일만 업로드할 수 있습니다.");
+        }
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || originalFilename.trim().isEmpty() || !originalFilename.contains(".")) {
+            throw new IllegalArgumentException("PDF 파일명이 유효하지 않습니다.");
+        }
+        if (originalFilename.contains("/") || originalFilename.contains("\\")) {
+            throw new IllegalArgumentException("파일명에 허용되지 않는 문자가 포함되어 있습니다.");
+        }
+        if (file.getSize() > MAX_SIZE) {
+            throw new IllegalArgumentException("PDF 파일 크기가 너무 큽니다.");
+        }
+    }
+
+    // 공통 이미지 검증 로직
+    private void validateImageBasics(MultipartFile file) {
+        final String contentType = file.getContentType();
+        if (contentType == null || !ALLOWED_IMAGE_TYPES.contains(contentType.toLowerCase())) {
+            throw new IllegalArgumentException("지원하지 않는 이미지 형식입니다.");
+        }
+
+        String originalFilename = file.getOriginalFilename();
+        if (originalFilename == null || !originalFilename.contains(".")) {
+            throw new IllegalArgumentException("파일명 또는 확장자가 유효하지 않습니다.");
+        }
+        if (originalFilename.contains("/") || originalFilename.contains("\\")) {
+            throw new IllegalArgumentException("파일명에 허용되지 않는 문자가 포함되어 있습니다.");
+        }
+
+        try {
+            if (!hasValidImageSignature(file)) {
+                throw new IllegalArgumentException("파일 시그니처가 유효하지 않습니다.");
+            }
+        } catch (Exception e) {
+            throw new IllegalArgumentException("파일을 읽는 중 오류가 발생했습니다.", e);
+        }
+    }
+
+    private boolean hasValidImageSignature(MultipartFile file) {
+        try (var in = file.getInputStream()) {
+            byte[] h = in.readNBytes(12);
+            return isValidImageHeader(h);
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean isValidImageHeader(byte[] header) {
+        if (header == null || header.length < 3) {
+            return false;
+        }
+
+        // JPEG / JPG: FF D8 FF
+        if (header.length >= 3 &&
+                header[0] == (byte) 0xFF &&
+                header[1] == (byte) 0xD8 &&
+                header[2] == (byte) 0xFF) {
+            return true;
+        }
+        // PNG: 89 50 4E 47 0D 0 A 1A 0A
+        if (header.length >= 8 &&
+                header[0] == (byte) 0x89 &&
+                header[1] == (byte) 0x50 &&
+                header[2] == (byte) 0x4E &&
+                header[3] == (byte) 0x47 &&
+                header[4] == (byte) 0x0D &&
+                header[5] == (byte) 0x0A &&
+                header[6] == (byte) 0x1A &&
+                header[7] == (byte) 0x0A) {
+            return true;
+        }
+        // GIF: "GIF87a" or "GIF89a"
+        if (header.length >= 6 &&
+                header[0] == 'G' && header[1] == 'I' && header[2] == 'F' &&
+                header[3] == '8' && (header[4] == '7' || header[4] == '9') &&
+                header[5] == 'a') {
+            return true;
+        }
+
+        // WEBP: "RIFF"...."WEBP"
+        if (header.length >= 12 &&
+                header[0] == 'R' && header[1] == 'I' && header[2] == 'F' && header[3] == 'F' &&
+                header[8] == 'W' && header[9] == 'E' && header[10] == 'B' && header[11] == 'P') {
+            return true;
+        }
+
+        return false;
+    }
+}

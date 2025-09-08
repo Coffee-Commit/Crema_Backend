@@ -53,7 +53,7 @@ spring:
           google:
             client-id: ${GOOGLE_CLIENT_ID}
             client-secret: ${GOOGLE_CLIENT_SECRET}
-            redirect-uri: "{baseUrl}/login/oauth2/code/google"
+            redirect-uri: "{baseUrl}/api/login/oauth2/code/google"
             scope:
               - profile
           kakao:
@@ -61,7 +61,7 @@ spring:
             client-secret: ${KAKAO_CLIENT_SECRET}
             client-authentication-method: client_secret_post
             authorization-grant-type: authorization_code
-            redirect-uri: "{baseUrl}/login/oauth2/code/kakao"
+            redirect-uri: "{baseUrl}/api/login/oauth2/code/kakao"
             scope:
               - profile_nickname
         provider:
@@ -70,12 +70,11 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
-  # Spring Cloud AWS 자동설정 비활성화 (S3 config 직접 구현한 것 적용하기 위함)
-  autoconfigure:
-    exclude:
-      - io.awspring.cloud.autoconfigure.s3.S3AutoConfiguration
-      - io.awspring.cloud.autoconfigure.core.CredentialsAutoConfiguration
-      - io.awspring.cloud.autoconfigure.core.RegionAutoConfiguration
+  cloud:
+    gcp:
+      project-id: "${GCP_PROJECT_ID}"
+      storage:
+        bucket-name: "${GCS_BUCKET_NAME}"
 
 server:
   port: 8080
@@ -99,3 +98,11 @@ cloud:
 openvidu:
   domain: ${OPENVIDU_DOMAIN}
   secret: ${OPENVIDU_SECRET}
+# 모니터링 관련 설정
+management:
+  server:
+    port: 9090
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus
