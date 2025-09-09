@@ -41,3 +41,7 @@ out/
 .env
 
 ***/gcp_crema.json
+
+### Monitoring ###
+/influxdb-data
+!local-monitoring.yml

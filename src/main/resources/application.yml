@@ -92,3 +92,10 @@ management:
     web:
       exposure:
         include: health,prometheus
+  influx:
+    metrics:
+      export:
+        uri: http://localhost:8086
+        bucket: jmeter-metrics
+        token: my-super-secret-token
+        org: my-org
