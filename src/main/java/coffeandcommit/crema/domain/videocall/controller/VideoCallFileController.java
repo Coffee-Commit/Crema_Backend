@@ -23,9 +23,9 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @Tag(name = "화상통화 파일 공유", description = "화상통화 세션 내 파일 공유 관리 API")
 public class VideoCallFileController {
-    
+
     private final VideoCallFileService videoCallFileService;
-    
+
     @GetMapping("/sessions/{sessionId}/materials")
     @Operation(
         summary = "공유 자료 목록 조회",
@@ -40,24 +40,24 @@ public class VideoCallFileController {
             @Parameter(description = "화상통화 세션 ID", required = true)
             @PathVariable String sessionId,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         String userId = userDetails.getUsername();
         log.info("공유 자료 목록 조회 요청 - 세션: {}, 사용자: {}", sessionId, userId);
-        
+
         SharedFileListResponse response = videoCallFileService.getSharedFiles(sessionId, userId);
-        
+
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
-    
+
     @PostMapping("/sessions/{sessionId}/materials")
     @Operation(
         summary = "공유 자료 등록",
-        description = "이미 S3에 업로드된 파일을 특정 화상통화 세션과 연결합니다. " +
+        description = "이미 스토리지에 업로드된 파일을 특정 화상통화 세션과 연결합니다. " +
                      "파일 업로드 자체는 기존 /api/images/upload API를 사용해주세요."
     )
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "공유 자료가 성공적으로 등록됨"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 또는 S3 파일이 존재하지 않음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 또는 파일이 존재하지 않음"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "세션 접근 권한 없음"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션을 찾을 수 없음"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 등록된 파일")
@@ -68,15 +68,15 @@ public class VideoCallFileController {
             @Parameter(description = "공유 파일 등록 정보", required = true)
             @Valid @RequestBody SharedFileUploadRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         String userId = userDetails.getUsername();
         log.info("공유 자료 등록 요청 - 세션: {}, 파일: {}, 사용자: {}", sessionId, request.getFileName(), userId);
-        
+
         SharedFileResponse response = videoCallFileService.addSharedFile(sessionId, request, userId);
-        
+
         return ApiResponse.onSuccess(SuccessStatus.CREATED, response);
     }
-    
+
     @DeleteMapping("/sessions/{sessionId}/materials")
     @Operation(
         summary = "공유 자료 삭제",
@@ -90,15 +90,15 @@ public class VideoCallFileController {
     public ApiResponse<Void> deleteSharedFile(
             @Parameter(description = "화상통화 세션 ID", required = true)
             @PathVariable String sessionId,
-            @Parameter(description = "삭제할 파일의 S3 이미지 키", required = true)
+            @Parameter(description = "삭제할 파일의 이미지 키", required = true)
             @RequestParam("imageKey") String imageKey,
             @AuthenticationPrincipal UserDetails userDetails) {
-        
+
         String userId = userDetails.getUsername();
         log.info("공유 자료 삭제 요청 - 세션: {}, 이미지키: {}, 사용자: {}", sessionId, imageKey, userId);
-        
+
         videoCallFileService.deleteSharedFile(sessionId, imageKey, userId);
-        
+
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
     }
 }

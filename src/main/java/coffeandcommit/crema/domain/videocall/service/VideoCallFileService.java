@@ -10,7 +10,7 @@ import coffeandcommit.crema.domain.videocall.entity.VideoCallSharedFile;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.domain.videocall.repository.VideoCallSharedFileRepository;
 import coffeandcommit.crema.domain.videocall.repository.VideoSessionRepository;
-import coffeandcommit.crema.global.AWS.service.S3Service;
+import coffeandcommit.crema.global.storage.StorageService;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +30,7 @@ public class VideoCallFileService {
     private final VideoCallSharedFileRepository sharedFileRepository;
     private final VideoSessionRepository videoSessionRepository;
     private final MemberRepository memberRepository;
-    private final S3Service s3Service;
+    private final StorageService storageService;
     
     /**
      * 세션의 공유 파일 목록 조회
@@ -65,12 +65,6 @@ public class VideoCallFileService {
         
         // 세션 존재 및 권한 확인
         VideoSession videoSession = validateSessionAccess(sessionId, userId);
-        
-        // S3 파일 존재 확인
-        if (!s3Service.fileExists(request.getImageKey())) {
-            log.error("S3에서 파일을 찾을 수 없습니다: {}", request.getImageKey());
-            throw new BaseException(ErrorStatus.FILE_NOT_FOUND);
-        }
         
         // 중복 등록 확인
         if (sharedFileRepository.existsByVideoSessionAndImageKey(videoSession, request.getImageKey())) {
