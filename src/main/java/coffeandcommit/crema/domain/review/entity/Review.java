@@ -46,13 +46,4 @@ public class Review extends BaseEntity{
         this.experienceEvaluations.add(experience);
     }
 
-    // Explicit getter methods to ensure compatibility
-    public Long getId() {
-        return this.id;
-    }
-
-    public Reservation getReservation() {
-        return this.reservation;
-    }
-
 }

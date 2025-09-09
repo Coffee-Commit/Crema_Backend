@@ -87,21 +87,4 @@ public class Guide extends BaseEntity {
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ExperienceDetail experienceDetail;
 
-    // Explicit getter methods to ensure compatibility
-    public Long getId() {
-        return this.id;
-    }
-
-    public GuideJobField getGuideJobField() {
-        return this.guideJobField;
-    }
-
-    public String getWorkingPeriod() {
-        return this.workingPeriod;
-    }
-
-    public List<HashTag> getHashTags() {
-        return this.hashTags;
-    }
-
 }
