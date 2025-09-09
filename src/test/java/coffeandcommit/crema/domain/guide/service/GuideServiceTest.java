@@ -43,6 +43,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
+import static coffeandcommit.crema.domain.globalTag.enums.JobNameType.DESIGN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -128,7 +129,7 @@ public class GuideServiceTest {
         guideJobField = GuideJobField.builder()
                 .id(1L)
                 .guide(guide1)
-                .jobName(JobNameType.DESIGN)
+                .jobName(DESIGN)
                 .build();
 
         chatTopic1 = ChatTopic.builder()
@@ -219,7 +220,7 @@ public class GuideServiceTest {
 
         assertNotNull(result);
         assertEquals(1L, result.getGuideId());
-        assertEquals(JobNameType.DESIGN, result.getJobName());
+        assertEquals(DESIGN, result.getJobName());
 
         verify(guideRepository).findById(1L);
         verify(guideJobFieldRepository).findByGuide(guide1);
@@ -1063,8 +1064,8 @@ public class GuideServiceTest {
     @DisplayName("가이드 목록 조회 - 성공")
     void getGuides_Success() {
         // 테스트 데이터 준비
-        List<Long> jobFieldIds = List.of(1L);
-        List<Long> chatTopicIds = List.of(1L, 2L);
+        List<JobNameType> jobNames = List.of(DESIGN);
+        List<TopicNameType> chatTopicNames = List.of(TopicNameType.INTERVIEW, TopicNameType.RESUME);
         String keyword = "Java";
         Pageable pageable = Pageable.unpaged();
         String loginMemberId = "member1";
@@ -1082,7 +1083,7 @@ public class GuideServiceTest {
         Page<Guide> guidePage = new PageImpl<>(List.of(guide1));
 
         // Mock 설정
-        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+        when(guideRepository.findBySearchConditions(jobNames, chatTopicNames, keyword, pageable))
                 .thenReturn(guidePage);
         when(reservationRepository.countByGuideAndStatus(guide1, Status.COMPLETED)).thenReturn(5L);
         when(reviewRepository.calculateAverageStarByGuide(guide1)).thenReturn(java.math.BigDecimal.valueOf(4.5));
@@ -1090,7 +1091,7 @@ public class GuideServiceTest {
         when(reviewExperienceRepository.countThumbsUpByGuide(guide1)).thenReturn(7L);
 
         // 테스트 실행
-        Page<GuideListResponseDTO> result = guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+        Page<GuideListResponseDTO> result = guideService.getGuides(jobNames, chatTopicNames, keyword, pageable, loginMemberId, sort);
 
         // 검증
         assertNotNull(result);
@@ -1100,7 +1101,7 @@ public class GuideServiceTest {
         GuideListResponseDTO dto = result.getContent().get(0);
         assertEquals(guide1.getId(), dto.getGuideId());
         assertEquals(guide1.getTitle(), dto.getTitle());
-        assertEquals(JobNameType.DESIGN, dto.getJobField().getJobName());
+        assertEquals(DESIGN, dto.getJobField().getJobName());
         assertEquals(2, dto.getHashTags().size());
         assertEquals(5L, dto.getStats().getTotalCoffeeChats());
         assertEquals(4.5, dto.getStats().getAverageStar());
@@ -1108,7 +1109,7 @@ public class GuideServiceTest {
         assertEquals(7L, dto.getStats().getThumbsUpCount());
 
         // 메서드 호출 검증
-        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        verify(guideRepository).findBySearchConditions(jobNames, chatTopicNames, keyword, pageable);
         verify(reservationRepository).countByGuideAndStatus(guide1, Status.COMPLETED);
         verify(reviewRepository).calculateAverageStarByGuide(guide1);
         verify(reviewRepository).countByGuide(guide1);
@@ -1119,8 +1120,8 @@ public class GuideServiceTest {
     @DisplayName("가이드 목록 조회 - 빈 결과")
     void getGuides_EmptyResult() {
         // 테스트 데이터 준비
-        List<Long> jobFieldIds = List.of(999L); // 존재하지 않는 ID
-        List<Long> chatTopicIds = null;
+        List<JobNameType> jobNames = List.of(DESIGN);
+        List<TopicNameType> chatTopicNames = null;
         String keyword = null;
         Pageable pageable = Pageable.unpaged();
         String loginMemberId = "member1";
@@ -1130,11 +1131,11 @@ public class GuideServiceTest {
         Page<Guide> emptyPage = new PageImpl<>(List.of());
 
         // Mock 설정
-        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+        when(guideRepository.findBySearchConditions(jobNames, chatTopicNames, keyword, pageable))
                 .thenReturn(emptyPage);
 
         // 테스트 실행
-        Page<GuideListResponseDTO> result = guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+        Page<GuideListResponseDTO> result = guideService.getGuides(jobNames, chatTopicNames, keyword, pageable, loginMemberId, sort);
 
         // 검증
         assertNotNull(result);
@@ -1142,7 +1143,7 @@ public class GuideServiceTest {
         assertTrue(result.getContent().isEmpty());
 
         // 메서드 호출 검증
-        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        verify(guideRepository).findBySearchConditions(jobNames, chatTopicNames, keyword, pageable);
         verifyNoInteractions(reservationRepository, reviewRepository, reviewExperienceRepository);
     }
 
@@ -1150,8 +1151,8 @@ public class GuideServiceTest {
     @DisplayName("가이드 목록 조회 - 인기순 정렬")
     void getGuides_SortByPopularity() {
         // 테스트 데이터 준비
-        List<Long> jobFieldIds = null;
-        List<Long> chatTopicIds = null;
+        List<JobNameType> jobNames = null;
+        List<TopicNameType> chatTopicNames = null;
         String keyword = null;
         Pageable pageable = Pageable.unpaged();
         String loginMemberId = "member1";
@@ -1189,7 +1190,7 @@ public class GuideServiceTest {
         Page<Guide> guidePage = new PageImpl<>(List.of(guide1, guide3));
 
         // Mock 설정
-        when(guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable))
+        when(guideRepository.findBySearchConditions(jobNames, chatTopicNames, keyword, pageable))
                 .thenReturn(guidePage);
 
         // guide1 설정
@@ -1206,7 +1207,7 @@ public class GuideServiceTest {
 
         // 테스트 실행
         Page<GuideListResponseDTO> result = guideService.getGuides(
-                jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+                jobNames, chatTopicNames, keyword, pageable, loginMemberId, sort);
 
         // 검증
         assertNotNull(result);
@@ -1224,7 +1225,7 @@ public class GuideServiceTest {
         assertEquals(10L, second.getStats().getTotalReviews());
 
         // 메서드 호출 검증
-        verify(guideRepository).findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+        verify(guideRepository).findBySearchConditions(jobNames, chatTopicNames, keyword, pageable);
     }
 
 }
