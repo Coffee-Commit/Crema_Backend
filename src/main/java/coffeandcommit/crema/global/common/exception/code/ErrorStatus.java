@@ -60,6 +60,29 @@ public enum ErrorStatus implements BaseCode {
     MAX_HASHTAG_EXCEEDED(HttpStatus.UNPROCESSABLE_ENTITY, "해시태그는 최대 5개까지 등록할 수 있습니다."),
     DUPLICATE_HASHTAG(HttpStatus.CONFLICT, "이미 등록된 해시태그입니다."),
     HASHTAG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 해시태그를 찾을 수 없습니다."),
+
+    // openvidu
+    SESSION_CREATE_EXCEPTION(HttpStatus.INTERNAL_SERVER_ERROR , "openvidu session 생성에 실패했습니다."),
+    RECORDING_ALREADY_STARTED(HttpStatus.INTERNAL_SERVER_ERROR , "이미 녹음이 진행 중 입니다."),
+    RECORDING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR , "녹음이 실패했습니다."),
+    SESSION_CONNECT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR , "세션 연결에 실패했습니다."),
+    SESSION_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR , "존재하지 않는 openvidu session 입니다."),
+    PARTICIPANT_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR , "존재하지 않는 participant 입니다."),
+    TOKEN_REFRESH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "토큰 갱신에 실패했습니다."),
+    AUTO_RECONNECT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "자동 재연결에 실패했습니다."),
+    OPENVIDU_CONNECTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "OpenVidu 서버에 연결할 수 없습니다."),
+
+    // Chat
+    CHAT_NOT_FOUND(HttpStatus.NOT_FOUND, "채팅 기록을 찾을 수 없습니다."),
+    CHAT_SAVE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "채팅 기록 저장에 실패했습니다."),
+
+    // Shared File
+    FILE_NOT_FOUND(HttpStatus.NOT_FOUND, "파일을 찾을 수 없습니다."),
+    FILE_ALREADY_EXISTS(HttpStatus.CONFLICT, "이미 등록된 파일입니다."),
+    SESSION_NOT_ACTIVE(HttpStatus.BAD_REQUEST, "비활성 상태의 세션입니다."),
+
+    // Else
+    HASHTAG_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 해시태그를 찾을 수 없습니다."),
     INVALID_TIME_RANGE(HttpStatus.UNPROCESSABLE_ENTITY, "시작 시간이 종료 시간보다 같거나 늦을 수 없습니다."),
     TIME_SLOT_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 시간 구간을 찾을 수 없습니다."),
     DUPLICATE_TIME_SLOT(HttpStatus.CONFLICT, "해당 요일에 겹치는 시간대가 이미 존재합니다."),
