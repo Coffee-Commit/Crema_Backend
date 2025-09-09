@@ -1,11 +1,9 @@
 package coffeandcommit.crema.domain.globalTag.enums;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
 
 @Getter
-@AllArgsConstructor
 @ToString
 public enum TopicNameType {
     UNDEFINED("미정"),
@@ -24,4 +22,12 @@ public enum TopicNameType {
     JOB_CHANGE("이직");
 
     private final String description;
+    
+    TopicNameType(String description) {
+        this.description = description;
+    }
+    
+    public String getDescription() {
+        return this.description;
+    }
 }
