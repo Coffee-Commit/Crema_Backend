@@ -6,6 +6,10 @@ import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 
 public class SessionNotFoundException extends BaseException {
     public SessionNotFoundException() {
-        super(ErrorStatus.SESSION_CREATE_EXCEPTION);
+        super(ErrorStatus.SESSION_NOT_FOUND);
+    }
+    
+    public SessionNotFoundException(String message) {
+        super(ErrorStatus.SESSION_NOT_FOUND);
     }
 }
