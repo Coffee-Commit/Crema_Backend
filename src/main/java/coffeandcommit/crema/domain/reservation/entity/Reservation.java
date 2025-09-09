@@ -4,7 +4,7 @@ import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
-import coffeandcommit.crema.domain.survey.entity.Survey;
+import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -46,6 +46,9 @@ public class Reservation extends BaseEntity{
     private Status status = Status.PENDING; // 예약 상태 (예: PENDING, CONFIRMED, COMPLETED)
 
     private LocalDateTime reservedAt;
+
+    @Column(length = 500)
+    private String reason; // 취소 사유
 
     @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private TimeUnit timeUnit;
