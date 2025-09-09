@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 
 import java.util.List;
 import java.util.Optional;
@@ -22,8 +24,8 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
      * 조건에 따라 필터링된 가이드를 페이지 단위로 반환합니다.
      * 영업 중(isOpened = true)인 가이드만 조회됩니다.
      *
-     * @param jobFieldIds 직무분야 ID 목록
-     * @param chatTopicIds 커피챗 주제 ID 목록
+     * @param jobNames 직무분야 이름 목록 (ENUM)
+     * @param chatTopicNames 커피챗 주제 이름 목록 (ENUM)
      * @param keyword 검색 키워드 (title, hashTagName)
      * @param pageable 페이징 정보
      * @return 필터링된 가이드 목록
@@ -36,8 +38,8 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
             LEFT JOIN g.guideChatTopics gct
             LEFT JOIN g.hashTags ht
             WHERE g.isOpened = true
-              AND (:jobFieldIds IS NULL OR gjf.id IN :jobFieldIds)
-              AND (:chatTopicIds IS NULL OR gct.chatTopic.id IN :chatTopicIds)
+              AND (:jobNames IS NULL OR gjf.jobName IN :jobNames)
+              AND (:chatTopicNames IS NULL OR gct.chatTopic.topicName IN :chatTopicNames)
               AND (:keyword IS NULL
                    OR LOWER(g.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(ht.hashTagName) LIKE LOWER(CONCAT('%', :keyword, '%')))
@@ -49,16 +51,16 @@ public interface GuideRepository extends JpaRepository<Guide, Long> {
             LEFT JOIN g.guideChatTopics gct
             LEFT JOIN g.hashTags ht
             WHERE g.isOpened = true
-              AND (:jobFieldIds IS NULL OR gjf.id IN :jobFieldIds)
-              AND (:chatTopicIds IS NULL OR gct.chatTopic.id IN :chatTopicIds)
+              AND (:jobNames IS NULL OR gjf.jobName IN :jobNames)
+              AND (:chatTopicNames IS NULL OR gct.chatTopic.topicName IN :chatTopicNames)
               AND (:keyword IS NULL
                    OR LOWER(g.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(ht.hashTagName) LIKE LOWER(CONCAT('%', :keyword, '%')))
             """
     )
     Page<Guide> findBySearchConditions(
-            @Param("jobFieldIds") List<Long> jobFieldIds,
-            @Param("chatTopicIds") List<Long> chatTopicIds,
+            @Param("jobNames") List<JobNameType> jobNames,
+            @Param("chatTopicNames") List<TopicNameType> chatTopicNames,
             @Param("keyword") String keyword,
             Pageable pageable
     );

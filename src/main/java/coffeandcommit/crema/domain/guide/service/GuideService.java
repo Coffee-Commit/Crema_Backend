@@ -374,16 +374,27 @@ public class GuideService {
         );
     }
 
-    /* 가이드 목록 조회 */
+    /* 가이드 목록 조회 (enum 기반 필터) */
     @Transactional(readOnly = true)
-    public Page<GuideListResponseDTO> getGuides(List<Long> jobFieldIds, List<Long> chatTopicIds, String keyword, Pageable pageable, String loginMemberId, String sort) {
+    public Page<GuideListResponseDTO> getGuides(
+            List<coffeandcommit.crema.domain.globalTag.enums.JobNameType> jobNames,
+            List<coffeandcommit.crema.domain.globalTag.enums.TopicNameType> chatTopicNames,
+            String keyword,
+            Pageable pageable,
+            String loginMemberId,
+            String sort
+    ) {
 
         boolean isPopular = "popular".equalsIgnoreCase(sort);
 
+        // 빈 리스트 방어: JPA IN () 오류 방지용
+        jobNames = (jobNames != null && jobNames.isEmpty()) ? null : jobNames;
+        chatTopicNames = (chatTopicNames != null && chatTopicNames.isEmpty()) ? null : chatTopicNames;
+
         // 1. popular는 전체 데이터 조회 (unpaged), latest는 DB에서 페이징
         Page<Guide> guides = isPopular
-                ? guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, Pageable.unpaged())
-                : guideRepository.findBySearchConditions(jobFieldIds, chatTopicIds, keyword, pageable);
+                ? guideRepository.findBySearchConditions(jobNames, chatTopicNames, keyword, Pageable.unpaged())
+                : guideRepository.findBySearchConditions(jobNames, chatTopicNames, keyword, pageable);
 
         // 2. DTO 변환
         List<GuideListResponseDTO> dtoList = guides.stream()

@@ -203,7 +203,7 @@
           "profileImageUrl": "https://cdn.example.com/profile2.png",
           "title": "백엔드 면접/이직 상담",
           "workingPeriod": null,
-          "jobField": { "guideId": 1, "jobName": "IT_DEVELOPMENT_DATA" },
+          "jobField": { "guideId": 1, "jobName": "IT_DEVELOPMENT_DATA", "jobNameDescription": "IT 개발/데이터" },
           "hashTags": [
             { "id": 1, "guideId": 1, "hashTagName": "#백엔드" },
             { "id": 2, "guideId": 1, "hashTagName": "#면접준비" }
@@ -216,7 +216,7 @@
           "profileImageUrl": "https://cdn.example.com/profile3.png",
           "title": "프론트엔드 커리어 상담",
           "workingPeriod": null,
-          "jobField": { "guideId": 2, "jobName": "IT_DEVELOPMENT_DATA" },
+          "jobField": { "guideId": 2, "jobName": "IT_DEVELOPMENT_DATA", "jobNameDescription": "IT 개발/데이터" },
           "hashTags": [
             { "id": 3, "guideId": 2, "hashTagName": "#프론트엔드" },
             { "id": 4, "guideId": 2, "hashTagName": "#포트폴리오" }
@@ -226,8 +226,8 @@
       ]
     },
     "guide2ChatTopics": [
-      { "id": 3, "guideId": 2, "topic": { "topicName": "INTERVIEW" } },
-      { "id": 4, "guideId": 2, "topic": { "topicName": "RESUME" } }
+      { "id": 3, "guideId": 2, "topic": { "topicName": "INTERVIEW", "description": "면접" } },
+      { "id": 4, "guideId": 2, "topic": { "topicName": "RESUME", "description": "이력서" } }
     ],
     "guide2Schedules": {
       "guideId": 2,

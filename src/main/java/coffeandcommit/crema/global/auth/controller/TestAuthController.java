@@ -33,7 +33,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/test/auth")
 @RequiredArgsConstructor
-@Profile("local")
+@Profile({"local", "dev"})
 @Tag(name = "Test Auth API", description = "로컬 개발용 테스트 인증 API (local 프로필에서만 활성화)")
 public class TestAuthController {
 

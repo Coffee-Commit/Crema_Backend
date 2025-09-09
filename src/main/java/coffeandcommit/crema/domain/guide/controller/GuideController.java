@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.guide.controller;
 
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
@@ -277,8 +279,8 @@ public class GuideController {
 
     @GetMapping
     public ResponseEntity<Response<Page<GuideListResponseDTO>>> getGuides(
-            @RequestParam(required = false) List<Long> jobFieldIds,
-            @RequestParam(required = false) List<Long> chatTopicIds,
+            @RequestParam(required = false) List<JobNameType> jobNames,
+            @RequestParam(required = false) List<TopicNameType> chatTopicNames,
             @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") @Min(0) int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
@@ -296,7 +298,7 @@ public class GuideController {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "modifiedAt"));
 
         Page<GuideListResponseDTO> guides =
-                guideService.getGuides(jobFieldIds, chatTopicIds, keyword, pageable, loginMemberId, sort);
+                guideService.getGuides(jobNames, chatTopicNames, keyword, pageable, loginMemberId, sort);
 
         Response<Page<GuideListResponseDTO>> response = Response.<Page<GuideListResponseDTO>>builder()
                 .message("가이드 목록 조회 성공")
