@@ -72,10 +72,10 @@ public class ChatController {
         }
     }
 
-    @GetMapping("/{sessionId}/history")
+    @GetMapping("/{reservationId}/history")
     @Operation(
             summary = "채팅 기록 조회",
-            description = "저장된 세션의 채팅 기록을 조회합니다."
+            description = "저장된 예약의 채팅 기록을 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "채팅 기록 조회 성공"),
@@ -84,23 +84,23 @@ public class ChatController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "채팅 기록 조회 실패")
     })
     public ResponseEntity<ApiResponse<ChatHistoryResponse>> getChatHistory(
-            @PathVariable String sessionId,
+            @PathVariable String reservationId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
         try {
-            ChatHistoryResponse response = chatService.getChatHistory(sessionId, userDetails.getUsername());
-            log.info("채팅 기록 조회 성공: sessionId={}, userId={}", sessionId, userDetails.getUsername());
+            ChatHistoryResponse response = chatService.getChatHistory(reservationId, userDetails.getUsername());
+            log.info("채팅 기록 조회 성공: reservationId={}, userId={}", reservationId, userDetails.getUsername());
             return ResponseEntity.ok(ApiResponse.onSuccess(SuccessStatus.OK, response));
         } catch (SecurityException e) {
-            log.error("채팅 조회 권한 없음: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
+            log.error("채팅 조회 권한 없음: reservationId={}, userId={}", reservationId, userDetails.getUsername(), e);
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(ApiResponse.onFailure(ErrorStatus.FORBIDDEN, null));
         } catch (ChatNotFoundException e) {
-            log.error("채팅 기록을 찾을 수 없음: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
+            log.error("채팅 기록을 찾을 수 없음: reservationId={}, userId={}", reservationId, userDetails.getUsername(), e);
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(ApiResponse.onFailure(ErrorStatus.CHAT_NOT_FOUND, null));
         } catch (Exception e) {
-            log.error("채팅 기록 조회 실패: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
+            log.error("채팅 기록 조회 실패: reservationId={}, userId={}", reservationId, userDetails.getUsername(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ApiResponse.onFailure(ErrorStatus.INTERNAL_SERVER_ERROR, null));
         }
