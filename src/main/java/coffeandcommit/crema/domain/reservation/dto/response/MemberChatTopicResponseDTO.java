@@ -17,9 +17,7 @@ public class MemberChatTopicResponseDTO {
     private TopicDTO topic;   // 글로벌 태그 DTO 재사용
 
     public static MemberChatTopicResponseDTO from(MemberChatTopic memberChatTopic) {
-        TopicDTO topic = TopicDTO.builder()
-                .topicName(memberChatTopic.getChatTopic().getTopicName())
-                .build();
+        TopicDTO topic = TopicDTO.from(memberChatTopic.getChatTopic().getTopicName());
 
         return MemberChatTopicResponseDTO.builder()
                 .id(memberChatTopic.getId())

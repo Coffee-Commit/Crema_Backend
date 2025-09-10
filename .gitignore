@@ -40,6 +40,9 @@ out/
 /doc/
 .env
 
+./node_modules/*
+/node_modules/
+
 ***/gcp_crema.json
 
 ### Monitoring ###
