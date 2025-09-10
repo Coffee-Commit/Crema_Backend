@@ -47,9 +47,6 @@ public class Reservation extends BaseEntity{
 
     private LocalDateTime reservedAt;
 
-    @Column(length = 500)
-    private String reason; // 취소 사유
-
     @OneToOne(mappedBy = "reservation", cascade = CascadeType.ALL, orphanRemoval = true)
     private TimeUnit timeUnit;
 
@@ -67,21 +64,15 @@ public class Reservation extends BaseEntity{
         }
     }
 
-
     public void setStatus(Status status) {
         this.status = status;
     }
 
-
-
-
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "video_session_id")
     private VideoSession videoSession;
-    /**
- * 예약 상태를 완료로 변경 (멱등성 보장)
- */
-public void completeReservation() {
+
+    public void completeReservation() {
     if (this.status == Status.COMPLETED) {
         // 이미 완료된 경우 - 멱등성
         return;
@@ -92,20 +83,13 @@ public void completeReservation() {
     }
 
     this.status = Status.COMPLETED;
-}
+    }
 
-    /**
-     * 예약 상태를 확정으로 변경
-     */
     public void confirmReservation() {
         this.status = Status.CONFIRMED;
     }
 
-    /**
-     * 예약 상태를 취소로 변경
-     */
     public void cancelReservation(String reason) {
         this.status = Status.CANCELLED;
-        this.reason = reason;
     }
 }
