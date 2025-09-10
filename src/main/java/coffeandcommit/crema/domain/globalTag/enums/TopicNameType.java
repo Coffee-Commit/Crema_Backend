@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.globalTag.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
@@ -24,4 +25,21 @@ public enum TopicNameType {
     JOB_CHANGE("이직");
 
     private final String description;
+
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static TopicNameType from(Object value) {
+        if (value == null) return null;
+        String text = String.valueOf(value).trim();
+        for (TopicNameType t : values()) {
+            if (t.name().equalsIgnoreCase(text)) {
+                return t;
+            }
+        }
+        for (TopicNameType t : values()) {
+            if (t.getDescription().equals(text)) {
+                return t;
+            }
+        }
+        throw new IllegalArgumentException("사용 불가능한 TopicNameType: " + text);
+    }
 }
