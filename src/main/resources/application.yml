@@ -103,3 +103,4 @@ management:
         bucket: jmeter-metrics
         token: my-super-secret-token
         org: my-org
+        enabled: ${INFLUX_ENABLE:false}
