@@ -11,7 +11,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "rookie_4926예제6f5d"
+  "nickname": "guide_d8dffb39"
 }
 
 ### 4. JWT 토큰으로 내 정보 조회 테스트 (3번 에서 받은 accessToken을 Bearer 뒤에 붙여넣기, 다른 도메인에서도 token 사용 가능한지 확인용)
@@ -23,5 +23,39 @@ DELETE http://localhost:8080/api/test/auth/cleanup
 
 
 ### 6. 가이드 본인 프로필 조회
-GET http://localhost:8080/api/guides/me
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlM2FjYjcwZCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJmNTI0YzIxMi1mYjM0LTRhMTUtYmFhYi0zMzA4ZjY5NjE5M2EiLCJpYXQiOjE3NTY1NjA1ODMsImV4cCI6MTc1NjU2MjM4M30.7aPhVRM3YPi8n81EqL6oJJrECysATkIp4tHCFi9yokf3cNONWAbIpW59rOLS7uPKIDEO2onrO3fowdsBIKPn7Q
+GET http://localhost:8080/api/guides
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0NTM2ZjBjYiIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI1YWU3OGUzNi0zN2ZjLTQ5ZjItYTZlYy0yOWRhNmIzOWZhNmIiLCJpYXQiOjE3NTc0Nzk5NjEsImV4cCI6MTc1NzQ4MTc2MX0.AmBGY6o2yWpgUBcwiqkDKkxoPbbNFRhdN086J_bpG93hMTrEP3Sxwk1g5DbuSYul50BNVIPYdNXiv64GmMuMmw
+
+### 가이드 조회 (jobFieldIds, keyword 쿼리 파라미터)
+GET http://localhost:8080/api/guides?jobFieldIds=PLANNING_STRATEGY
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwZWU5OWZlNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2YzZhNzM5NS1kMTgzLTRiZDktODdmZS0wZTEyMjYzN2EzYTciLCJpYXQiOjE3NTc0ODY0ODksImV4cCI6MTc1NzQ4ODI4OX0.ZVYx2ultSlpr_BmSmQFGBt3EU62Jk5qYQqvxqSeAlepWtMsnuOVl1_GHiGyfPxSm2a6CZvtXgSTAdavN3ARvoA
+
+### Guide 직무분야 등록
+POST http://localhost:8080/api/guides/me/job-field
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwZWU5OWZlNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2YzZhNzM5NS1kMTgzLTRiZDktODdmZS0wZTEyMjYzN2EzYTciLCJpYXQiOjE3NTc0ODY0ODksImV4cCI6MTc1NzQ4ODI4OX0.ZVYx2ultSlpr_BmSmQFGBt3EU62Jk5qYQqvxqSeAlepWtMsnuOVl1_GHiGyfPxSm2a6CZvtXgSTAdavN3ARvoA
+Content-Type: application/json
+
+{
+  "jobName": "PLANNING_STRATEGY"
+}
+
+### Guide 직무분야 등록
+POST http://localhost:8080/api/guides/me/job-field
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2ZGM5MTgyMyIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhZjAyMTMzNC05ODQ1LTQ5NmUtOTFmNi1iNzhkZjg1ZGE5YjEiLCJpYXQiOjE3NTc0ODEzNjMsImV4cCI6MTc1NzQ4MzE2M30.epLXwOJQaDLUgWFx7WCkO4Gzo29-ZAcXdu2WqsEeR7Hcxuf92IBewK8t32KFhcc8-LsgzF5WZqjVlqCePN1_jg
+Content-Type: application/json
+
+{
+  "jobName": "PLANNING_STRATEGY"
+}
+
+### 📌 특정 가이드 채팅 주제 조회 (GuideChatTopicResponse[])
+POST http://localhost:8080/api/guides/me/chat-topics
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwZWU5OWZlNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2YzZhNzM5NS1kMTgzLTRiZDktODdmZS0wZTEyMjYzN2EzYTciLCJpYXQiOjE3NTc0ODY0ODksImV4cCI6MTc1NzQ4ODI4OX0.ZVYx2ultSlpr_BmSmQFGBt3EU62Jk5qYQqvxqSeAlepWtMsnuOVl1_GHiGyfPxSm2a6CZvtXgSTAdavN3ARvoA
+Content-Type: application/json
+
+{
+  "topics": [
+    { "topicName": "직무 전환" },
+    { "topicName": "COVER_LETTER" }
+  ]
+}

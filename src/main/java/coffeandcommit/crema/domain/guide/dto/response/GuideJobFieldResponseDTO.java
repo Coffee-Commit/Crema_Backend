@@ -14,7 +14,7 @@ import lombok.NoArgsConstructor;
 public class GuideJobFieldResponseDTO {
 
     private Long guideId;
-    private JobNameType jobName; // 기존 호환 유지 (enum)
+    private String jobName; // 응답은 영문 enum 이름으로 고정
     private String jobNameDescription; // 프론트 표시용 설명 문자열
 
     public static GuideJobFieldResponseDTO from(GuideJobField guideJobField) {
@@ -24,7 +24,7 @@ public class GuideJobFieldResponseDTO {
 
         return GuideJobFieldResponseDTO.builder()
                 .guideId(guideJobField.getGuide().getId())
-                .jobName(type)
+                .jobName(type.name())
                 .jobNameDescription(type.getDescription())
                 .build();
     }
