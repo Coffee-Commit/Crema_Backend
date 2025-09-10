@@ -84,20 +84,10 @@ jwt:
   access-token-expiration: 1800000  # 30분
   refresh-token-expiration: 1209600000  # 14일
 
-# AWS S3 설정 (우리 커스텀 S3Config에서 사용)
-cloud:
-  aws:
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
-    s3:
-      bucket: ${AWS_S3_BUCKET}
-    region:
-      static: ${AWS_REGION}
-
 openvidu:
   domain: ${OPENVIDU_DOMAIN}
   secret: ${OPENVIDU_SECRET}
+
 # 모니터링 관련 설정
 management:
   server:
