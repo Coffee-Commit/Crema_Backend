@@ -55,7 +55,10 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 // Health check
                                 "/actuator/health",
-                                "/actuator/info"
+                                "/actuator/info",
+                                // 화상통화 API
+                                "/api/video-call/**",
+                                "/api/test/video-call/**"
                         ).permitAll()
 
                         // Auth endpoints (인증 필요)
