@@ -1,0 +1,264 @@
+{
+  "members": [
+    {
+      "id": "MBR00001",
+      "nickname": "홍길동",
+      "role": "ROOKIE",
+      "point": 100,
+      "profileImageUrl": "https://cdn.example.com/profile1.png",
+      "description": "백엔드 지망생입니다.",
+      "provider": "GOOGLE",
+      "providerId": "google_123",
+      "isDeleted": false
+    },
+    {
+      "id": "MBR00002",
+      "nickname": "김선배",
+      "role": "GUIDE",
+      "point": 200,
+      "profileImageUrl": "https://cdn.example.com/profile2.png",
+      "description": "현직 백엔드 개발자입니다.",
+      "provider": "KAKAO",
+      "providerId": "kakao_456",
+      "isDeleted": false
+    },
+    {
+      "id": "MBR00003",
+      "nickname": "프론트가이드",
+      "role": "GUIDE",
+      "point": 150,
+      "profileImageUrl": "https://cdn.example.com/profile3.png",
+      "description": "프론트엔드 개발자입니다.",
+      "provider": "GOOGLE",
+      "providerId": "google_789",
+      "isDeleted": false
+    }
+  ],
+  "memberJobFields": [
+    { "id": 1, "memberId": "MBR00001", "jobName": "IT_DEVELOPMENT_DATA" },
+    { "id": 2, "memberId": "MBR00002", "jobName": "RESEARCH_RND" },
+    { "id": 3, "memberId": "MBR00003", "jobName": "IT_DEVELOPMENT_DATA" }
+  ],
+  "chatTopics": [
+    { "id": 1, "topicName": "INTERVIEW" },
+    { "id": 2, "topicName": "RESUME" },
+    { "id": 3, "topicName": "JOB_CHANGE" }
+  ],
+  "memberChatTopics": [
+    { "id": 1, "memberId": "MBR00001", "chatTopicId": 1 },
+    { "id": 2, "memberId": "MBR00001", "chatTopicId": 2 },
+    { "id": 3, "memberId": "MBR00002", "chatTopicId": 3 }
+  ],
+
+  "guides": [
+    {
+      "id": 1,
+      "memberId": "MBR00002",
+      "chatDescription": "커피챗으로 면접 준비 도와드립니다.",
+      "isOpened": true,
+      "title": "백엔드 면접/이직 상담",
+      "certificationImageUrl": "https://cdn.example.com/cert1.png",
+      "approvedDate": "2025-09-01T12:00:00",
+      "workingStart": "2020-01-01",
+      "workingEnd": null,
+      "workingPeriod": null,
+      "companyName": "네이버",
+      "isCompanyNamePublic": true,
+      "jobPosition": "Backend Engineer",
+      "isCurrent": true
+    },
+    {
+      "id": 2,
+      "memberId": "MBR00003",
+      "chatDescription": "프론트엔드 커리어/포트폴리오 상담합니다.",
+      "isOpened": true,
+      "title": "프론트엔드 커리어 상담",
+      "certificationImageUrl": "https://cdn.example.com/cert2.png",
+      "approvedDate": "2025-09-01T12:00:00",
+      "workingStart": "2019-03-01",
+      "workingEnd": null,
+      "workingPeriod": null,
+      "companyName": "카카오",
+      "isCompanyNamePublic": true,
+      "jobPosition": "Frontend Engineer",
+      "isCurrent": true
+    }
+  ],
+  "guideJobFields": [
+    { "id": 1, "guideId": 1, "jobName": "IT_DEVELOPMENT_DATA" },
+    { "id": 2, "guideId": 2, "jobName": "IT_DEVELOPMENT_DATA" }
+  ],
+  "guideChatTopics": [
+    { "id": 1, "guideId": 1, "chatTopicId": 1 },
+    { "id": 2, "guideId": 1, "chatTopicId": 3 },
+    { "id": 3, "guideId": 2, "chatTopicId": 1 },
+    { "id": 4, "guideId": 2, "chatTopicId": 2 }
+  ],
+  "hashTags": [
+    { "id": 1, "guideId": 1, "hashTagName": "#백엔드" },
+    { "id": 2, "guideId": 1, "hashTagName": "#면접준비" },
+    { "id": 3, "guideId": 2, "hashTagName": "#프론트엔드" },
+    { "id": 4, "guideId": 2, "hashTagName": "#포트폴리오" }
+  ],
+
+  "guideSchedules": [
+    { "id": 1, "guideId": 1, "dayOfWeek": "MONDAY" },
+    { "id": 2, "guideId": 1, "dayOfWeek": "WEDNESDAY" },
+    { "id": 3, "guideId": 2, "dayOfWeek": "TUESDAY" },
+    { "id": 4, "guideId": 2, "dayOfWeek": "THURSDAY" }
+  ],
+  "timeSlots": [
+    { "id": 1, "scheduleId": 1, "startTimeOption": "09:00:00", "endTimeOption": "12:00:00" },
+    { "id": 2, "scheduleId": 2, "startTimeOption": "14:00:00", "endTimeOption": "18:00:00" },
+    { "id": 3, "scheduleId": 3, "startTimeOption": "10:00:00", "endTimeOption": "12:00:00" },
+    { "id": 4, "scheduleId": 4, "startTimeOption": "19:00:00", "endTimeOption": "21:00:00" }
+  ],
+
+  "surveys": [
+    { "id": 1, "fileUploadUrl": "https://cdn.example.com/survey1-root.pdf", "messageToGuide": "면접 준비 조언 부탁드립니다.", "preferredDate": "2025-09-15 15:00:00" },
+    { "id": 2, "fileUploadUrl": "https://cdn.example.com/survey2-root.pdf", "messageToGuide": "자소서 피드백 받고 싶습니다.", "preferredDate": "2025-09-20 19:00:00" },
+    { "id": 3, "fileUploadUrl": "https://cdn.example.com/survey3-root.pdf", "messageToGuide": "프로젝트 코드 리뷰 받고 싶어요.", "preferredDate": "2025-09-22 20:00:00" },
+    { "id": 4, "fileUploadUrl": "https://cdn.example.com/survey4-root.pdf", "messageToGuide": "커리어 전환 조언 부탁드립니다.", "preferredDate": "2025-09-25 21:00:00" },
+    { "id": 5, "fileUploadUrl": "https://cdn.example.com/survey5-root.pdf", "messageToGuide": "포트폴리오 피드백 부탁드립니다.", "preferredDate": "2025-09-28 10:00:00" },
+    { "id": 6, "fileUploadUrl": "https://cdn.example.com/survey6-root.pdf", "messageToGuide": "프론트 면접 상담 부탁드립니다.", "preferredDate": "2025-09-29 10:00:00" },
+    { "id": 7, "fileUploadUrl": "https://cdn.example.com/survey7-root.pdf", "messageToGuide": "리액트 포트폴리오 문의드립니다.", "preferredDate": "2025-09-30 14:00:00" }
+  ],
+  "surveyFiles": [
+    { "id": 1, "surveyId": 1, "fileKey": "survey/1/file1.pdf" },
+    { "id": 2, "surveyId": 2, "fileKey": "survey/2/file1.pdf" },
+    { "id": 3, "surveyId": 3, "fileKey": "survey/3/file1.pdf" },
+    { "id": 4, "surveyId": 4, "fileKey": "survey/4/file1.pdf" },
+    { "id": 5, "surveyId": 5, "fileKey": "survey/5/file1.pdf" },
+    { "id": 6, "surveyId": 6, "fileKey": "survey/6/file1.pdf" },
+    { "id": 7, "surveyId": 7, "fileKey": "survey/7/file1.pdf" }
+  ],
+
+  "reservations": [
+    { "id": 1, "guideId": 1, "memberId": "MBR00001", "surveyId": 1, "matchingTime": "2025-09-15 15:00:00", "status": "COMPLETED" },
+    { "id": 2, "guideId": 1, "memberId": "MBR00001", "surveyId": 2, "matchingTime": "2025-09-20 19:00:00", "status": "PENDING" },
+    { "id": 3, "guideId": 1, "memberId": "MBR00001", "surveyId": 3, "matchingTime": "2025-09-22 20:00:00", "status": "COMPLETED" },
+    { "id": 4, "guideId": 1, "memberId": "MBR00001", "surveyId": 4, "matchingTime": "2025-09-25 21:00:00", "status": "COMPLETED" },
+    { "id": 5, "guideId": 1, "memberId": "MBR00001", "surveyId": 5, "matchingTime": "2025-09-28 10:00:00", "status": "COMPLETED" },
+    { "id": 6, "guideId": 2, "memberId": "MBR00001", "surveyId": 6, "matchingTime": "2025-09-29 10:00:00", "status": "PENDING" },
+    { "id": 7, "guideId": 2, "memberId": "MBR00001", "surveyId": 7, "matchingTime": "2025-09-30 14:00:00", "status": "PENDING" }
+  ],
+  "timeUnits": [
+    { "id": 1, "reservationId": 1, "timeType": "MINUTE_30" },
+    { "id": 2, "reservationId": 2, "timeType": "MINUTE_60" },
+    { "id": 3, "reservationId": 3, "timeType": "MINUTE_30" },
+    { "id": 4, "reservationId": 4, "timeType": "MINUTE_60" },
+    { "id": 5, "reservationId": 5, "timeType": "MINUTE_30" },
+    { "id": 6, "reservationId": 6, "timeType": "MINUTE_30" },
+    { "id": 7, "reservationId": 7, "timeType": "MINUTE_60" }
+  ],
+
+  "reviews": [
+    { "id": 1, "reservationId": 1, "comment": "면접 팁이 정말 유익했습니다!", "starReview": 4.5 },
+    { "id": 2, "reservationId": 3, "comment": "프로젝트 코드 리뷰가 큰 도움이 됐어요.", "starReview": 5.0 },
+    { "id": 3, "reservationId": 4, "comment": "커리어 전환 방향성을 잡을 수 있었어요.", "starReview": 4.0 },
+    { "id": 4, "reservationId": 5, "comment": "포트폴리오 개선 포인트를 알게 되었어요.", "starReview": 3.5 },
+    { "id": 8, "reservationId": 6, "comment": "프론트 면접 팁이 유익했어요.", "starReview": 4.5 },
+    { "id": 9, "reservationId": 7, "comment": "포트폴리오 피드백 좋았어요.", "starReview": 4.0 }
+  ],
+  "experienceGroups": [
+    { "id": 1, "guideId": 1, "guideChatTopicId": 1, "experienceTitle": "면접 경험", "experienceContent": "삼성전자 면접 합격 경험" },
+    { "id": 2, "guideId": 1, "guideChatTopicId": 2, "experienceTitle": "이직 경험", "experienceContent": "스타트업 → 대기업 전환기 이야기" },
+    { "id": 3, "guideId": 2, "guideChatTopicId": 3, "experienceTitle": "프론트 면접 경험", "experienceContent": "카카오 면접 합격 경험" },
+    { "id": 4, "guideId": 2, "guideChatTopicId": 4, "experienceTitle": "포트폴리오 리뷰", "experienceContent": "리액트 포트폴리오 개선 사례" }
+  ],
+  "experienceDetails": [
+    { "id": 1, "guideId": 1, "who": "신입 지원자", "solution": "코딩테스트 대비", "how": "스터디 그룹 운영" },
+    { "id": 2, "guideId": 2, "who": "주니어 프론트엔드", "solution": "포트폴리오 개선", "how": "컴포넌트 구조 리팩토링" }
+  ],
+  "reviewExperiences": [
+    { "id": 1, "reviewId": 1, "experienceGroupId": 1, "isThumbsUp": true },
+    { "id": 2, "reviewId": 2, "experienceGroupId": 1, "isThumbsUp": true },
+    { "id": 3, "reviewId": 3, "experienceGroupId": 2, "isThumbsUp": true },
+    { "id": 4, "reviewId": 4, "experienceGroupId": 2, "isThumbsUp": false },
+    { "id": 5, "reviewId": 8, "experienceGroupId": 3, "isThumbsUp": true },
+    { "id": 6, "reviewId": 9, "experienceGroupId": 4, "isThumbsUp": true }
+  ],
+
+  "meetingRooms": [
+    { "id": 1, "reservationId": 1, "startTime": "2025-09-15 15:00:00", "endTime": "2025-09-15 15:30:00", "roomUrl": "https://meet.example.com/room1" }
+  ],
+  "candidates": [
+    { "id": 1, "reservationId": 1, "timeId": 1, "priority": 1, "candidateDate": "2025-09-14 10:00:00" },
+    { "id": 2, "reservationId": 2, "timeId": 2, "priority": 2, "candidateDate": "2025-09-19 15:00:00" }
+  ],
+  "notifications": [
+    { "id": 1, "memberId": "MBR00001", "reservationId": 1, "message": "예약이 확정되었습니다.", "isRead": false },
+    { "id": 2, "memberId": "MBR00002", "reservationId": 1, "message": "새로운 후기가 등록되었습니다.", "isRead": false }
+  ],
+
+  "apiExamples": {
+    "guidesList": {
+      "page": 0,
+      "size": 20,
+      "totalElements": 2,
+      "content": [
+        {
+          "guideId": 1,
+          "nickname": "김선배",
+          "profileImageUrl": "https://cdn.example.com/profile2.png",
+          "title": "백엔드 면접/이직 상담",
+          "workingPeriod": null,
+          "jobField": { "guideId": 1, "jobName": "IT_DEVELOPMENT_DATA", "jobNameDescription": "IT 개발/데이터" },
+          "hashTags": [
+            { "id": 1, "guideId": 1, "hashTagName": "#백엔드" },
+            { "id": 2, "guideId": 1, "hashTagName": "#면접준비" }
+          ],
+          "stats": { "totalCoffeeChats": 4, "averageStar": 4.3, "totalReviews": 4, "thumbsUpCount": 3 }
+        },
+        {
+          "guideId": 2,
+          "nickname": "프론트가이드",
+          "profileImageUrl": "https://cdn.example.com/profile3.png",
+          "title": "프론트엔드 커리어 상담",
+          "workingPeriod": null,
+          "jobField": { "guideId": 2, "jobName": "IT_DEVELOPMENT_DATA", "jobNameDescription": "IT 개발/데이터" },
+          "hashTags": [
+            { "id": 3, "guideId": 2, "hashTagName": "#프론트엔드" },
+            { "id": 4, "guideId": 2, "hashTagName": "#포트폴리오" }
+          ],
+          "stats": { "totalCoffeeChats": 0, "averageStar": 4.3, "totalReviews": 2, "thumbsUpCount": 2 }
+        }
+      ]
+    },
+    "guide2ChatTopics": [
+      { "id": 3, "guideId": 2, "topic": { "topicName": "INTERVIEW", "description": "면접" } },
+      { "id": 4, "guideId": 2, "topic": { "topicName": "RESUME", "description": "이력서" } }
+    ],
+    "guide2Schedules": {
+      "guideId": 2,
+      "schedules": [
+        { "id": 3, "dayOfWeek": "TUESDAY", "timeSlots": [ { "id": 3, "startTimeOption": "10:00:00", "endTimeOption": "12:00:00" } ] },
+        { "id": 4, "dayOfWeek": "THURSDAY", "timeSlots": [ { "id": 4, "startTimeOption": "19:00:00", "endTimeOption": "21:00:00" } ] }
+      ]
+    },
+    "guide2Coffeechats": {
+      "guide": { "id": 2, "nickname": "프론트가이드" },
+      "isOpened": true,
+      "title": "프론트엔드 커리어 상담",
+      "tags": [ { "id": 3, "hashTagName": "#프론트엔드" }, { "id": 4, "hashTagName": "#포트폴리오" } ],
+      "reviewScore": 4.3,
+      "reviewCount": 2,
+      "experiences": {
+        "groups": [
+          { "id": 3, "experienceTitle": "프론트 면접 경험" },
+          { "id": 4, "experienceTitle": "포트폴리오 리뷰" }
+        ]
+      },
+      "experienceDetail": { "id": 2, "who": "주니어 프론트엔드" }
+    },
+    "guide2PendingReservationsForMe": [
+      { "reservationId": 6, "status": "PENDING" },
+      { "reservationId": 7, "status": "PENDING" }
+    ],
+    "guide2Reviews": [
+      { "id": 8, "reservationId": 6, "comment": "프론트 면접 팁이 유익했어요.", "starReview": 4.5 },
+      { "id": 9, "reservationId": 7, "comment": "포트폴리오 피드백 좋았어요.", "starReview": 4.0 }
+    ]
+  }
+}
+

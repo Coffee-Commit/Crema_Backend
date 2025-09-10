@@ -98,9 +98,16 @@ public class GuideMeService {
 
         // 요청된 주제들 저장
         for (TopicDTO topicDTO : guideChatTopicRequestDTO.getTopics()) {
-            // 주제가 유효한지 확인
+            if (topicDTO == null || topicDTO.getTopicName() == null) {
+                throw new BaseException(ErrorStatus.INVALID_TOPIC);
+            }
+
+            // 1) Enum 값 유효성은 역직렬화 단계에서 보장되지만, null 가드 추가
+            // 2) 마스터 테이블(chat_topic)에 없으면 생성하여 정합성 보장
             ChatTopic chatTopic = chatTopicRepository.findByTopicName(topicDTO.getTopicName())
-                    .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_TOPIC));
+                    .orElseGet(() -> chatTopicRepository.save(
+                            ChatTopic.builder().topicName(topicDTO.getTopicName()).build()
+                    ));
 
             // 이미 등록된 주제인지 확인
             boolean exists = guideChatTopicRepository.existsByGuideAndChatTopic(guide, chatTopic);

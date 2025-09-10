@@ -4,6 +4,8 @@ import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.reservation.entity.Survey;
+import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -62,11 +64,32 @@ public class Reservation extends BaseEntity{
         }
     }
 
-
     public void setStatus(Status status) {
         this.status = status;
     }
 
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "video_session_id")
+    private VideoSession videoSession;
 
+    public void completeReservation() {
+    if (this.status == Status.COMPLETED) {
+        // 이미 완료된 경우 - 멱등성
+        return;
+    }
 
+    if (this.status == Status.CANCELLED) {
+        throw new IllegalStateException("취소된 예약은 완료할 수 없습니다.");
+    }
+
+    this.status = Status.COMPLETED;
+    }
+
+    public void confirmReservation() {
+        this.status = Status.CONFIRMED;
+    }
+
+    public void cancelReservation(String reason) {
+        this.status = Status.CANCELLED;
+    }
 }

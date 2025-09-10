@@ -40,4 +40,11 @@ out/
 /doc/
 .env
 
+./node_modules/*
+/node_modules/
+
 ***/gcp_crema.json
+
+### Monitoring ###
+/influxdb-data
+!local-monitoring.yml

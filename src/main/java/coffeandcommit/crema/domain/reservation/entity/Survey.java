@@ -21,7 +21,8 @@ public class Survey extends BaseEntity{
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 2048)
+    // 명시적으로 컬럼명을 지정해 init.sql과 일치시킵니다.
+    @Column(name = "file_upload_url", nullable = false, length = 2048)
     private String fileUploadURL;
 
     @Column(nullable = true)

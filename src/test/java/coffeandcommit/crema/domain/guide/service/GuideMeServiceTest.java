@@ -211,7 +211,9 @@ public class GuideMeServiceTest {
 
         assertNotNull(result);
         assertEquals(guide.getId(), result.getGuideId());
-        assertEquals(JobNameType.IT_DEVELOPMENT_DATA, result.getJobName());
+        // 응답 스펙 변경 반영: jobName은 영문 enum 이름(String), description은 한글
+        assertEquals(JobNameType.IT_DEVELOPMENT_DATA.name(), result.getJobName());
+        assertEquals(JobNameType.IT_DEVELOPMENT_DATA.getDescription(), result.getJobNameDescription());
 
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideJobFieldRepository).findByGuide(guide);
@@ -240,7 +242,9 @@ public class GuideMeServiceTest {
 
         assertNotNull(result);
         assertEquals(guide.getId(), result.getGuideId());
-        assertEquals(JobNameType.MARKETING_PR, result.getJobName());
+        // 응답 스펙 변경: jobName은 영문 enum 이름(String), jobNameDescription은 한글 설명
+        assertEquals(JobNameType.MARKETING_PR.name(), result.getJobName());
+        assertEquals(JobNameType.MARKETING_PR.getDescription(), result.getJobNameDescription());
 
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideJobFieldRepository).findByGuide(guide);
@@ -423,11 +427,11 @@ public class GuideMeServiceTest {
     }
 
     @Test
-    @DisplayName("registerChatTopics 유효하지 않은 주제 테스트")
+    @DisplayName("registerChatTopics 유효하지 않은 주제 테스트 - null 값")
     void registerChatTopics_InvalidTopic() {
-        // 요청 DTO 생성
+        // 요청 DTO 생성: topicName null → INVALID_TOPIC
         TopicDTO topicDTO = TopicDTO.builder()
-                .topicName(TopicNameType.CAREER_CHANGE)
+                .topicName(null)
                 .build();
 
         GuideChatTopicRequestDTO requestDTO = GuideChatTopicRequestDTO.builder()
@@ -437,8 +441,6 @@ public class GuideMeServiceTest {
         // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
         when(guideChatTopicRepository.countByGuide(guide)).thenReturn(0L);
-        when(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
-                .thenReturn(Optional.empty());
 
         // 테스트 실행 및 검증
         BaseException exception = assertThrows(BaseException.class, () ->
@@ -448,7 +450,8 @@ public class GuideMeServiceTest {
         assertEquals(ErrorStatus.INVALID_TOPIC, exception.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
         verify(guideChatTopicRepository).countByGuide(guide);
-        verify(chatTopicRepository).findByTopicName(TopicNameType.CAREER_CHANGE);
+        // chatTopicRepository는 호출되지 않아야 함
+        verify(chatTopicRepository, never()).findByTopicName(any());
         verify(guideChatTopicRepository, never()).existsByGuideAndChatTopic(any(), any());
         verify(guideChatTopicRepository, never()).save(any());
         verify(guideChatTopicRepository, never()).findAllByGuideWithJoin(any());
