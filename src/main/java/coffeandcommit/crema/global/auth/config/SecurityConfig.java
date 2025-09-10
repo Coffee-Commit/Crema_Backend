@@ -92,21 +92,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // 개발 환경과 프로덕션 환경의 모든 도메인 포함
+        // 명시적으로 각 도메인을 추가
         configuration.setAllowedOriginPatterns(List.of(
                 // 로컬 개발 환경
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:8080",
-                // dev 서버 환경 (API 서버)
+                // dev 서버 환경
                 "https://dev-api-coffeechat.kro.kr",
-                // dev 서버 환경 (프론트엔드 서버 - 예상)
                 "https://dev-coffeechat.kro.kr",
                 "https://dev.coffeechat.kro.kr",
                 // 프로덕션 환경
                 "https://coffeechat.kro.kr",
                 "https://api.coffeechat.kro.kr",
-                // 모든 coffeechat.kro.kr 서브도메인 허용
+                // 와일드카드 패턴 (올바른 방법)
                 "https://*.coffeechat.kro.kr"
         ));
 
@@ -115,7 +114,7 @@ public class SecurityConfig {
         ));
 
         configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true); // 쿠키 허용을 위해 필수
+        configuration.setAllowCredentials(true);
 
         // Preflight 요청 캐시 시간 설정 (1시간)
         configuration.setMaxAge(3600L);
