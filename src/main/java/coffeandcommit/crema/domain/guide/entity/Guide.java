@@ -87,4 +87,9 @@ public class Guide extends BaseEntity {
     @OneToOne(mappedBy = "guide", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private ExperienceDetail experienceDetail;
 
+    public void updateVisibility(boolean isOpened) {
+        this.isOpened = isOpened;
+    }
+
+
 }

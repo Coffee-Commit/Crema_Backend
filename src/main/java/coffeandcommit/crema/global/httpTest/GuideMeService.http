@@ -11,7 +11,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "guide_fb969dd6"
+  "nickname": "guide_2b2a553d"
 }
 
 ### 7. 가이드 경험 등록 (enum 기반, 새로운 스펙)
@@ -78,4 +78,23 @@ Content-Type: application/json
     { "topicName": "직무 전환" },
     { "topicName": "COVER_LETTER" }
   ]
+}
+
+### 6. 가이드 공개 여부 변경 (토글 OFF)
+PATCH http://localhost:8080/api/guides/me/visibility
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyMGE3NmM5ZS01NGQ3LTQxOTAtOWU2NC1iOWUwNzc3YzcwNTQiLCJpYXQiOjE3NTc2MDIxNjQsImV4cCI6MTc1NzYwMzk2NH0.ff86ID61Gc560nVuFbqCpL-K7pMRPC2I7pjjxuBcaYaAvcAhDRn9MmTpwvpn4RS9_L3Iv7FE53Y2O2mHI-0TDA
+Content-Type: application/json
+
+{
+  "isOpened": false
+}
+
+### 7. 가이드 커피챗 주제 등록 (GuideCoffeeChatResponse)
+POST http://localhost:8080/api/guides/me/coffeechat
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyMGE3NmM5ZS01NGQ3LTQxOTAtOWU2NC1iOWUwNzc3YzcwNTQiLCJpYXQiOjE3NTc2MDIxNjQsImV4cCI6MTc1NzYwMzk2NH0.ff86ID61Gc560nVuFbqCpL-K7pMRPC2I7pjjxuBcaYaAvcAhDRn9MmTpwvpn4RS9_L3Iv7FE53Y2O2mHI-0TDA
+Content-Type: application/json
+
+{
+"title": "커피챗 제목 예시",
+"chatDescription": "이 커피챗은 직무 전환 및 커리어 관련 상담을 다룹니다."
 }
