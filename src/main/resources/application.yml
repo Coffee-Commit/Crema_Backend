@@ -24,8 +24,8 @@ spring:
       max-request-size: 15MB
   datasource:
     hikari:
-      minimum-idle: 5
-      maximum-pool-size: 10
+      minimum-idle: 20
+      maximum-pool-size: 50
       connection-timeout: 30000
       idle-timeout: 600000
       max-lifetime: 1800000
@@ -95,7 +95,11 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,prometheus
+        include: health, metrics, prometheus
+  metrics:
+    export:
+      prometheus:
+        enabled: true
   influx:
     metrics:
       export:
