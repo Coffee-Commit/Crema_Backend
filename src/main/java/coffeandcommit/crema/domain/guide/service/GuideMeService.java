@@ -578,4 +578,14 @@ public class GuideMeService {
         };
     }
 
+    /* 가이드 노출 설정 변경 */
+    @Transactional
+    public void updateGuideVisibility(String loginMemberId, GuideVisibilityRequestDTO guideVisibilityRequestDTO) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
+
+    }
 }

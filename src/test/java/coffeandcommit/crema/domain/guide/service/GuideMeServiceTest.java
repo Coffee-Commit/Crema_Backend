@@ -9,6 +9,7 @@ import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideCoffeeChatRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceDetailRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideVisibilityRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
@@ -1862,5 +1863,59 @@ public class GuideMeServiceTest {
         // Verify
         verify(guideRepository).findByMember_Id(loginMemberId);
         verifyNoInteractions(reservationRepository);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 성공 - 영업중(false→true) 전환")
+    void updateGuideVisibility_Success_Open() {
+        // Given: 닫혀있는 가이드를 반환하도록 준비
+        Guide closedGuide = guide.toBuilder().isOpened(false).build();
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(closedGuide));
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(true)
+                .build();
+
+        // When
+        guideMeService.updateGuideVisibility(memberId, requestDTO);
+
+        // Then
+        assertTrue(closedGuide.isOpened());
+        verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 성공 - 영업중(true→false) 전환")
+    void updateGuideVisibility_Success_Close() {
+        // Given: setUp에서 guide는 isOpened(true)
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(false)
+                .build();
+
+        // When
+        guideMeService.updateGuideVisibility(memberId, requestDTO);
+
+        // Then
+        assertFalse(guide.isOpened());
+        verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 실패 - 가이드를 찾을 수 없음")
+    void updateGuideVisibility_GuideNotFound() {
+        // Given
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(true)
+                .build();
+
+        // When & Then
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.updateGuideVisibility(memberId, requestDTO));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
     }
 }

@@ -327,5 +327,25 @@ public class GuideMeController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "가이드 공개 상태 변경", description = "가이드의 공개 상태를 변경합니다.")
+    @PatchMapping("/visibility")
+    public ResponseEntity<Response<Void>> updateGuideVisibility(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestBody GuideVisibilityRequestDTO guideVisibilityRequestDTO) {
+
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+        String loginMemberId = userDetails.getMemberId();
+
+        guideMeService.updateGuideVisibility(loginMemberId, guideVisibilityRequestDTO);
+
+        Response<Void> response = Response.<Void>builder()
+                .message("가이드 공개 상태 변경 완료")
+                .data(null)
+                .build();
+
+        return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
 
 }
