@@ -1,22 +1,5 @@
 package coffeandcommit.crema.domain.videocall.controller;
 
-import coffeandcommit.crema.domain.videocall.dto.response.ParticipantInfoResponse;
-import coffeandcommit.crema.domain.videocall.dto.response.QuickJoinResponse;
-import coffeandcommit.crema.domain.videocall.dto.response.SessionConfigResponse;
-import coffeandcommit.crema.domain.videocall.dto.response.SessionStatusResponse;
-import coffeandcommit.crema.domain.videocall.service.VideoCallService;
-import coffeandcommit.crema.global.common.exception.response.ApiResponse;
-import coffeandcommit.crema.global.common.exception.code.SuccessStatus;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
-
-package coffeandcommit.crema.domain.videocall.controller;
-
 import coffeandcommit.crema.domain.videocall.dto.request.ChatHistorySaveRequest;
 import coffeandcommit.crema.domain.videocall.dto.response.ParticipantInfoResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.QuickJoinResponse;
@@ -34,7 +17,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/video-call")
