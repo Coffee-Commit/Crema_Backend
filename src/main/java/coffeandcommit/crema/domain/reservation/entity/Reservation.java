@@ -4,7 +4,6 @@ import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
-import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import coffeandcommit.crema.global.common.exception.BaseException;
