@@ -36,138 +36,135 @@ public class ChatService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, String username) {
-    try {
-        // 권한 검증
-        validateSavePermission(sessionId, username);
-        
-        VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(SessionNotFoundException::new);
+    public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, String username) {
+        try {
+            // 권한 검증
+            validateSavePermission(sessionId, username);
 
-        String chatMessagesJson = objectMapper.writeValueAsString(request.getMessages());
-        
-        // 멱등성 체크 - 동일한 내용이면 건너뛰기
-        SessionChatLog existingChatLog = sessionChatLogRepository.findBySessionId(sessionId)
-                .orElse(null);
+            VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
+                    .orElseThrow(() -> new SessionNotFoundException("채팅 저장용 세션 ID: " + sessionId + "를 찾을 수 없습니다"));
 
-        if (existingChatLog != null) {
-            // 동일한 내용인지 확인 (간단한 메시지 개수 및 크기 비교)
-            if (existingChatLog.getTotalMessages() != null && 
-                existingChatLog.getTotalMessages().equals(request.getMessages().size()) &&
-                existingChatLog.getChatMessages() != null &&
-                existingChatLog.getChatMessages().length() == chatMessagesJson.length()) {
-                log.info("채팅 기록 중복 저장 방지: sessionId={}, messageCount={}", 
-                        sessionId, request.getMessages().size());
-                return; // 멱등성 - 동일한 내용은 재저장하지 않음
+            String chatMessagesJson = objectMapper.writeValueAsString(request.getMessages());
+
+            // 멱등성 체크 - 동일한 내용이면 건너뛰기
+            SessionChatLog existingChatLog = sessionChatLogRepository.findBySessionId(sessionId)
+                    .orElse(null);
+
+            if (existingChatLog != null) {
+                // 동일한 내용인지 확인 (간단한 메시지 개수 및 크기 비교)
+                if (existingChatLog.getTotalMessages() != null &&
+                    existingChatLog.getTotalMessages().equals(request.getMessages().size()) &&
+                    existingChatLog.getChatMessages() != null &&
+                    existingChatLog.getChatMessages().length() == chatMessagesJson.length()) {
+                    log.info("채팅 기록 중복 저장 방지: sessionId={}, messageCount={}",
+                            sessionId, request.getMessages().size());
+                    return; // 멱등성 - 동일한 내용은 재저장하지 않음
+                }
+
+                existingChatLog.updateChatHistoryWithMetadata(
+                    chatMessagesJson,
+                    request.getMessages().size(),
+                    request.getSessionEndTime(),
+                    username
+                );
+                sessionChatLogRepository.save(existingChatLog);
+                log.info("채팅 기록 업데이트 완료: sessionId={}, messageCount={}, savedBy={}",
+                        sessionId, request.getMessages().size(), username);
+            } else {
+                SessionChatLog chatLog = SessionChatLog.builder()
+                        .sessionId(sessionId)
+                        .chatMessages(chatMessagesJson)
+                        .totalMessages(request.getMessages().size())
+                        .sessionStartTime(request.getSessionStartTime())
+                        .sessionEndTime(request.getSessionEndTime())
+                        .savedBy(username)
+                        .videoSession(videoSession)
+                        .build();
+
+                sessionChatLogRepository.save(chatLog);
+                log.info("채팅 기록 저장 완료: sessionId={}, messageCount={}, savedBy={}",
+                        sessionId, request.getMessages().size(), username);
             }
-            
-            existingChatLog.updateChatHistoryWithMetadata(
-                chatMessagesJson, 
-                request.getMessages().size(), 
-                request.getSessionEndTime(),
-                username
-            );
-            sessionChatLogRepository.save(existingChatLog);
-            log.info("채팅 기록 업데이트 완료: sessionId={}, messageCount={}, savedBy={}", 
-                    sessionId, request.getMessages().size(), username);
-        } else {
-            SessionChatLog chatLog = SessionChatLog.builder()
-                    .sessionId(sessionId)
-                    .chatMessages(chatMessagesJson)
-                    .totalMessages(request.getMessages().size())
-                    .sessionStartTime(request.getSessionStartTime())
-                    .sessionEndTime(request.getSessionEndTime())
-                    .savedBy(username)
-                    .videoSession(videoSession)
-                    .build();
-                    
-            sessionChatLogRepository.save(chatLog);
-            log.info("채팅 기록 저장 완료: sessionId={}, messageCount={}, savedBy={}", 
-                    sessionId, request.getMessages().size(), username);
-        }
 
-        // 연관된 예약의 상태를 COMPLETED로 변경 (별도 메서드로 분리)
-        completeRelatedReservation(videoSession, sessionId);
-                
-    } catch (IllegalArgumentException e) {
-        log.error("잘못된 입력 값: sessionId={}, username={}, error={}", sessionId, username, e.getMessage());
-        throw e;
-    } catch (SecurityException e) {
-        log.error("채팅 저장 권한 없음: sessionId={}, username={}", sessionId, username);
-        throw e;
-    } catch (JsonProcessingException e) {
-        log.error("채팅 메시지 JSON 변환 실패: sessionId={}", sessionId, e);
-        throw new ChatSaveFailedException("채팅 메시지 직렬화에 실패했습니다.");
-    } catch (SessionNotFoundException | ChatNotFoundException e) {
-        log.error("데이터를 찾을 수 없음: sessionId={}, error={}", sessionId, e.getMessage());
-        throw e;
-    } catch (Exception e) {
-        log.error("채팅 기록 저장 실패: sessionId={}", sessionId, e);
-        throw new ChatSaveFailedException("채팅 기록 저장 중 예상치 못한 오류가 발생했습니다.");
+        } catch (IllegalArgumentException e) {
+            log.error("잘못된 입력 값: sessionId={}, username={}, error={}", sessionId, username, e.getMessage());
+            throw e;
+        } catch (SecurityException e) {
+            log.error("채팅 저장 권한 없음: sessionId={}, username={}", sessionId, username);
+            throw e;
+        } catch (JsonProcessingException e) {
+            log.error("채팅 메시지 JSON 변환 실패: sessionId={}", sessionId, e);
+            throw new ChatSaveFailedException("채팅 메시지 JSON 직렬화 실패 - 세션 ID: " + sessionId + ", 메시지 수: " + request.getMessages().size());
+        } catch (SessionNotFoundException | ChatNotFoundException e) {
+            log.error("데이터를 찾을 수 없음: sessionId={}, error={}", sessionId, e.getMessage());
+            throw e;
+        } catch (Exception e) {
+            log.error("채팅 기록 저장 실패: sessionId={}", sessionId, e);
+            throw new ChatSaveFailedException("채팅 기록 저장 중 예상치 못한 오류 - 세션 ID: " + sessionId + ", 사용자: " + username + ", 원인: " + e.getMessage());
+        }
     }
-}
 
     @Transactional(readOnly = true)
     public ChatHistoryResponse getChatHistory(String reservationId, String username) {
-    try {
-        // reservationId 유효성 검증
-        Long parsedReservationId;
         try {
-            parsedReservationId = Long.valueOf(reservationId);
-        } catch (NumberFormatException e) {
-            log.error("잘못된 예약 ID 형식: reservationId={}", reservationId);
-            throw new ChatNotFoundException("잘못된 예약 ID 형식입니다.");
-        }
-        
-        // Reservation 조회
-        Reservation reservation = reservationRepository.findById(parsedReservationId)
-                .orElseThrow(() -> new ChatNotFoundException("채팅 기록을 조회할 수 없습니다. 예약을 찾을 수 없습니다."));
-        
-        // 권한 검증 - Reservation의 member로 확인
-        validateReservationReadPermission(reservation, username);
-        
-        // VideoSession에서 sessionId 추출
-        VideoSession videoSession = reservation.getVideoSession();
-        if (videoSession == null) {
-            log.error("예약에 연결된 화상통화 세션이 없음: reservationId={}", reservation.getId());
-            throw new SessionNotFoundException("해당 예약에 연결된 화상통화 세션이 없습니다.");
-        }
-        
-        if (videoSession.getSessionId() == null || videoSession.getSessionId().trim().isEmpty()) {
-            log.error("비어있는 세션 ID: reservationId={}", reservation.getId());
-            throw new SessionNotFoundException("유효하지 않은 세션 ID입니다.");
-        }
-        
-        String sessionId = videoSession.getSessionId();
-        
-        SessionChatLog chatLog = sessionChatLogRepository.findBySessionId(sessionId)
-                .orElseThrow(ChatNotFoundException::new);
+            // reservationId 유효성 검증
+            Long parsedReservationId;
+            try {
+                parsedReservationId = Long.valueOf(reservationId);
+            } catch (NumberFormatException e) {
+                log.error("잘못된 예약 ID 형식: reservationId={}", reservationId);
+                throw new ChatNotFoundException("잘못된 예약 ID 형식입니다.");
+            }
+            
+            // Reservation 조회
+            Reservation reservation = reservationRepository.findById(parsedReservationId)
+                    .orElseThrow(() -> new ChatNotFoundException("채팅 기록을 조회할 수 없습니다. 예약을 찾을 수 없습니다."));
+            
+            // 권한 검증 - Reservation의 member로 확인
+            validateReservationReadPermission(reservation, username);
+            
+            // VideoSession에서 sessionId 추출
+            VideoSession videoSession = reservation.getVideoSession();
+            if (videoSession == null) {
+                log.error("예약에 연결된 화상통화 세션이 없음: reservationId={}", reservation.getId());
+                throw new SessionNotFoundException("해당 예약에 연결된 화상통화 세션이 없습니다.");
+            }
+            
+            if (videoSession.getSessionId() == null || videoSession.getSessionId().trim().isEmpty()) {
+                log.error("비어있는 세션 ID: reservationId={}", reservation.getId());
+                throw new SessionNotFoundException("유효하지 않은 세션 ID입니다.");
+            }
+            
+            String sessionId = videoSession.getSessionId();
+            
+            SessionChatLog chatLog = sessionChatLogRepository.findBySessionId(sessionId)
+                    .orElseThrow(() -> new ChatNotFoundException("세션 " + sessionId + "의 채팅 기록을 찾을 수 없습니다"));
 
-        List<ChatMessageDto> messages = objectMapper.readValue(
-            chatLog.getChatMessages(), 
-            new TypeReference<List<ChatMessageDto>>() {}
-        );
+            List<ChatMessageDto> messages = objectMapper.readValue(
+                chatLog.getChatMessages(), 
+                new TypeReference<List<ChatMessageDto>>() {}
+            );
 
-        return ChatHistoryResponse.builder()
-                .sessionId(sessionId)
-                .messages(messages)
-                .totalMessages(chatLog.getTotalMessages())
-                .sessionStartTime(chatLog.getSessionStartTime())
-                .sessionEndTime(chatLog.getSessionEndTime())
-                .createdAt(chatLog.getCreatedAt())
-                .build();
-                
-    } catch (SecurityException e) {
-        log.error("채팅 조회 권한 없음: reservationId={}, username={}", reservationId, username);
-        throw e;
-    } catch (JsonProcessingException e) {
-        log.error("채팅 메시지 JSON 파싱 실패: reservationId={}", reservationId, e);
-        throw new ChatNotFoundException();
-    } catch (Exception e) {
-        log.error("채팅 기록 조회 실패: reservationId={}", reservationId, e);
-        throw new ChatNotFoundException();
+            return ChatHistoryResponse.builder()
+                    .sessionId(sessionId)
+                    .messages(messages)
+                    .totalMessages(chatLog.getTotalMessages())
+                    .sessionStartTime(chatLog.getSessionStartTime())
+                    .sessionEndTime(chatLog.getSessionEndTime())
+                    .createdAt(chatLog.getCreatedAt())
+                    .build();
+                    
+        } catch (SecurityException e) {
+            log.error("채팅 조회 권한 없음: reservationId={}, username={}", reservationId, username);
+            throw e;
+        } catch (JsonProcessingException e) {
+            log.error("채팅 메시지 JSON 파싱 실패: reservationId={}", reservationId, e);
+            throw new ChatNotFoundException("예약 ID " + reservationId + "의 채팅 메시지 JSON 파싱 실패: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("채팅 기록 조회 실패: reservationId={}", reservationId, e);
+            throw new ChatNotFoundException("예약 ID " + reservationId + "의 채팅 기록 조회 실패: " + e.getMessage());
+        }
     }
-}
 
     /**
      * 사용자가 해당 세션에 접근할 권한이 있는지 확인
@@ -294,29 +291,4 @@ public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, St
             throw new SecurityException("해당 예약의 채팅을 조회할 권한이 없습니다.");
         }
     }
-
-    
-    /**
-     * 연관된 예약의 상태를 COMPLETED로 변경하는 별도 메서드
-     */
-    private void completeRelatedReservation(VideoSession videoSession, String sessionId) {
-        try {
-            if (videoSession.getReservation() != null) {
-                if (videoSession.getReservation().getStatus() != Status.COMPLETED) {
-                    videoSession.getReservation().completeReservation();
-                    log.info("예약 상태를 COMPLETED로 변경: reservationId={}, sessionId={}", 
-                            videoSession.getReservation().getId(), sessionId);
-                } else {
-                    log.debug("예약이 이미 완료 상태입니다: reservationId={}, sessionId={}", 
-                            videoSession.getReservation().getId(), sessionId);
-                }
-            } else {
-                log.warn("세션에 연결된 예약이 없습니다: sessionId={}", sessionId);
-            }
-        } catch (Exception e) {
-            log.error("예약 상태 변경 실패: sessionId={}, error={}", sessionId, e.getMessage());
-            // 예약 상태 변경 실패가 채팅 저장을 방해하지 않도록 예외를 삼킴
-        }
-    }
-
 }
