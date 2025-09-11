@@ -24,7 +24,4 @@ public class SurveyRequestDTO {
     @NotNull(message = "희망 날짜는 필수입니다.")
     private LocalDateTime preferredDate; // 희망 날짜
 
-    @Valid
-    @Builder.Default
-    private List<@Valid SurveyFileRequestDTO> files = new ArrayList<>(); // 여러 개 파일 업로드
 }

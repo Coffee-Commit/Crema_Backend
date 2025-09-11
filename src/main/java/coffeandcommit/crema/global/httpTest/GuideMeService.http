@@ -98,3 +98,33 @@ Content-Type: application/json
 "title": "커피챗 제목 예시",
 "chatDescription": "이 커피챗은 직무 전환 및 커리어 관련 상담을 다룹니다."
 }
+
+### 8. 커피챗 예약 신청 (파일 업로드 포함)
+POST http://localhost:8080/api/reservations
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyZWQyZDUwYy0yOWRhLTQ2MzItOTZhNi0xMjk5ZTZkNWYzNzEiLCJpYXQiOjE3NTc2MjczNzIsImV4cCI6MTc1NzYyOTE3Mn0.ym1i7BXnCbw-T76e9YgK2SxH4t1xQgByzieFJoAjntcNciy8ZX8YU3Bp86NCiPcjmGDuI4VrMVNKEupkyY0ojw
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="reservation"; filename="reservation.json"
+Content-Type: application/json
+
+{
+  "guideId": 1,
+  "timeUnit": "MINUTE_30",
+  "survey": {
+    "messageToGuide": "안녕하세요! 포트폴리오 피드백 받고 싶습니다 🙏",
+    "preferredDate": "2025-09-13T10:00:00"
+  }
+}
+--WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="resume.pdf"
+Content-Type: application/pdf
+
+< ./sample-files/resume.pdf
+
+--WebAppBoundary--
+Content-Disposition: form-data; name="files"; filename="resume_test.pdf"
+Content-Type: application/pdf
+
+< ./sample-files/resume_test.pdf
+
