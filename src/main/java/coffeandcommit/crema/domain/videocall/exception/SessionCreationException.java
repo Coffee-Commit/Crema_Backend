@@ -8,4 +8,8 @@ public class SessionCreationException extends BaseException {
     public SessionCreationException() {
         super(ErrorStatus.SESSION_CREATE_EXCEPTION);
     }
+    
+    public SessionCreationException(String detailMessage) {
+        super(ErrorStatus.SESSION_CREATE_EXCEPTION, detailMessage);
+    }
 }
