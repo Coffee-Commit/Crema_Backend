@@ -30,48 +30,6 @@ public class ChatController {
 
     private final ChatService chatService;
 
-    @PostMapping("/{sessionId}/save")
-    @Operation(
-            summary = "채팅 기록 저장",
-            description = "세션의 채팅 기록을 JSON 형태로 DB에 저장합니다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "채팅 기록 저장 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "채팅 기록 업데이트 성공"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "접근 권한 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션을 찾을 수 없음"),
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "500", description = "채팅 기록 저장 실패")
-    })
-    public ResponseEntity<ApiResponse<Void>> saveChatHistory(
-            @PathVariable String sessionId,
-            @Valid @RequestBody ChatHistorySaveRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
-
-        try {
-            chatService.saveChatHistory(sessionId, request, userDetails.getUsername());
-            log.info("채팅 기록 저장 성공: sessionId={}, userId={}", sessionId, userDetails.getUsername());
-            return ResponseEntity.status(HttpStatus.CREATED)
-                    .body(ApiResponse.onSuccess(SuccessStatus.CREATED, null));
-        } catch (SecurityException e) {
-            log.error("채팅 저장 권한 없음: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(ApiResponse.onFailure(ErrorStatus.FORBIDDEN, null));
-        } catch (ChatSaveFailedException e) {
-            log.error("채팅 기록 저장 실패: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.onFailure(ErrorStatus.CHAT_SAVE_FAILED, null));
-        } catch (SessionNotFoundException e) {
-            log.error("세션을 찾을 수 없음: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(ApiResponse.onFailure(ErrorStatus.SESSION_NOT_FOUND, null));
-        } catch (Exception e) {
-            log.error("예상치 못한 오류: sessionId={}, userId={}", sessionId, userDetails.getUsername(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(ApiResponse.onFailure(ErrorStatus.INTERNAL_SERVER_ERROR, null));
-        }
-    }
-
     @GetMapping("/{reservationId}/history")
     @Operation(
             summary = "채팅 기록 조회",

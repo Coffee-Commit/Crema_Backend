@@ -12,4 +12,5 @@ import java.util.Optional;
 public interface ParticipantRepository extends JpaRepository<Participant, Long> {
     Optional<Participant> findByConnectionId(String connectionId);
     List<Participant> findByVideoSessionAndIsConnectedTrue(VideoSession videoSession);
+    Optional<Participant> findByVideoSession_SessionIdAndUsername(String sessionId, String username);
 }
