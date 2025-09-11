@@ -1,18 +1,22 @@
 package coffeandcommit.crema.domain.videocall.service;
 
+import coffeandcommit.crema.domain.guide.entity.Guide;
+import coffeandcommit.crema.domain.member.entity.Member;
+import coffeandcommit.crema.domain.member.repository.MemberRepository;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
+import coffeandcommit.crema.domain.videocall.dto.response.ParticipantInfoResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.QuickJoinResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.SessionConfigResponse;
 import coffeandcommit.crema.domain.videocall.dto.response.SessionStatusResponse;
 import coffeandcommit.crema.domain.videocall.entity.Participant;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
-import coffeandcommit.crema.domain.videocall.exception.AutoReconnectFailedException;
-import coffeandcommit.crema.domain.videocall.exception.OpenViduConnectionException;
-import coffeandcommit.crema.domain.videocall.exception.SessionConnectFailed;
-import coffeandcommit.crema.domain.videocall.exception.SessionNotFoundException;
-import coffeandcommit.crema.domain.videocall.exception.TokenRefreshFailedException;
+import coffeandcommit.crema.domain.videocall.exception.*;
 import coffeandcommit.crema.domain.videocall.repository.VideoSessionRepository;
+import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.videocall.dto.request.ChatHistorySaveRequest;
+import coffeandcommit.crema.domain.videocall.repository.ParticipantRepository;
+
 import io.openvidu.java.client.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,12 +30,16 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static coffeandcommit.crema.domain.member.enums.MemberRole.ROOKIE;
+
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
 public class VideoCallService {
 
+    private final MemberRepository memberRepository;
     @Value("${openvidu.domain}")
     private String openviduDomain;
 
@@ -43,6 +51,10 @@ public class VideoCallService {
     private final VideoSessionRepository videoSessionRepository;
 
     private final ReservationRepository reservationRepository;
+    
+    private final ChatService chatService;
+    
+    private final ParticipantRepository participantRepository;
 
     public QuickJoinResponse quickJoin(Long reservationId, UserDetails userDetails) {
         try {
@@ -188,6 +200,113 @@ public class VideoCallService {
         } catch (Exception e) {
             log.error("OpenVidu 상태 확인 실패: {}", e.getMessage());
             throw new OpenViduConnectionException();
+        }
+    }
+
+    public ParticipantInfoResponse getParticipantInfo(String sessionId, String username) {
+
+        Member member = memberRepository.findByNicknameAndIsDeletedFalse(username)
+                .orElseThrow(ParticipantNotFound::new);
+        VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
+                .orElseThrow(SessionNotFoundException::new);
+        Reservation reservation = videoSession.getReservation();
+
+        String oppponent = null;
+
+        Guide guide = reservation.getGuide();
+        Member mentee = reservation.getMember();
+
+        if(member.getRole() == ROOKIE){
+            oppponent = guide.getMember().getNickname();
+        }else{
+            oppponent = mentee.getNickname();
+        }
+
+        return ParticipantInfoResponse.builder()
+                .participantName(oppponent)
+                .videoChatField(guide.getGuideJobField().getJobName().toString())
+                .videoChatTopic(guide.getGuideChatTopics().toString())
+                .build();
+    }
+
+    @Transactional
+    public void endSession(String sessionId, ChatHistorySaveRequest chatHistory, String username) {
+        try {
+            // 1. Member 조회 및 역할 확인
+            Member member = memberRepository.findByNicknameAndIsDeletedFalse(username)
+                    .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + username));
+            
+            log.info("세션 종료 요청: sessionId={}, username={}, role={}", sessionId, username, member.getRole());
+            
+            // 2. ROOKIE인 경우 - 본인만 세션에서 나가기
+            if (member.getRole() == ROOKIE) {
+                // Participant 정보 조회
+                Participant participant = participantRepository
+                        .findByVideoSession_SessionIdAndUsername(sessionId, username)
+                        .orElseThrow(() -> new RuntimeException("참가자 정보를 찾을 수 없습니다: sessionId=" + sessionId + ", username=" + username));
+                
+                // OpenVidu 세션에서 나가기만 함
+                try {
+                    basicVideoCallService.leaveSession(sessionId, participant.getConnectionId());
+                    log.info("ROOKIE가 세션에서 나감: sessionId={}, username={}, connectionId={}", 
+                            sessionId, username, participant.getConnectionId());
+                } catch (Exception e) {
+                    log.error("ROOKIE 세션 나가기 실패: sessionId={}, username={}, error={}", 
+                            sessionId, username, e.getMessage());
+                    throw new RuntimeException("세션 나가기 실패: " + e.getMessage(), e);
+                }
+                return; // 채팅 저장이나 예약 완료 없이 종료
+            }
+            
+            // 3. GUIDE인 경우 - 전체 세션 종료 (기존 로직)
+            log.info("GUIDE가 전체 세션 종료 시작: sessionId={}, username={}", sessionId, username);
+            
+            // VideoSession 조회
+            VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
+                    .orElseThrow(() -> new SessionNotFoundException("세션 ID: " + sessionId + "를 찾을 수 없습니다"));
+            
+            // OpenVidu 세션 종료
+            try {
+                basicVideoCallService.endSession(sessionId);
+                log.info("GUIDE가 OpenVidu 세션 종료: sessionId={}", sessionId);
+            } catch (Exception e) {
+                log.error("OpenVidu 세션 종료 실패 (계속 진행): sessionId={}, error={}", sessionId, e.getMessage());
+            }
+            
+            // 세션 종료 시간 기록
+            videoSession.endSession();
+            log.info("세션 종료 시간 기록: sessionId={}, endedAt={}", sessionId, videoSession.getEndedAt());
+            
+            // 채팅 기록 저장
+            chatService.saveChatHistory(sessionId, chatHistory, username);
+            log.info("채팅 기록 저장 완료: sessionId={}, username={}", sessionId, username);
+            
+            // 예약 상태 COMPLETED로 변경
+            if (videoSession.getReservation() != null) {
+                Reservation reservation = videoSession.getReservation();
+                if (reservation.getStatus() != Status.COMPLETED) {
+                    reservation.completeReservation();
+                    log.info("예약 상태를 COMPLETED로 변경: reservationId={}", reservation.getId());
+                } else {
+                    log.debug("예약이 이미 완료 상태입니다: reservationId={}", reservation.getId());
+                }
+            } else {
+                log.warn("세션에 연결된 예약이 없습니다: sessionId={}", sessionId);
+            }
+            
+            // DB 저장
+            videoSessionRepository.save(videoSession);
+            log.info("GUIDE가 전체 세션 종료 완료: sessionId={}, username={}", sessionId, username);
+            
+        } catch (SessionNotFoundException e) {
+            log.error("세션을 찾을 수 없음: sessionId={}, username={}", sessionId, username, e);
+            throw e;
+        } catch (SecurityException e) {
+            log.error("세션 종료 권한 없음: sessionId={}, username={}", sessionId, username, e);
+            throw e;
+        } catch (Exception e) {
+            log.error("세션 종료 처리 실패: sessionId={}, username={}", sessionId, username, e);
+            throw new RuntimeException("세션 종료 처리 중 오류 - 세션 ID: " + sessionId + ", 사용자: " + username + ", 원인: " + e.getMessage(), e);
         }
     }
 
