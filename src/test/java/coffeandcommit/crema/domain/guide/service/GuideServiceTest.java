@@ -220,7 +220,9 @@ public class GuideServiceTest {
 
         assertNotNull(result);
         assertEquals(1L, result.getGuideId());
-        assertEquals(DESIGN, result.getJobName());
+        // 응답 스펙 변경 반영: jobName은 영문 enum 이름(String), description은 한글
+        assertEquals(DESIGN.name(), result.getJobName());
+        assertEquals(DESIGN.getDescription(), result.getJobNameDescription());
 
         verify(guideRepository).findById(1L);
         verify(guideJobFieldRepository).findByGuide(guide1);
@@ -316,7 +318,8 @@ public class GuideServiceTest {
 
         assertNotNull(result);
         assertEquals(2L, result.getGuideId());
-        assertEquals(JobNameType.MARKETING_PR, result.getJobName());
+        assertEquals(JobNameType.MARKETING_PR.name(), result.getJobName());
+        assertEquals(JobNameType.MARKETING_PR.getDescription(), result.getJobNameDescription());
 
         verify(guideRepository).findById(2L);
         verify(guideJobFieldRepository).findByGuide(guide2);
@@ -1101,7 +1104,9 @@ public class GuideServiceTest {
         GuideListResponseDTO dto = result.getContent().get(0);
         assertEquals(guide1.getId(), dto.getGuideId());
         assertEquals(guide1.getTitle(), dto.getTitle());
-        assertEquals(DESIGN, dto.getJobField().getJobName());
+        // 응답 스펙 변경 반영: jobName은 String 영문 코드, description은 한글
+        assertEquals(DESIGN.name(), dto.getJobField().getJobName());
+        assertEquals(DESIGN.getDescription(), dto.getJobField().getJobNameDescription());
         assertEquals(2, dto.getHashTags().size());
         assertEquals(5L, dto.getStats().getTotalCoffeeChats());
         assertEquals(4.5, dto.getStats().getAverageStar());

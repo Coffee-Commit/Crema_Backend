@@ -13,6 +13,7 @@ import java.util.List;
 @Repository
 public interface GuideChatTopicRepository extends JpaRepository<GuideChatTopic, Long> {
     boolean existsByGuideAndChatTopic(Guide guide, ChatTopic chatTopic);
+    java.util.Optional<GuideChatTopic> findByGuideAndChatTopic(Guide guide, ChatTopic chatTopic);
 
 
     @Query("SELECT gct FROM GuideChatTopic gct " +

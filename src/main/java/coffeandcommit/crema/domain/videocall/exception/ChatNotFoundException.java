@@ -8,7 +8,7 @@ public class ChatNotFoundException extends BaseException {
         super(ErrorStatus.CHAT_NOT_FOUND);
     }
     
-    public ChatNotFoundException(String message) {
-        super(ErrorStatus.CHAT_NOT_FOUND);
+    public ChatNotFoundException(String detailMessage) {
+        super(ErrorStatus.CHAT_NOT_FOUND, detailMessage);
     }
 }

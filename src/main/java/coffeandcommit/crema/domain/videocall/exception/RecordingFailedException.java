@@ -7,4 +7,8 @@ public class RecordingFailedException extends BaseException {
     public RecordingFailedException() {
         super(ErrorStatus.RECORDING_FAILED);
     }
+    
+    public RecordingFailedException(String detailMessage) {
+        super(ErrorStatus.RECORDING_FAILED, detailMessage);
+    }
 }

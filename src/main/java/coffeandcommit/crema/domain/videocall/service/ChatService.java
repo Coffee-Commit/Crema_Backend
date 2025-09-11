@@ -115,33 +115,33 @@ public class ChatService {
                 log.error("잘못된 예약 ID 형식: reservationId={}", reservationId);
                 throw new ChatNotFoundException("잘못된 예약 ID 형식입니다.");
             }
-            
+
             // Reservation 조회
             Reservation reservation = reservationRepository.findById(parsedReservationId)
                     .orElseThrow(() -> new ChatNotFoundException("채팅 기록을 조회할 수 없습니다. 예약을 찾을 수 없습니다."));
-            
+
             // 권한 검증 - Reservation의 member로 확인
             validateReservationReadPermission(reservation, username);
-            
+
             // VideoSession에서 sessionId 추출
             VideoSession videoSession = reservation.getVideoSession();
             if (videoSession == null) {
                 log.error("예약에 연결된 화상통화 세션이 없음: reservationId={}", reservation.getId());
                 throw new SessionNotFoundException("해당 예약에 연결된 화상통화 세션이 없습니다.");
             }
-            
+
             if (videoSession.getSessionId() == null || videoSession.getSessionId().trim().isEmpty()) {
                 log.error("비어있는 세션 ID: reservationId={}", reservation.getId());
                 throw new SessionNotFoundException("유효하지 않은 세션 ID입니다.");
             }
-            
+
             String sessionId = videoSession.getSessionId();
-            
+
             SessionChatLog chatLog = sessionChatLogRepository.findBySessionId(sessionId)
                     .orElseThrow(() -> new ChatNotFoundException("세션 " + sessionId + "의 채팅 기록을 찾을 수 없습니다"));
 
             List<ChatMessageDto> messages = objectMapper.readValue(
-                chatLog.getChatMessages(), 
+                chatLog.getChatMessages(),
                 new TypeReference<List<ChatMessageDto>>() {}
             );
 
@@ -153,7 +153,7 @@ public class ChatService {
                     .sessionEndTime(chatLog.getSessionEndTime())
                     .createdAt(chatLog.getCreatedAt())
                     .build();
-                    
+
         } catch (SecurityException e) {
             log.error("채팅 조회 권한 없음: reservationId={}, username={}", reservationId, username);
             throw e;

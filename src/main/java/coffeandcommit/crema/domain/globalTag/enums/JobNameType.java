@@ -1,5 +1,6 @@
 package coffeandcommit.crema.domain.globalTag.enums;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -23,5 +24,24 @@ public enum JobNameType {
     @JsonValue
     public String getDescription() {
         return description;
+    }
+
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static JobNameType from(Object value) {
+        if (value == null) return null;
+        String text = String.valueOf(value).trim();
+        // 1) Enum 이름으로 매칭 (권장 입력값)
+        for (JobNameType type : values()) {
+            if (type.name().equalsIgnoreCase(text)) {
+                return type;
+            }
+        }
+        // 2) 한글 설명으로 매칭 (기존 클라이언트 호환)
+        for (JobNameType type : values()) {
+            if (type.getDescription().equals(text)) {
+                return type;
+            }
+        }
+        throw new IllegalArgumentException("사용 불가능한 JobNameType: " + text);
     }
 }

@@ -45,7 +45,7 @@ public class VideoCallController {
 
     private final VideoCallService videoCallService;
 
-    @PostMapping("/quick-join")
+    @PostMapping("/quick-join/{reservationId}")
     @Operation(
             summary = "세션 참가(자동 세션생성)"
     )

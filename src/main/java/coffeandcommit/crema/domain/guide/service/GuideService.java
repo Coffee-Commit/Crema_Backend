@@ -1,5 +1,7 @@
 package coffeandcommit.crema.domain.guide.service;
 
+import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
+import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.*;
 import coffeandcommit.crema.domain.guide.repository.*;
@@ -377,8 +379,8 @@ public class GuideService {
     /* 가이드 목록 조회 (enum 기반 필터) */
     @Transactional(readOnly = true)
     public Page<GuideListResponseDTO> getGuides(
-            List<coffeandcommit.crema.domain.globalTag.enums.JobNameType> jobNames,
-            List<coffeandcommit.crema.domain.globalTag.enums.TopicNameType> chatTopicNames,
+            List<JobNameType> jobNames,
+            List<TopicNameType> chatTopicNames,
             String keyword,
             Pageable pageable,
             String loginMemberId,
