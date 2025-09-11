@@ -204,7 +204,7 @@ public class VideoCallTestService {
         } catch (Exception e) {
             log.error("테스트 토큰 갱신 실패: sessionId={}, username={}, error={}", 
                     sessionId, username, e.getMessage(), e);
-            throw new TokenRefreshFailedException();
+            throw new TokenRefreshFailedException("테스트 세션 " + sessionId + " 토큰 갱신 실패 - 사용자: " + username + ", 원인: " + e.getMessage());
         }
     }
 
@@ -237,7 +237,7 @@ public class VideoCallTestService {
         } catch (Exception e) {
             log.error("테스트 자동 재연결 실패: sessionId={}, username={}, error={}", 
                     sessionId, username, e.getMessage(), e);
-            throw new AutoReconnectFailedException();
+            throw new AutoReconnectFailedException("테스트 세션 " + sessionId + " 재연결 실패 - 사용자: " + username + ", 이전 연결: " + lastConnectionId + ", 원인: " + e.getMessage());
         }
     }
 
@@ -247,7 +247,7 @@ public class VideoCallTestService {
             return basicVideoCallTestService.getOpenViduActiveSessions();
         } catch (Exception e) {
             log.error("테스트 OpenVidu 상태 확인 실패: {}", e.getMessage());
-            throw new OpenViduConnectionException();
+            throw new OpenViduConnectionException("테스트 OpenVidu 서버 연결 실패: " + e.getMessage());
         }
     }
 

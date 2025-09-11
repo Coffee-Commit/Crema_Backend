@@ -46,16 +46,17 @@ public class VideoCallService {
 
     public QuickJoinResponse quickJoin(Long reservationId, UserDetails userDetails) {
         try {
-            Reservation reservation = reservationRepository.findById(reservationId).orElseThrow(SessionNotFoundException::new);
+            Reservation reservation = reservationRepository.findById(reservationId)
+                    .orElseThrow(() -> new SessionNotFoundException("예약 ID: " + reservationId + "를 찾을 수 없습니다"));
 
             VideoSession session;
             try {   //세션이 없으면 새로 만듦
                 if(reservation.getVideoSession() == null)
-                    throw new SessionNotFoundException();
+                    throw new SessionNotFoundException("예약 ID " + reservation.getId() + "에 연결된 VideoSession이 없습니다");
 
                 session = videoSessionRepository
                         .findBySessionNameAndIsActiveTrue(reservation.getVideoSession().getSessionName())
-                        .orElseThrow(SessionNotFoundException::new);
+                        .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + reservation.getVideoSession().getSessionName() + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
                 String sessionName = "reservation_" + reservation.getId() + "_" + reservation.getReservedAt();
                 session = basicVideoCallService.createVideoSession(sessionName);
@@ -144,7 +145,7 @@ public class VideoCallService {
         } catch (Exception e) {
             log.error("토큰 갱신 실패: sessionId={}, username={}, error={}", 
                     sessionId, username, e.getMessage(), e);
-            throw new TokenRefreshFailedException();
+            throw new TokenRefreshFailedException("세션 ID: " + sessionId + ", 사용자: " + username + " - " + e.getMessage());
         }
     }
 
@@ -177,7 +178,7 @@ public class VideoCallService {
         } catch (Exception e) {
             log.error("자동 재연결 실패: sessionId={}, username={}, error={}", 
                     sessionId, username, e.getMessage(), e);
-            throw new AutoReconnectFailedException();
+            throw new AutoReconnectFailedException("세션 ID: " + sessionId + ", 사용자: " + username + ", 이전 연결: " + lastConnectionId + " - " + e.getMessage());
         }
     }
 
@@ -187,7 +188,7 @@ public class VideoCallService {
             return basicVideoCallService.getOpenViduActiveSessions();
         } catch (Exception e) {
             log.error("OpenVidu 상태 확인 실패: {}", e.getMessage());
-            throw new OpenViduConnectionException();
+            throw new OpenViduConnectionException("OpenVidu 서버 상태 확인 실패: " + e.getMessage());
         }
     }
 
