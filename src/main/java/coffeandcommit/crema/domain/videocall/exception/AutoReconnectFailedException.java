@@ -7,4 +7,8 @@ public class AutoReconnectFailedException extends BaseException {
     public AutoReconnectFailedException() {
         super(ErrorStatus.AUTO_RECONNECT_FAILED);
     }
+    
+    public AutoReconnectFailedException(String detailMessage) {
+        super(ErrorStatus.AUTO_RECONNECT_FAILED, detailMessage);
+    }
 }

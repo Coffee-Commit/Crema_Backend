@@ -9,7 +9,7 @@ public class SessionNotFoundException extends BaseException {
         super(ErrorStatus.SESSION_NOT_FOUND);
     }
     
-    public SessionNotFoundException(String message) {
-        super(ErrorStatus.SESSION_NOT_FOUND);
+    public SessionNotFoundException(String detailMessage) {
+        super(ErrorStatus.SESSION_NOT_FOUND, detailMessage);
     }
 }
