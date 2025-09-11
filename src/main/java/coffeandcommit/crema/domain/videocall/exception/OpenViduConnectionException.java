@@ -7,4 +7,8 @@ public class OpenViduConnectionException extends BaseException {
     public OpenViduConnectionException() {
         super(ErrorStatus.OPENVIDU_CONNECTION_FAILED);
     }
+    
+    public OpenViduConnectionException(String detailMessage) {
+        super(ErrorStatus.OPENVIDU_CONNECTION_FAILED, detailMessage);
+    }
 }

@@ -36,30 +36,23 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable()) // CSRF 완전 비활성화
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .requestCache(cache -> cache.disable())
-                .securityContext(context -> context.requireExplicitSave(false))
+                .requestCache(cache -> cache.disable()) // 요청 캐시 비활성화 (JSESSIONID 제거)
+                .securityContext(context -> context.requireExplicitSave(false)) // 보안 컨텍스트 자동 저장 비활성화
                 .exceptionHandling(exception -> exception.authenticationEntryPoint(jwtAuthenticationEntryPoint))
                 .authorizeHttpRequests(auth -> auth
                         // Prometheus Actuator Endpoint
                         .requestMatchers(EndpointRequest.to("prometheus")).permitAll()
-
-                        // OAuth2 관련 URL들 - 인증 불필요
-                        .requestMatchers(
-                                "/oauth2/**",           // OAuth2 기본 경로
-                                "/api/oauth2/**",       // 커스텀 OAuth2 경로
-                                "/login/oauth2/**",     // OAuth2 로그인 콜백
-                                "/api/login/oauth2/**"  // 커스텀 OAuth2 콜백
-                        ).permitAll()
-
-                        // Public endpoints
+                        // Public endpoints (인증 불필요)
                         .requestMatchers(
                                 "/api/auth/status",
                                 "/api/auth/refresh",
                                 "/api/member/check/**",
                                 "/api/test/auth/**",
-                                "/api/debug/**",
+                                "/api/debug/**", // 디버그 엔드포인트 추가
+                                "/api/oauth2/**",
+                                "/api/login/oauth2/**",
                                 // Swagger UI
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
@@ -92,6 +85,7 @@ public class SecurityConfig {
                         .userInfoEndpoint(userInfo -> userInfo.userService(customOAuth2UserService))
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                         .failureHandler(oAuth2AuthenticationFailureHandler)
+                        .permitAll()
                 );
 
         // JWT 필터를 UsernamePasswordAuthenticationFilter 앞에 추가
@@ -104,20 +98,20 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
+        // 명시적으로 각 도메인을 추가
         configuration.setAllowedOriginPatterns(List.of(
                 // 로컬 개발 환경
                 "http://localhost:3000",
                 "http://localhost:3001",
                 "http://localhost:8080",
-                // dev 서버 환경 (API 서버)
+                // dev 서버 환경
                 "https://dev-api-coffeechat.kro.kr",
-                // dev 서버 환경 (프론트엔드 서버)
                 "https://dev-coffeechat.kro.kr",
                 "https://dev.coffeechat.kro.kr",
                 // 프로덕션 환경
                 "https://coffeechat.kro.kr",
                 "https://api.coffeechat.kro.kr",
-                // 모든 coffeechat.kro.kr 서브도메인 허용
+                // 와일드카드 패턴 (올바른 방법)
                 "https://*.coffeechat.kro.kr"
         ));
 
@@ -127,6 +121,8 @@ public class SecurityConfig {
 
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
+
+        // Preflight 요청 캐시 시간 설정 (1시간)
         configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
