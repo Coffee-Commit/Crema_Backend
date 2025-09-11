@@ -63,4 +63,44 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
     Page<Reservation> findByGuideAndMatchingTimeBetweenAndStatusIn(Guide guide, LocalDateTime matchingTimeAfter, LocalDateTime matchingTimeBefore, Collection<Status> statuses, Pageable pageable);
 
     Long countByGuideAndStatus(Guide guide, Status status);
+
+    /**
+     * 멤버의 모든 예약 조회 (필요한 연관 엔티티들 fetch join)
+     * MemberCoffeeChatResponse에서 사용하는 모든 연관관계 포함
+     */
+    @EntityGraph(attributePaths = {
+            "guide",
+            "guide.member",           // 가이드 프로필 이미지용
+            "survey",                 // 희망 날짜/시간용
+            "timeUnit",               // 시간 타입용
+            "videoSession"            // 화상채팅 세션용 (optional)
+    })
+    @Query("""
+    SELECT r FROM Reservation r 
+    WHERE r.member.id = :memberId 
+    ORDER BY r.createdAt DESC
+""")
+    List<Reservation> findByMemberIdWithFetchJoin(@Param("memberId") String memberId);
+
+    /**
+     * 멤버의 상태별 예약 조회 (필요한 연관 엔티티들 fetch join)
+     */
+    @EntityGraph(attributePaths = {
+            "guide",
+            "guide.member",           // 가이드 프로필 이미지용
+            "survey",                 // 희망 날짜/시간용
+            "timeUnit",               // 시간 타입용
+            "videoSession"            // 화상채팅 세션용 (optional)
+    })
+    @Query("""
+    SELECT r FROM Reservation r 
+    WHERE r.member.id = :memberId 
+    AND r.status = :status 
+    ORDER BY r.createdAt DESC
+""")
+    List<Reservation> findByMemberIdAndStatusWithFetchJoin(
+            @Param("memberId") String memberId,
+            @Param("status") Status status
+    );
+
 }

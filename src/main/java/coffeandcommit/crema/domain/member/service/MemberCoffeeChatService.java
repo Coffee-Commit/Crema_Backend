@@ -134,25 +134,25 @@ public class MemberCoffeeChatService {
     // === 커피챗 예약 조회 ===
 
     public List<MemberCoffeeChatResponse> getPendingReservations(String memberId) {
-        return getReservationsByStatus(memberId, Status.PENDING);
+        return getReservationsByStatusWithFetchJoin(memberId, Status.PENDING);
     }
 
     public List<MemberCoffeeChatResponse> getConfirmedReservations(String memberId) {
-        return getReservationsByStatus(memberId, Status.CONFIRMED);
+        return getReservationsByStatusWithFetchJoin(memberId, Status.CONFIRMED);
     }
 
     public List<MemberCoffeeChatResponse> getCompletedReservations(String memberId) {
-        return getReservationsByStatus(memberId, Status.COMPLETED);
+        return getReservationsByStatusWithFetchJoin(memberId, Status.COMPLETED);
     }
 
     public List<MemberCoffeeChatResponse> getCancelledReservations(String memberId) {
-        return getReservationsByStatus(memberId, Status.CANCELLED);
+        return getReservationsByStatusWithFetchJoin(memberId, Status.CANCELLED);
     }
 
     public List<MemberCoffeeChatResponse> getAllReservations(String memberId) {
         findActiveMemberById(memberId); // 멤버 존재 확인
 
-        List<Reservation> reservations = reservationRepository.findByMember_Id(memberId);
+        List<Reservation> reservations = reservationRepository.findByMemberIdWithFetchJoin(memberId);
 
         return reservations.stream()
                 .map(MemberCoffeeChatResponse::from)
@@ -176,10 +176,13 @@ public class MemberCoffeeChatService {
                 });
     }
 
-    private List<MemberCoffeeChatResponse> getReservationsByStatus(String memberId, Status status) {
+    /**
+     * 상태별 예약 조회 (필요한 연관 엔티티들을 fetch join으로 한번에 가져오기)
+     */
+    private List<MemberCoffeeChatResponse> getReservationsByStatusWithFetchJoin(String memberId, Status status) {
         findActiveMemberById(memberId); // 멤버 존재 확인
 
-        List<Reservation> reservations = reservationRepository.findByMember_IdAndStatus(memberId, status);
+        List<Reservation> reservations = reservationRepository.findByMemberIdAndStatusWithFetchJoin(memberId, status);
 
         return reservations.stream()
                 .map(MemberCoffeeChatResponse::from)
