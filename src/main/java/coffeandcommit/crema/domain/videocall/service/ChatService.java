@@ -42,7 +42,7 @@ public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, St
         validateSavePermission(sessionId, username);
         
         VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
-                .orElseThrow(SessionNotFoundException::new);
+                .orElseThrow(() -> new SessionNotFoundException("채팅 저장용 세션 ID: " + sessionId + "를 찾을 수 없습니다"));
 
         String chatMessagesJson = objectMapper.writeValueAsString(request.getMessages());
         
@@ -97,13 +97,13 @@ public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, St
         throw e;
     } catch (JsonProcessingException e) {
         log.error("채팅 메시지 JSON 변환 실패: sessionId={}", sessionId, e);
-        throw new ChatSaveFailedException("채팅 메시지 직렬화에 실패했습니다.");
+        throw new ChatSaveFailedException("채팅 메시지 JSON 직렬화 실패 - 세션 ID: " + sessionId + ", 메시지 수: " + request.getMessages().size());
     } catch (SessionNotFoundException | ChatNotFoundException e) {
         log.error("데이터를 찾을 수 없음: sessionId={}, error={}", sessionId, e.getMessage());
         throw e;
     } catch (Exception e) {
         log.error("채팅 기록 저장 실패: sessionId={}", sessionId, e);
-        throw new ChatSaveFailedException("채팅 기록 저장 중 예상치 못한 오류가 발생했습니다.");
+        throw new ChatSaveFailedException("채팅 기록 저장 중 예상치 못한 오류 - 세션 ID: " + sessionId + ", 사용자: " + username + ", 원인: " + e.getMessage());
     }
 }
 
@@ -141,7 +141,7 @@ public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, St
         String sessionId = videoSession.getSessionId();
         
         SessionChatLog chatLog = sessionChatLogRepository.findBySessionId(sessionId)
-                .orElseThrow(ChatNotFoundException::new);
+                .orElseThrow(() -> new ChatNotFoundException("세션 " + sessionId + "의 채팅 기록을 찾을 수 없습니다"));
 
         List<ChatMessageDto> messages = objectMapper.readValue(
             chatLog.getChatMessages(), 
@@ -162,10 +162,10 @@ public void saveChatHistory(String sessionId, ChatHistorySaveRequest request, St
         throw e;
     } catch (JsonProcessingException e) {
         log.error("채팅 메시지 JSON 파싱 실패: reservationId={}", reservationId, e);
-        throw new ChatNotFoundException();
+        throw new ChatNotFoundException("예약 ID " + reservationId + "의 채팅 메시지 JSON 파싱 실패: " + e.getMessage());
     } catch (Exception e) {
         log.error("채팅 기록 조회 실패: reservationId={}", reservationId, e);
-        throw new ChatNotFoundException();
+        throw new ChatNotFoundException("예약 ID " + reservationId + "의 채팅 기록 조회 실패: " + e.getMessage());
     }
 }
 

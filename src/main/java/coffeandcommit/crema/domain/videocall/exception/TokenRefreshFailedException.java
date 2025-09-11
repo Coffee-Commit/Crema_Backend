@@ -7,4 +7,8 @@ public class TokenRefreshFailedException extends BaseException {
     public TokenRefreshFailedException() {
         super(ErrorStatus.TOKEN_REFRESH_FAILED);
     }
+    
+    public TokenRefreshFailedException(String detailMessage) {
+        super(ErrorStatus.TOKEN_REFRESH_FAILED, detailMessage);
+    }
 }

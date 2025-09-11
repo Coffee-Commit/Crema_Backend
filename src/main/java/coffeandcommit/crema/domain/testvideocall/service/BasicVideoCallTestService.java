@@ -157,12 +157,12 @@ public class BasicVideoCallTestService {
                         
                         // 여전히 null이면 SessionNotFoundException
                         log.error("[CREATE-OR-GET] fetch 후에도 세션을 찾을 수 없음 - sessionId: {}", sessionId);
-                        throw new SessionNotFoundException();
+                        throw new SessionNotFoundException("테스트 세션 생성/조회 실패 - fetch 후에도 세션 ID: " + sessionId + "를 찾을 수 없음");
                     }
                 } catch (OpenViduJavaClientException | OpenViduHttpException getError) {
                     log.error("[CREATE-OR-GET] 세션 조회 중 오류 - sessionId: {}, status: {}", 
                              sessionId, getErrorStatus(getError));
-                    throw new SessionNotFoundException();
+                    throw new SessionNotFoundException("테스트 세션 조회 오류 - ID: " + sessionId + ", 상태 코드: " + getErrorStatus(getError));
                 }
                 
             } else if (isServerError(status) || isTimeoutError(createError)) {
@@ -174,14 +174,14 @@ public class BasicVideoCallTestService {
                 // 기타 4xx 오류: 클라이언트 오류
                 log.error("[CREATE-OR-GET] 세션 생성 실패 - sessionId: {}, status: {}, error: {}", 
                          sessionId, status, createError.getMessage());
-                throw new SessionNotFoundException();
+                throw new SessionNotFoundException("테스트 세션 생성 실패 - ID: " + sessionId + ", 상태 코드: " + status);
             }
             
         } catch (Exception unexpectedError) {
             // 예상치 못한 오류
             log.error("[CREATE-OR-GET] 예상치 못한 오류 - sessionId: {}, error: {}", 
                      sessionId, unexpectedError.getMessage());
-            throw new SessionNotFoundException();
+            throw new SessionNotFoundException("테스트 세션 예상치 못한 오류 - ID: " + sessionId + ", 원인: " + unexpectedError.getMessage());
         }
     }
 
@@ -370,7 +370,7 @@ public class BasicVideoCallTestService {
                 throw (SessionCreationException) e;
             }
             // 체크된 예외는 SessionCreationException으로 래핑
-            throw new SessionCreationException();
+            throw new SessionCreationException("테스트 세션 생성 실패 - 이름: " + sessionName + ", 원인: " + e.getMessage());
         }
     }
 
@@ -515,7 +515,7 @@ public class BasicVideoCallTestService {
                 throw (SessionNotFoundException) e;
             }
             // 체크된 예외는 SessionCreationException으로 래핑
-            throw new SessionCreationException();
+            throw new SessionCreationException("테스트 토큰 발급 실패 - 세션: " + videoSession.getSessionId() + ", 사용자: " + userName + ", 원인: " + e.getMessage());
         }
     }
     
@@ -669,7 +669,7 @@ public class BasicVideoCallTestService {
                 throw (SessionNotFoundException) e;
             }
             // 체크된 예외는 SessionCreationException으로 래핑
-            throw new SessionCreationException();
+            throw new SessionCreationException("테스트 토큰 발급 실패(호환) - 세션: " + sessionId + ", 사용자: " + userName + ", 원인: " + e.getMessage());
         }
     }
 
@@ -708,11 +708,11 @@ public class BasicVideoCallTestService {
     public Recording startAudioRecording(String sessionId){
         try{
             VideoSession videoSession = videoSessionRepository.findBySessionIdAndIsActiveTrue(sessionId)
-                    .orElseThrow(SessionNotFoundException::new);
+                    .orElseThrow(() -> new SessionNotFoundException("테스트 녹화용 활성 세션 ID: " + sessionId + "를 찾을 수 없습니다"));
 
             Session openviduSession = openVidu.getActiveSession(sessionId);
             if(openviduSession == null){
-                throw new SessionNotFoundException();
+                throw new SessionNotFoundException("테스트 녹화용 OpenVidu 세션 ID: " + sessionId + "가 없습니다");
             }
 
             List<Participant> connectedParticipants = participantRepository.findByVideoSessionAndIsConnectedTrue(videoSession);
@@ -726,7 +726,7 @@ public class BasicVideoCallTestService {
                     .toList();
             
             if(!activeRecordings.isEmpty()){
-                throw new RecordingAlreadyStartedException();
+                throw new RecordingAlreadyStartedException("테스트 세션 " + sessionId + "에서 이미 녹화가 진행 중입니다");
             }
 
             RecordingProperties recordingProperties = new RecordingProperties.Builder()
@@ -742,11 +742,11 @@ public class BasicVideoCallTestService {
                 return recording;
             }catch (Exception e){
                 log.error("[OPENVIDU TEST] session {} / recording failed {}",sessionId,  e.getMessage());
-                throw new RecordingFailedException();
+                throw new RecordingFailedException("테스트 세션 " + sessionId + " 녹화 시작 실패: " + e.getMessage());
             }
         }catch (Exception e){
             log.error("[OPENVIDU TEST] session {} / recording failed in outside {}",sessionId,  e.getMessage());
-            throw new RecordingFailedException();
+            throw new RecordingFailedException("테스트 세션 " + sessionId + " 녹화 전체 실패: " + e.getMessage());
         }
     }
 
@@ -810,7 +810,7 @@ public class BasicVideoCallTestService {
             
         } catch (Exception e) {
             log.error("테스트 녹화 중단 실패: sessionId={}, error={}", sessionId, e.getMessage());
-            throw new RecordingFailedException();
+            throw new RecordingFailedException("테스트 세션 " + sessionId + " 녹화 중단 실패: " + e.getMessage());
         }
     }
 
@@ -822,7 +822,7 @@ public class BasicVideoCallTestService {
                     .toList();
         } catch (Exception e) {
             log.error("테스트 녹화 목록 조회 실패: sessionId={}, error={}", sessionId, e.getMessage());
-            throw new RecordingFailedException();
+            throw new RecordingFailedException("테스트 세션 " + sessionId + " 녹화 목록 조회 실패: " + e.getMessage());
         }
     }
 
@@ -831,7 +831,7 @@ public class BasicVideoCallTestService {
             return openVidu.getRecording(recordingId);
         } catch (Exception e) {
             log.error("테스트 녹화 정보 조회 실패: recordingId={}, error={}", recordingId, e.getMessage());
-            throw new RecordingFailedException();
+            throw new RecordingFailedException("테스트 녹화 ID " + recordingId + " 정보 조회 실패: " + e.getMessage());
         }
     }
 
@@ -879,7 +879,7 @@ public class BasicVideoCallTestService {
 
             Session openviduSession = openVidu.getActiveSession(sessionId);
             if (openviduSession == null) {
-                throw new SessionNotFoundException();
+                throw new SessionNotFoundException("테스트 화면 공유용 OpenVidu 세션 ID: " + sessionId + "가 없습니다");
             }
 
             boolean isAlreadySharing = openviduSession.getActiveConnections().stream()

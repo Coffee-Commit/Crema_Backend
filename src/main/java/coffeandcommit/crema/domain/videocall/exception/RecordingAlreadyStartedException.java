@@ -7,4 +7,8 @@ public class RecordingAlreadyStartedException extends BaseException {
     public RecordingAlreadyStartedException() {
         super(ErrorStatus.RECORDING_ALREADY_STARTED);
     }
+    
+    public RecordingAlreadyStartedException(String detailMessage) {
+        super(ErrorStatus.RECORDING_ALREADY_STARTED, detailMessage);
+    }
 }

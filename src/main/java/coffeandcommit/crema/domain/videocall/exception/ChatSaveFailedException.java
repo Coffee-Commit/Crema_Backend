@@ -8,7 +8,7 @@ public class ChatSaveFailedException extends BaseException {
         super(ErrorStatus.CHAT_SAVE_FAILED);
     }
     
-    public ChatSaveFailedException(String message) {
-        super(ErrorStatus.CHAT_SAVE_FAILED);
+    public ChatSaveFailedException(String detailMessage) {
+        super(ErrorStatus.CHAT_SAVE_FAILED, detailMessage);
     }
 }
