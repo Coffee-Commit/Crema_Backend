@@ -57,6 +57,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1917,5 +1921,81 @@ public class GuideMeServiceTest {
                 () -> guideMeService.updateGuideVisibility(memberId, requestDTO));
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
         verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("getAllReservations 성공 - 페이지 응답 매핑")
+    void getAllReservations_Success() {
+        // Given
+        String loginMemberId = memberId;
+
+        Survey survey = Survey.builder()
+                .id(1L)
+                .fileUploadURL("")
+                .messageToGuide("message")
+                .preferredDate(LocalDateTime.now().plusDays(3))
+                .build();
+
+        TimeUnit timeUnit = TimeUnit.builder()
+                .id(1L)
+                .timeType(TimeType.MINUTE_30)
+                .build();
+
+        Reservation reservation = Reservation.builder()
+                .id(10L)
+                .guide(guide)
+                .member(member)
+                .status(Status.PENDING)
+                .survey(survey)
+                .build();
+        reservation.setTimeUnit(timeUnit);
+        timeUnit.setReservation(reservation);
+
+        LocalDateTime now = LocalDateTime.now();
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Field createdAtField =
+                    coffeandcommit.crema.global.common.entity.BaseEntity.class.getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(reservation, now);
+        });
+
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Reservation> page = new PageImpl<>(List.of(reservation), pageable, 1);
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.of(guide));
+        when(reservationRepository.findByGuide(guide, pageable)).thenReturn(page);
+
+        // When
+        Page<GuidePendingReservationResponseDTO> result = guideMeService.getAllReservations(loginMemberId, pageable);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        GuidePendingReservationResponseDTO dto = result.getContent().get(0);
+        assertEquals(10L, dto.getReservationId());
+        assertEquals(Status.PENDING, dto.getStatus());
+        assertNotNull(dto.getMember());
+        assertEquals(member.getNickname(), dto.getMember().getNickname());
+
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verify(reservationRepository).findByGuide(guide, pageable);
+    }
+
+    @Test
+    @DisplayName("getAllReservations 실패 - 가이드 없음")
+    void getAllReservations_GuideNotFound() {
+        // Given
+        String loginMemberId = "missing";
+        Pageable pageable = PageRequest.of(0, 10);
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.getAllReservations(loginMemberId, pageable));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verifyNoInteractions(reservationRepository);
     }
 }

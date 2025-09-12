@@ -21,6 +21,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
@@ -588,4 +590,55 @@ public class GuideMeService {
         guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
 
     }
+
+    /* 가이드 전체 예약 조회 (페이징) */
+    @Transactional(readOnly = true)
+    public Page<GuidePendingReservationResponseDTO> getAllReservations(String loginMemberId, Pageable pageable) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        Page<Reservation> reservations = reservationRepository.findByGuide(guide, pageable);
+
+        return reservations.map(reservation -> {
+            String createdAt = (reservation.getCreatedAt() != null)
+                    ? reservation.getCreatedAt().toString()
+                    : null;
+
+            // survey, timeUnit null 안전 처리
+            Survey survey = reservation.getSurvey();
+            LocalDateTime preferredDateTime = (survey != null) ? survey.getPreferredDate() : null;
+
+            TimeUnit timeUnit = reservation.getTimeUnit();
+            TimeType timeType = (timeUnit != null) ? timeUnit.getTimeType() : null;
+
+            String preferredDateOnly = null;
+            String preferredTimeRange = null;
+            String preferredDayOfWeek = null;
+
+            if (preferredDateTime != null) {
+                preferredDateOnly = preferredDateTime.toLocalDate().toString();
+
+                DayType dayType = convertToDayType(preferredDateTime.getDayOfWeek());
+                preferredDayOfWeek = dayType.getDescription();
+
+                if (timeType != null) {
+                    LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
+                    preferredTimeRange = preferredDateTime.toLocalTime().toString()
+                            + "~" + endDateTime.toLocalTime().toString();
+                }
+            }
+
+            return GuidePendingReservationResponseDTO.builder()
+                    .reservationId(reservation.getId())
+                    .member(MemberInfo.from(reservation.getMember()))
+                    .createdAt(createdAt)
+                    .preferredDateOnly(preferredDateOnly)
+                    .preferredDayOfWeek(preferredDayOfWeek)
+                    .preferredTimeRange(preferredTimeRange)
+                    .status(reservation.getStatus())
+                    .build();
+        });
+    }
+
 }

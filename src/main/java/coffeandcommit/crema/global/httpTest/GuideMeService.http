@@ -128,3 +128,6 @@ Content-Type: application/pdf
 
 < ./sample-files/resume_test.pdf
 
+### 가이드 전체 커피챗 조회 (모든 상태)
+GET http://localhost:8080/api/guides/me/reservations/all?page=0&size=10&sortBy=createdAt&direction=DESC
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJkYjYyMTNkYS1iMmEyLTQ4MTgtYTFiOS0wMDc2NzcxZjM5ZjEiLCJpYXQiOjE3NTc2NDA5NTEsImV4cCI6MTc1NzY0Mjc1MX0._dLN5heMlKBkLVq179YulezLpLjqJ_hpDCcKmJS4hcHZG04RIq_WQjmWCge5b-bUWK3YsyuGjXSgUE6FNHtAqQ

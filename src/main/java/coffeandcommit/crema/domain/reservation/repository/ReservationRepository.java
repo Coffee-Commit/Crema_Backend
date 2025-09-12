@@ -76,8 +76,8 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "videoSession"            // 화상채팅 세션용 (optional)
     })
     @Query("""
-    SELECT r FROM Reservation r 
-    WHERE r.member.id = :memberId 
+    SELECT r FROM Reservation r
+    WHERE r.member.id = :memberId
     ORDER BY r.createdAt DESC
 """)
     List<Reservation> findByMemberIdWithFetchJoin(@Param("memberId") String memberId);
@@ -93,9 +93,9 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             "videoSession"            // 화상채팅 세션용 (optional)
     })
     @Query("""
-    SELECT r FROM Reservation r 
-    WHERE r.member.id = :memberId 
-    AND r.status = :status 
+    SELECT r FROM Reservation r
+    WHERE r.member.id = :memberId
+    AND r.status = :status
     ORDER BY r.createdAt DESC
 """)
     List<Reservation> findByMemberIdAndStatusWithFetchJoin(
@@ -103,4 +103,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("status") Status status
     );
 
+    Page<Reservation> findByGuide(Guide guide, Pageable pageable);
+
+    /**
+     * 가이드의 모든 예약 조회 (연관 엔티티 fetch join)
+     */
+    @EntityGraph(attributePaths = {
+            "member",
+            "survey",
+            "timeUnit",
+            "videoSession"
+    })
+    @Query("""
+    SELECT r FROM Reservation r
+    WHERE r.guide = :guide
+    ORDER BY r.createdAt DESC
+    """)
+    List<Reservation> findByGuideWithFetchJoin(@Param("guide") Guide guide);
 }
