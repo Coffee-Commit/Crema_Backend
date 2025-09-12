@@ -104,8 +104,7 @@ public class VideoCallService {
                         .findBySessionNameAndIsActiveTrue(inputSessionName)
                         .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + inputSessionName + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
-                String sessionName = "reservation_" + inputSessionName + "_"
-                        + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")).toString();
+                String sessionName = inputSessionName;
                 session = basicVideoCallService.createVideoSession(sessionName);
             }
 
