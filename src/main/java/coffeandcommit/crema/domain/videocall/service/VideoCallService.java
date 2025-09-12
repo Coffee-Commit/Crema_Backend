@@ -76,11 +76,12 @@ public class VideoCallService {
             }
             
             String token = basicVideoCallService.joinSession(session.getSessionId(), userDetails.getUsername());
-            
+            Member member = memberRepository.findByIdAndIsDeletedFalse(userDetails.getUsername()).orElseThrow(ParticipantNotFound::new);
+
             return QuickJoinResponse.builder()
                     .sessionId(session.getSessionId())
                     .sessionName(session.getSessionName())
-                    .username(userDetails.getUsername())
+                    .username(member.getNickname())
                     .token(token)
                     .openviduServerUrl("https://" + openviduDomain)
                     .apiBaseUrl("https://" + openviduDomain)
@@ -90,7 +91,7 @@ public class VideoCallService {
                     .build();
             
         } catch (Exception e) {
-            throw new SessionConnectFailed();
+            throw e;
         }
     }
 
@@ -109,11 +110,13 @@ public class VideoCallService {
             }
 
             String token = basicVideoCallService.joinSession(session.getSessionId(), userDetails.getUsername());
+            Member member = memberRepository.findByIdAndIsDeletedFalse(userDetails.getUsername()).orElseThrow(ParticipantNotFound::new);
+
 
             return QuickJoinResponse.builder()
                     .sessionId(session.getSessionId())
                     .sessionName(session.getSessionName())
-                    .username(userDetails.getUsername())
+                    .username(member.getNickname())
                     .token(token)
                     .openviduServerUrl("https://" + openviduDomain)
                     .apiBaseUrl("https://" + openviduDomain)
@@ -123,7 +126,7 @@ public class VideoCallService {
                     .build();
 
         } catch (Exception e) {
-            throw new SessionConnectFailed();
+            throw e;
         }
     }
 
@@ -240,7 +243,7 @@ public class VideoCallService {
 
     public ParticipantInfoResponse getParticipantInfo(String sessionId, String username) {
 
-        Member member = memberRepository.findByNicknameAndIsDeletedFalse(username)
+        Member member = memberRepository.findByIdAndIsDeletedFalse(username)
                 .orElseThrow(ParticipantNotFound::new);
         VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
                 .orElseThrow(SessionNotFoundException::new);
@@ -268,7 +271,7 @@ public class VideoCallService {
     public void endSession(String sessionId, ChatHistorySaveRequest chatHistory, String username) {
         try {
             // 1. Member 조회 및 역할 확인
-            Member member = memberRepository.findByNicknameAndIsDeletedFalse(username)
+            Member member = memberRepository.findByIdAndIsDeletedFalse(username)
                     .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + username));
             
             log.info("세션 종료 요청: sessionId={}, username={}, role={}", sessionId, username, member.getRole());
@@ -329,7 +332,7 @@ public class VideoCallService {
                     log.warn("세션에 연결된 예약이 없습니다: sessionId={}", sessionId);
                 }
             }catch (Exception e) {
-                throw new VideoSessionReservationNotFoundException("in endsession");
+                throw e;
             }
             
             // DB 저장

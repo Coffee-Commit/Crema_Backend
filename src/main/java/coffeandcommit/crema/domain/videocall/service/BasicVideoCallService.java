@@ -456,7 +456,7 @@ public class BasicVideoCallService {
             log.info("[SESSION-JOIN] DB에서 회원 정보 조회 시작: '{}'", userName);
             
             long memberStartTime = System.currentTimeMillis();
-            Optional<Member> byNicknameAndIsDeletedFalse = memberRepository.findByNicknameAndIsDeletedFalse(userName);
+            Optional<Member> byNicknameAndIsDeletedFalse = memberRepository.findByIdAndIsDeletedFalse(userName);
             long memberElapsedTime = System.currentTimeMillis() - memberStartTime;
             
             if(byNicknameAndIsDeletedFalse.isEmpty()){
@@ -590,7 +590,7 @@ public class BasicVideoCallService {
             Participant participant = Participant.builder()
                     .connectionId(connection.getConnectionId())
                     .token(token)
-                    .username(userName)
+                    .username(member.getNickname())
                     .videoSession(videoSession)
                     .member(member)
                     .build();
