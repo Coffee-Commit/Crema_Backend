@@ -270,7 +270,7 @@ public class VideoCallService {
     public void endSession(String sessionId, ChatHistorySaveRequest chatHistory, String username) {
         try {
             // 1. Member 조회 및 역할 확인
-            Member member = memberRepository.findByIdAndIsDeletedFalse(username)
+            Member member = memberRepository.findByNicknameAndIsDeletedFalse(username)
                     .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다: " + username));
             
             log.info("세션 종료 요청: sessionId={}, username={}, role={}", sessionId, username, member.getRole());
