@@ -103,4 +103,21 @@ public interface ReservationRepository extends JpaRepository<Reservation, Long> 
             @Param("status") Status status
     );
 
+    Page<Reservation> findByGuide(Guide guide, Pageable pageable);
+
+    /**
+     * 가이드의 모든 예약 조회 (연관 엔티티 fetch join)
+     */
+    @EntityGraph(attributePaths = {
+            "member",
+            "survey",
+            "timeUnit",
+            "videoSession"
+    })
+    @Query("""
+    SELECT r FROM Reservation r
+    WHERE r.guide = :guide
+    ORDER BY r.createdAt DESC
+    """)
+    List<Reservation> findByGuideWithFetchJoin(@Param("guide") Guide guide);
 }

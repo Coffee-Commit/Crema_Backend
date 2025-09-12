@@ -3,6 +3,7 @@ package coffeandcommit.crema.domain.guide.controller;
 import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
+import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -10,9 +11,15 @@ import coffeandcommit.crema.global.common.response.Response;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -346,6 +353,37 @@ public class GuideMeController {
                 .build();
 
         return ResponseEntity.status(HttpStatus.OK).body(response);
+    }
+
+    @Operation(summary = "가이드 전체 커피챗 조회", description = "가이드의 모든 상태 커피챗 예약을 조회합니다.")
+    @GetMapping("/reservations/all")
+    public ResponseEntity<Response<Page<GuidePendingReservationResponseDTO>>> getAllReservations(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            @RequestParam(defaultValue = "0") @Min(0) int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            @RequestParam(defaultValue = "createdAt") String sortBy,
+            @RequestParam(defaultValue = "DESC") String direction
+    ) {
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+
+        Pageable pageable = PageRequest.of(
+                page,
+                size,
+                Sort.by(Sort.Direction.fromString(direction), sortBy)
+        );
+
+        Page<GuidePendingReservationResponseDTO> result = guideMeService.getAllReservations(loginMemberId, pageable);
+
+        Response<Page<GuidePendingReservationResponseDTO>> response = Response.<Page<GuidePendingReservationResponseDTO>>builder()
+                .message("가이드 전체 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
     }
 
 }
