@@ -40,6 +40,38 @@ public class VideoCallController {
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
 
+    @PostMapping("/test-quick-join")
+    @Operation(
+            summary = "세션 참가(자동 세션생성) - 테스트용/Auth 있음",
+            description = "인증 없이 세션에 참가할 수 있는 테스트용 API입니다."
+    )
+    public ApiResponse<QuickJoinResponse> quickJoin(
+            @RequestParam String sessionName,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        long startTime = System.currentTimeMillis();
+        log.info("[QUICKJOIN-REQUEST] 테스트 quickjoin 요청 시작 - sessionName: {}",sessionName);
+
+        if (sessionName == null || sessionName.trim().isEmpty()) {
+            log.error("[QUICKJOIN-REQUEST] 잘못된 sessionName 파라미터: {}", sessionName);
+        }
+
+        try {
+            QuickJoinResponse response = videoCallService.testQuickJoinAuth(sessionName, userDetails);
+            long processingTime = System.currentTimeMillis() - startTime;
+
+            log.info("[QUICKJOIN-RESPONSE] 테스트 quickjoin 요청 성공 - sessionName: {}, " +
+                    "sessionId: {}, 처리시간: {}ms", sessionName, response.getSessionId(), processingTime);
+
+            return ApiResponse.onSuccess(SuccessStatus.OK, response);
+        } catch (Exception e) {
+            long processingTime = System.currentTimeMillis() - startTime;
+            log.error("[QUICKJOIN-ERROR] 테스트 quickjoin 요청 실패 - sessionName: {}, " +
+                    "처리시간: {}ms, error: {}", sessionName, processingTime, e.getMessage(), e);
+            throw e;
+        }
+    }
+
     @GetMapping("/config")
     @Operation(summary = "프론트엔드 연결 정보")
     public ApiResponse<SessionConfigResponse> getSessionConfig() {
@@ -88,11 +120,6 @@ public class VideoCallController {
     public ApiResponse<ParticipantInfoResponse> getParticipantInfo(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String sessionId) {
-        // TODO: 구현 필요
-        // 1. sessionId로 VideoSession 조회
-        // 2. VideoSession의 reservation 정보에서 member, guide 정보 확인
-        // 3. 요청자(userDetails.getUsername())의 역할 확인
-        // 4. 상대방 정보를 ParticipantInfoResponse로 변환하여 반환
         ParticipantInfoResponse response = videoCallService.getParticipantInfo(sessionId, userDetails.getUsername());
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
