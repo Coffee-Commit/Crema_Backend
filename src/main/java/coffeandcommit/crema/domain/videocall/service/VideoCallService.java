@@ -93,6 +93,38 @@ public class VideoCallService {
         }
     }
 
+    public QuickJoinResponse testQuickJoinAuth(String inputSessionName, UserDetails userDetails) {
+        try {
+
+            VideoSession session;
+            try {   //세션이 없으면 새로 만듦
+                session = videoSessionRepository
+                        .findBySessionNameAndIsActiveTrue(inputSessionName)
+                        .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + inputSessionName + "를 찾을 수 없습니다"));
+            }catch (SessionNotFoundException e) {
+                String sessionName = "reservation_" + inputSessionName + LocalDateTime.now().toString();
+                session = basicVideoCallService.createVideoSession(sessionName);
+            }
+
+            String token = basicVideoCallService.joinSession(session.getSessionId(), userDetails.getUsername());
+
+            return QuickJoinResponse.builder()
+                    .sessionId(session.getSessionId())
+                    .sessionName(session.getSessionName())
+                    .username(userDetails.getUsername())
+                    .token(token)
+                    .openviduServerUrl("https://" + openviduDomain)
+                    .apiBaseUrl("https://" + openviduDomain)
+                    .webSocketUrl("wss://" + openviduDomain)
+                    .isNewSession(Duration.between(session.getCreatedAt(), LocalDateTime.now()).toMillis() < 5000)
+                    .configInfo(buildConfigInfo())
+                    .build();
+
+        } catch (Exception e) {
+            throw new SessionConnectFailed();
+        }
+    }
+
     public SessionConfigResponse getFrontendConfig() {
         return SessionConfigResponse.builder()
                 .openviduServerUrl("https://" + openviduDomain)
@@ -281,18 +313,21 @@ public class VideoCallService {
             // 채팅 기록 저장
             chatService.saveChatHistory(sessionId, chatHistory, username);
             log.info("채팅 기록 저장 완료: sessionId={}, username={}", sessionId, username);
-            
-            // 예약 상태 COMPLETED로 변경
-            if (videoSession.getReservation() != null) {
-                Reservation reservation = videoSession.getReservation();
-                if (reservation.getStatus() != Status.COMPLETED) {
-                    reservation.completeReservation();
-                    log.info("예약 상태를 COMPLETED로 변경: reservationId={}", reservation.getId());
+            try {
+                // 예약 상태 COMPLETED로 변경
+                if (videoSession.getReservation() != null) {
+                    Reservation reservation = videoSession.getReservation();
+                    if (reservation.getStatus() != Status.COMPLETED) {
+                        reservation.completeReservation();
+                        log.info("예약 상태를 COMPLETED로 변경: reservationId={}", reservation.getId());
+                    } else {
+                        log.debug("예약이 이미 완료 상태입니다: reservationId={}", reservation.getId());
+                    }
                 } else {
-                    log.debug("예약이 이미 완료 상태입니다: reservationId={}", reservation.getId());
+                    log.warn("세션에 연결된 예약이 없습니다: sessionId={}", sessionId);
                 }
-            } else {
-                log.warn("세션에 연결된 예약이 없습니다: sessionId={}", sessionId);
+            }catch (Exception e) {
+                throw new VideoSessionReservationNotFoundException("in endsession");
             }
             
             // DB 저장
