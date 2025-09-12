@@ -27,6 +27,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -102,7 +103,8 @@ public class VideoCallService {
                         .findBySessionNameAndIsActiveTrue(inputSessionName)
                         .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + inputSessionName + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
-                String sessionName = "reservation_" + inputSessionName + LocalDateTime.now().toString();
+                String sessionName = "reservation_" + inputSessionName + "_"
+                        + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmm")).toString();
                 session = basicVideoCallService.createVideoSession(sessionName);
             }
 
