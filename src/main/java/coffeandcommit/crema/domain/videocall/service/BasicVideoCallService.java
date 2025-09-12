@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import io.openvidu.java.client.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -593,6 +594,8 @@ public class BasicVideoCallService {
                     .username(member.getNickname())
                     .videoSession(videoSession)
                     .member(member)
+                    .joinedAt(LocalDateTime.now())  // 필수 필드 추가
+                    .isConnected(true)               // 필수 필드 추가
                     .build();
             
             log.info("[SESSION-JOIN] Participant 엔티티 구성 완료:");

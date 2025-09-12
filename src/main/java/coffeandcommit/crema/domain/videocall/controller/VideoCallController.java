@@ -36,6 +36,10 @@ public class VideoCallController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long reservationId
             ) {
+        if (userDetails == null) {
+            log.error("[VIDEO-CALL] 인증되지 않은 요청 - quickJoin");
+            throw new RuntimeException("인증이 필요합니다");
+        }
         QuickJoinResponse response = videoCallService.quickJoin(reservationId, userDetails);
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
@@ -95,6 +99,10 @@ public class VideoCallController {
     public ApiResponse<QuickJoinResponse> refreshSessionToken(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String sessionId){
+        if (userDetails == null) {
+            log.error("[VIDEO-CALL] 인증되지 않은 요청 - refreshToken");
+            throw new RuntimeException("인증이 필요합니다");
+        }
         QuickJoinResponse response = videoCallService.refreshToken(sessionId, userDetails.getUsername());
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
@@ -107,6 +115,10 @@ public class VideoCallController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String sessionId,
             @RequestParam(required = false) String lastConnectionId){
+        if (userDetails == null) {
+            log.error("[VIDEO-CALL] 인증되지 않은 요청 - autoReconnect");
+            throw new RuntimeException("인증이 필요합니다");
+        }
         QuickJoinResponse quickJoinResponse = videoCallService.autoReconnect(sessionId, userDetails.getUsername(), lastConnectionId);
         return ApiResponse.onSuccess(SuccessStatus.OK, quickJoinResponse);
     }
@@ -120,6 +132,10 @@ public class VideoCallController {
     public ApiResponse<ParticipantInfoResponse> getParticipantInfo(
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String sessionId) {
+        if (userDetails == null) {
+            log.error("[VIDEO-CALL] 인증되지 않은 요청 - getParticipantInfo");
+            throw new RuntimeException("인증이 필요합니다");
+        }
         ParticipantInfoResponse response = videoCallService.getParticipantInfo(sessionId, userDetails.getUsername());
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
@@ -140,6 +156,10 @@ public class VideoCallController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable String sessionId,
             @Valid @RequestBody ChatHistorySaveRequest request) {
+        if (userDetails == null) {
+            log.error("[VIDEO-CALL] 인증되지 않은 요청 - endSession");
+            throw new RuntimeException("인증이 필요합니다");
+        }
         
         videoCallService.endSession(sessionId, request, userDetails.getUsername());
         log.info("세션 종료 완료: sessionId={}, userId={}", sessionId, userDetails.getUsername());
