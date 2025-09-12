@@ -3,7 +3,6 @@ package coffeandcommit.crema.domain.guide.controller;
 import coffeandcommit.crema.domain.guide.dto.request.*;
 import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.service.GuideMeService;
-import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
