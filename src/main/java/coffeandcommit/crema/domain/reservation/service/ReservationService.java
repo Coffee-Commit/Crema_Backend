@@ -67,6 +67,7 @@ public class ReservationService {
 
         // 3. Survey 엔티티 생성
         Survey survey = Survey.builder()
+                .fileUploadURL("")
                 .messageToGuide(reservationRequestDTO.getSurvey().getMessageToGuide())
                 .preferredDate(reservationRequestDTO.getSurvey().getPreferredDate())
                 .build();
@@ -107,11 +108,15 @@ public class ReservationService {
                 .timeType(reservationRequestDTO.getTimeUnit()) // String -> Enum 변환
                 .build();
 
-        reservation.setTimeUnit(timeUnit);
+        
 
         Reservation saved = reservationRepository.save(reservation);
 
-        return ReservationResponseDTO.from(saved, storageService);
+        // Save TimeUnit after Reservation is persisted to avoid transient reference
+        saved.setTimeUnit(timeUnit);
+        Reservation savedWithTimeUnit = reservationRepository.save(saved);
+
+        return ReservationResponseDTO.from(savedWithTimeUnit, storageService);
     }
 
     /* 커피챗 예약 승인/거절 */

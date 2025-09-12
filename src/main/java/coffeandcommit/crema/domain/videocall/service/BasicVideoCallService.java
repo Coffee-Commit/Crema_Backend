@@ -766,25 +766,6 @@ public class BasicVideoCallService {
                 .findBySessionId(sessionId)
                 .orElseThrow(SessionNotFoundException::new);
 
-        // 세션 종료 전 채팅 기록 자동 저장 시도
-        try {
-            // 현재는 자동 저장 기능을 비활성화 (프론트엔드에서 명시적으로 저장하는 방식 사용)
-            log.info("세션 종료: sessionId={}, 채팅 기록은 별도 API로 저장됩니다", sessionId);
-        } catch (Exception chatSaveException) {
-            log.error("채팅 기록 자동 저장 실패: sessionId={}, error={}", 
-                     sessionId, chatSaveException.getMessage());
-            // 채팅 저장 실패가 세션 종료를 막지 않도록 함
-        }
-
-        videoSession.endSession();
-        videoSessionRepository.save(videoSession);
-
-        List<Participant> participants = participantRepository
-                .findByVideoSessionAndIsConnectedTrue(videoSession);
-        
-        participants.forEach(Participant::leaveSession);
-        participantRepository.saveAll(participants);
-
         Session openviduSession = openVidu.getActiveSession(sessionId);
         if (openviduSession != null) {
             openviduSession.close();

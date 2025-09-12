@@ -21,6 +21,8 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotEmpty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.util.HtmlUtils;
@@ -364,9 +366,23 @@ public class GuideMeService {
         Guide guide = guideRepository.findByMember_Id(loginMemberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        // 2. 등록 개수 제한 체크
+        // 2. 등록 개수 제한 체크 (기존 항목은 제외하고 새로 추가되는 항목만 계산)
         long currentCount = experienceGroupRepository.countByGuide(guide);
-        if (currentCount + guideExperienceRequestDTO.getGroups().size() > 6) {
+
+        long newAddCount = guideExperienceRequestDTO.getGroups().stream().map(groupReq -> {
+            if (groupReq.getTopicName() == null) {
+                return Boolean.TRUE; // 후단에서 INVALID_TOPIC 처리되지만, 보수적으로 새 추가로 간주
+            }
+            // ChatTopic이 없을 수 있으므로, 존재 여부만 조회
+            return chatTopicRepository.findByTopicName(groupReq.getTopicName())
+                    .map(chatTopic -> guideChatTopicRepository.findByGuideAndChatTopic(guide, chatTopic)
+                            .flatMap(existGct -> experienceGroupRepository.findByGuideChatTopic(existGct)
+                                    .map(eg -> Boolean.FALSE))
+                            .orElse(Boolean.TRUE))
+                    .orElse(Boolean.TRUE);
+        }).filter(Boolean::booleanValue).count();
+
+        if (currentCount + newAddCount > 6) {
             throw new BaseException(ErrorStatus.EXPERIENCE_LIMIT_EXCEEDED);
         }
 
@@ -374,26 +390,48 @@ public class GuideMeService {
         // 3. ExperienceGroup 생성
         List<ExperienceGroup> experienceGroups = guideExperienceRequestDTO.getGroups().stream()
                 .map(groupReq  -> {
-                    GuideChatTopic guideChatTopic = guideChatTopicRepository.findById(groupReq.getGuideChatTopicId())
-                            .orElseThrow(() -> new BaseException(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC));
-
-                    if (!guideChatTopic.getGuide().getId().equals(guide.getId())) {
-                        throw new BaseException(ErrorStatus.FORBIDDEN);
+                    if (groupReq.getTopicName() == null) {
+                        throw new BaseException(ErrorStatus.INVALID_TOPIC);
                     }
 
-                    return ExperienceGroup.builder()
-                            .guide(guide)
-                            .guideChatTopic(guideChatTopic)
-                            .experienceTitle(groupReq.getExperienceTitle())
-                            .experienceContent(groupReq.getExperienceContent())
-                            .build();
+                    // 1) enum 유효성: TopicNameType JsonCreator가 영어/한글 매핑을 처리
+                    //    DB에 ChatTopic이 없을 수도 있으므로, 없으면 생성
+                    ChatTopic chatTopic = chatTopicRepository.findByTopicName(groupReq.getTopicName())
+                            .orElseGet(() -> chatTopicRepository.save(
+                                    ChatTopic.builder().topicName(groupReq.getTopicName()).build()
+                            ));
+
+                    // 2) 가이드에 주제가 없으면 GuideChatTopic를 추가, 있으면 그대로 사용
+                    GuideChatTopic guideChatTopic = guideChatTopicRepository
+                            .findByGuideAndChatTopic(guide, chatTopic)
+                            .orElseGet(() -> guideChatTopicRepository.save(
+                                    GuideChatTopic.builder()
+                                            .guide(guide)
+                                            .chatTopic(chatTopic)
+                                            .build()
+                            ));
+
+                    // 경험 그룹은 주제당 1개만 가능(Unique). 있으면 업데이트, 없으면 생성
+                    return experienceGroupRepository.findByGuideChatTopic(guideChatTopic)
+                            .map(existing -> existing.toBuilder()
+                                    .experienceTitle(groupReq.getExperienceTitle())
+                                    .experienceContent(groupReq.getExperienceContent())
+                                    .build()
+                            )
+                            .orElseGet(() -> ExperienceGroup.builder()
+                                    .guide(guide)
+                                    .guideChatTopic(guideChatTopic)
+                                    .experienceTitle(groupReq.getExperienceTitle())
+                                    .experienceContent(groupReq.getExperienceContent())
+                                    .build());
                 }).toList();
 
-        // 4. 저장
-        List<ExperienceGroup> savedGroups = experienceGroupRepository.saveAll(experienceGroups);
+        // 4. 저장 (신규 + 업데이트 모두 saveAll)
+        experienceGroupRepository.saveAll(experienceGroups);
 
-        // 5. Response 변환
-        return GuideExperienceResponseDTO.from(savedGroups);
+        // 5. 가이드 전체 경험 목록 조회로 응답 (DB에는 3개인데 응답이 2개로 보이는 문제 방지)
+        List<ExperienceGroup> allGroups = experienceGroupRepository.findByGuide(guide);
+        return GuideExperienceResponseDTO.from(allGroups);
     }
 
     /* 가이드 경험 목록 삭제 */
@@ -540,6 +578,67 @@ public class GuideMeService {
             case SATURDAY -> DayType.SATURDAY;
             case SUNDAY -> DayType.SUNDAY;
         };
+    }
+
+    /* 가이드 노출 설정 변경 */
+    @Transactional
+    public void updateGuideVisibility(String loginMemberId, GuideVisibilityRequestDTO guideVisibilityRequestDTO) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
+
+    }
+
+    /* 가이드 전체 예약 조회 (페이징) */
+    @Transactional(readOnly = true)
+    public Page<GuidePendingReservationResponseDTO> getAllReservations(String loginMemberId, Pageable pageable) {
+
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        Page<Reservation> reservations = reservationRepository.findByGuide(guide, pageable);
+
+        return reservations.map(reservation -> {
+            String createdAt = (reservation.getCreatedAt() != null)
+                    ? reservation.getCreatedAt().toString()
+                    : null;
+
+            // survey, timeUnit null 안전 처리
+            Survey survey = reservation.getSurvey();
+            LocalDateTime preferredDateTime = (survey != null) ? survey.getPreferredDate() : null;
+
+            TimeUnit timeUnit = reservation.getTimeUnit();
+            TimeType timeType = (timeUnit != null) ? timeUnit.getTimeType() : null;
+
+            String preferredDateOnly = null;
+            String preferredTimeRange = null;
+            String preferredDayOfWeek = null;
+
+            if (preferredDateTime != null) {
+                preferredDateOnly = preferredDateTime.toLocalDate().toString();
+
+                DayType dayType = convertToDayType(preferredDateTime.getDayOfWeek());
+                preferredDayOfWeek = dayType.getDescription();
+
+                if (timeType != null) {
+                    LocalDateTime endDateTime = preferredDateTime.plusMinutes(timeType.getMinutes());
+                    preferredTimeRange = preferredDateTime.toLocalTime().toString()
+                            + "~" + endDateTime.toLocalTime().toString();
+                }
+            }
+
+            return GuidePendingReservationResponseDTO.builder()
+                    .reservationId(reservation.getId())
+                    .member(MemberInfo.from(reservation.getMember()))
+                    .createdAt(createdAt)
+                    .preferredDateOnly(preferredDateOnly)
+                    .preferredDayOfWeek(preferredDayOfWeek)
+                    .preferredTimeRange(preferredTimeRange)
+                    .status(reservation.getStatus())
+                    .build();
+        });
     }
 
 }

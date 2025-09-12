@@ -11,7 +11,27 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "guide_d8dffb39"
+  "nickname": "guide_2b2a553d"
+}
+
+### 7. 가이드 경험 등록 (enum 기반, 새로운 스펙)
+POST http://localhost:8080/api/guides/me/experiences
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwMzhjZDZkZSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI0YzQ3NGNhMC01NDVmLTQ1YmEtOTM0MS05OGU0Y2I3MjMxODMiLCJpYXQiOjE3NTc1OTM3MDQsImV4cCI6MTc1NzU5NTUwNH0.JrXN4lShibyUw_-4illHPaA1Yyi8ZtLyg72-1jZKhGo1IbEdlE0N56QkE8XufUPmHPIjfBK9dXS4Qdn0n1CexQ
+Content-Type: application/json
+
+{
+  "groups": [
+    {
+      "topicName": "INTERVIEW",
+      "experienceTitle": "면접대비",
+      "experienceContent": "실제 면접 질문 정리 및 모의 면접 피드백\n"
+    },
+    {
+      "topicName": "PORTFOLIO",
+      "experienceTitle": "포트폴리오준비",
+      "experienceContent": "작은 프로젝트를 엮어 스토리 구성\n"
+    }
+  ]
 }
 
 ### 4. JWT 토큰으로 내 정보 조회 테스트 (3번 에서 받은 accessToken을 Bearer 뒤에 붙여넣기, 다른 도메인에서도 token 사용 가능한지 확인용)
@@ -28,7 +48,7 @@ Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0NTM2ZjBjYiIsInR5cGUiOiJhY
 
 ### 가이드 조회 (jobFieldIds, keyword 쿼리 파라미터)
 GET http://localhost:8080/api/guides?jobFieldIds=PLANNING_STRATEGY
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIwZWU5OWZlNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2YzZhNzM5NS1kMTgzLTRiZDktODdmZS0wZTEyMjYzN2EzYTciLCJpYXQiOjE3NTc0ODY0ODksImV4cCI6MTc1NzQ4ODI4OX0.ZVYx2ultSlpr_BmSmQFGBt3EU62Jk5qYQqvxqSeAlepWtMsnuOVl1_GHiGyfPxSm2a6CZvtXgSTAdavN3ARvoA
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI1MzEwODgwMCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJmODIwYmRmYy00ODNjLTQ3NDEtOGYxYi02YTZmNGFiYjkwZWIiLCJpYXQiOjE3NTc1ODA2MDEsImV4cCI6MTc1NzU4MjQwMX0.Ft8XfdLQSKp0jb6OkWO_H-j7HRisWI4cgNcqW9KnDYHx6Fk2KwPlFRW16AouMyr84l2XQx8VaostXE7f_33rvg
 
 ### Guide 직무분야 등록
 POST http://localhost:8080/api/guides/me/job-field
@@ -59,3 +79,55 @@ Content-Type: application/json
     { "topicName": "COVER_LETTER" }
   ]
 }
+
+### 6. 가이드 공개 여부 변경 (토글 OFF)
+PATCH http://localhost:8080/api/guides/me/visibility
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyMGE3NmM5ZS01NGQ3LTQxOTAtOWU2NC1iOWUwNzc3YzcwNTQiLCJpYXQiOjE3NTc2MDIxNjQsImV4cCI6MTc1NzYwMzk2NH0.ff86ID61Gc560nVuFbqCpL-K7pMRPC2I7pjjxuBcaYaAvcAhDRn9MmTpwvpn4RS9_L3Iv7FE53Y2O2mHI-0TDA
+Content-Type: application/json
+
+{
+  "isOpened": false
+}
+
+### 7. 가이드 커피챗 주제 등록 (GuideCoffeeChatResponse)
+POST http://localhost:8080/api/guides/me/coffeechat
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyMGE3NmM5ZS01NGQ3LTQxOTAtOWU2NC1iOWUwNzc3YzcwNTQiLCJpYXQiOjE3NTc2MDIxNjQsImV4cCI6MTc1NzYwMzk2NH0.ff86ID61Gc560nVuFbqCpL-K7pMRPC2I7pjjxuBcaYaAvcAhDRn9MmTpwvpn4RS9_L3Iv7FE53Y2O2mHI-0TDA
+Content-Type: application/json
+
+{
+"title": "커피챗 제목 예시",
+"chatDescription": "이 커피챗은 직무 전환 및 커리어 관련 상담을 다룹니다."
+}
+
+### 8. 커피챗 예약 신청 (파일 업로드 포함)
+POST http://localhost:8080/api/reservations
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIyZWQyZDUwYy0yOWRhLTQ2MzItOTZhNi0xMjk5ZTZkNWYzNzEiLCJpYXQiOjE3NTc2MjczNzIsImV4cCI6MTc1NzYyOTE3Mn0.ym1i7BXnCbw-T76e9YgK2SxH4t1xQgByzieFJoAjntcNciy8ZX8YU3Bp86NCiPcjmGDuI4VrMVNKEupkyY0ojw
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="reservation"; filename="reservation.json"
+Content-Type: application/json
+
+{
+  "guideId": 1,
+  "timeUnit": "MINUTE_30",
+  "survey": {
+    "messageToGuide": "안녕하세요! 포트폴리오 피드백 받고 싶습니다 🙏",
+    "preferredDate": "2025-09-13T10:00:00"
+  }
+}
+--WebAppBoundary
+Content-Disposition: form-data; name="files"; filename="resume.pdf"
+Content-Type: application/pdf
+
+< ./sample-files/resume.pdf
+
+--WebAppBoundary--
+Content-Disposition: form-data; name="files"; filename="resume_test.pdf"
+Content-Type: application/pdf
+
+< ./sample-files/resume_test.pdf
+
+### 가이드 전체 커피챗 조회 (모든 상태)
+GET http://localhost:8080/api/guides/me/reservations/all?page=0&size=10&sortBy=createdAt&direction=DESC
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI2NDMwZGE4MCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJkYjYyMTNkYS1iMmEyLTQ4MTgtYTFiOS0wMDc2NzcxZjM5ZjEiLCJpYXQiOjE3NTc2NDA5NTEsImV4cCI6MTc1NzY0Mjc1MX0._dLN5heMlKBkLVq179YulezLpLjqJ_hpDCcKmJS4hcHZG04RIq_WQjmWCge5b-bUWK3YsyuGjXSgUE6FNHtAqQ

@@ -1,6 +1,5 @@
 package coffeandcommit.crema.domain.reservation.dto.request;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -9,8 +8,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Getter
 @AllArgsConstructor
@@ -24,7 +21,4 @@ public class SurveyRequestDTO {
     @NotNull(message = "희망 날짜는 필수입니다.")
     private LocalDateTime preferredDate; // 희망 날짜
 
-    @Valid
-    @Builder.Default
-    private List<@Valid SurveyFileRequestDTO> files = new ArrayList<>(); // 여러 개 파일 업로드
 }

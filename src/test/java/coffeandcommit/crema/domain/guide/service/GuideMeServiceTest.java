@@ -9,6 +9,7 @@ import coffeandcommit.crema.domain.guide.dto.request.GuideChatTopicRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideCoffeeChatRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceDetailRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideExperienceRequestDTO;
+import coffeandcommit.crema.domain.guide.dto.request.GuideVisibilityRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideHashTagRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideJobFieldRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
@@ -56,6 +57,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1470,13 +1475,13 @@ public class GuideMeServiceTest {
     void registerGuideExperience_Success() {
         // 테스트 데이터 준비
         GroupRequestDTO groupRequestDTO1 = GroupRequestDTO.builder()
-                .guideChatTopicId(guideChatTopic.getId())
+                .topicName(guideChatTopic.getChatTopic().getTopicName())
                 .experienceTitle("첫 번째 경험")
                 .experienceContent("첫 번째 경험 내용")
                 .build();
 
         GroupRequestDTO groupRequestDTO2 = GroupRequestDTO.builder()
-                .guideChatTopicId(guideChatTopic.getId())
+                .topicName(guideChatTopic.getChatTopic().getTopicName())
                 .experienceTitle("두 번째 경험")
                 .experienceContent("두 번째 경험 내용")
                 .build();
@@ -1507,10 +1512,24 @@ public class GuideMeServiceTest {
         List<ExperienceGroup> savedGroups = Arrays.asList(savedGroup1, savedGroup2);
 
         // Mock 설정
+        // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
         when(experienceGroupRepository.countByGuide(guide)).thenReturn(0L);
-        when(guideChatTopicRepository.findById(guideChatTopic.getId())).thenReturn(Optional.of(guideChatTopic));
-        when(experienceGroupRepository.saveAll(any())).thenReturn(savedGroups);
+
+        when(chatTopicRepository.findByTopicName(groupRequestDTO1.getTopicName()))
+                .thenReturn(Optional.of(guideChatTopic.getChatTopic()));
+        when(chatTopicRepository.findByTopicName(groupRequestDTO2.getTopicName()))
+                .thenReturn(Optional.of(guideChatTopic.getChatTopic()));
+
+        when(guideChatTopicRepository.findByGuideAndChatTopic(eq(guide), any(ChatTopic.class)))
+                .thenReturn(Optional.of(guideChatTopic));
+
+        when(experienceGroupRepository.findByGuideChatTopic(guideChatTopic))
+                .thenReturn(Optional.empty());
+        when(experienceGroupRepository.findByGuide(guide))
+                .thenReturn(savedGroups);
+
+
 
         // 테스트 실행
         GuideExperienceResponseDTO result = guideMeService.registerGuideExperience(memberId, requestDTO);
@@ -1534,7 +1553,7 @@ public class GuideMeServiceTest {
         // 메서드 호출 검증
         verify(guideRepository).findByMember_Id(memberId);
         verify(experienceGroupRepository).countByGuide(guide);
-        verify(guideChatTopicRepository, times(2)).findById(guideChatTopic.getId());
+        verify(guideChatTopicRepository, atLeastOnce()).findByGuideAndChatTopic(eq(guide), any(ChatTopic.class));
         verify(experienceGroupRepository).saveAll(any());
     }
 
@@ -1543,7 +1562,7 @@ public class GuideMeServiceTest {
     void registerGuideExperience_GuideNotFound() {
         // 테스트 데이터 준비
         GroupRequestDTO groupRequestDTO = GroupRequestDTO.builder()
-                .guideChatTopicId(1L)
+                .topicName(TopicNameType.INTERVIEW)
                 .experienceTitle("경험 제목")
                 .experienceContent("경험 내용")
                 .build();
@@ -1576,7 +1595,7 @@ public class GuideMeServiceTest {
         List<GroupRequestDTO> groupRequestDTOs = new ArrayList<>();
         for (int i = 0; i < 7; i++) {
             groupRequestDTOs.add(GroupRequestDTO.builder()
-                    .guideChatTopicId(1L)
+                    .topicName(TopicNameType.INTERVIEW)
                     .experienceTitle("경험 제목 " + i)
                     .experienceContent("경험 내용 " + i)
                     .build());
@@ -1605,11 +1624,10 @@ public class GuideMeServiceTest {
     }
 
     @Test
-    @DisplayName("registerGuideExperience 유효하지 않은 가이드 채팅 주제 테스트")
-    void registerGuideExperience_InvalidGuideChatTopic() {
-        // 테스트 데이터 준비
+    @DisplayName("registerGuideExperience 새로운 주제 자동 생성 테스트")
+    void registerGuideExperience_NewTopicAutoCreated() {
         GroupRequestDTO groupRequestDTO = GroupRequestDTO.builder()
-                .guideChatTopicId(999L) // 존재하지 않는 ID
+                .topicName(TopicNameType.INTERVIEW)
                 .experienceTitle("경험 제목")
                 .experienceContent("경험 내용")
                 .build();
@@ -1618,24 +1636,19 @@ public class GuideMeServiceTest {
                 .groups(List.of(groupRequestDTO))
                 .build();
 
-        // Mock 설정
         when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
         when(experienceGroupRepository.countByGuide(guide)).thenReturn(0L);
-        when(guideChatTopicRepository.findById(999L)).thenReturn(Optional.empty());
+        when(chatTopicRepository.findByTopicName(TopicNameType.INTERVIEW)).thenReturn(Optional.empty());
+        when(chatTopicRepository.save(any())).thenReturn(new ChatTopic(1L, TopicNameType.INTERVIEW));
 
-        // 테스트 실행 및 검증
-        BaseException exception = assertThrows(BaseException.class, () ->
-                guideMeService.registerGuideExperience(memberId, requestDTO)
-        );
+        // 실행
+        guideMeService.registerGuideExperience(memberId, requestDTO);
 
-        assertEquals(ErrorStatus.INVALID_GUIDE_CHAT_TOPIC, exception.getErrorCode());
-
-        // 메서드 호출 검증
-        verify(guideRepository).findByMember_Id(memberId);
-        verify(experienceGroupRepository).countByGuide(guide);
-        verify(guideChatTopicRepository).findById(999L);
-        verify(experienceGroupRepository, never()).saveAll(any());
+        // 검증: 새로운 ChatTopic이 생성되었는지 확인
+        verify(chatTopicRepository).save(any(ChatTopic.class));
+        verify(experienceGroupRepository).saveAll(any());
     }
+
 
     @Test
     @DisplayName("registerGuideCoffeeChat 성공 테스트")
@@ -1852,6 +1865,136 @@ public class GuideMeServiceTest {
         assertEquals(ErrorStatus.GUIDE_NOT_FOUND, exception.getErrorCode());
 
         // Verify
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verifyNoInteractions(reservationRepository);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 성공 - 영업중(false→true) 전환")
+    void updateGuideVisibility_Success_Open() {
+        // Given: 닫혀있는 가이드를 반환하도록 준비
+        Guide closedGuide = guide.toBuilder().isOpened(false).build();
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(closedGuide));
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(true)
+                .build();
+
+        // When
+        guideMeService.updateGuideVisibility(memberId, requestDTO);
+
+        // Then
+        assertTrue(closedGuide.isOpened());
+        verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 성공 - 영업중(true→false) 전환")
+    void updateGuideVisibility_Success_Close() {
+        // Given: setUp에서 guide는 isOpened(true)
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(false)
+                .build();
+
+        // When
+        guideMeService.updateGuideVisibility(memberId, requestDTO);
+
+        // Then
+        assertFalse(guide.isOpened());
+        verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("updateGuideVisibility 실패 - 가이드를 찾을 수 없음")
+    void updateGuideVisibility_GuideNotFound() {
+        // Given
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        GuideVisibilityRequestDTO requestDTO = GuideVisibilityRequestDTO.builder()
+                .isOpened(true)
+                .build();
+
+        // When & Then
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.updateGuideVisibility(memberId, requestDTO));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+    }
+
+    @Test
+    @DisplayName("getAllReservations 성공 - 페이지 응답 매핑")
+    void getAllReservations_Success() {
+        // Given
+        String loginMemberId = memberId;
+
+        Survey survey = Survey.builder()
+                .id(1L)
+                .fileUploadURL("")
+                .messageToGuide("message")
+                .preferredDate(LocalDateTime.now().plusDays(3))
+                .build();
+
+        TimeUnit timeUnit = TimeUnit.builder()
+                .id(1L)
+                .timeType(TimeType.MINUTE_30)
+                .build();
+
+        Reservation reservation = Reservation.builder()
+                .id(10L)
+                .guide(guide)
+                .member(member)
+                .status(Status.PENDING)
+                .survey(survey)
+                .build();
+        reservation.setTimeUnit(timeUnit);
+        timeUnit.setReservation(reservation);
+
+        LocalDateTime now = LocalDateTime.now();
+        assertDoesNotThrow(() -> {
+            java.lang.reflect.Field createdAtField =
+                    coffeandcommit.crema.global.common.entity.BaseEntity.class.getDeclaredField("createdAt");
+            createdAtField.setAccessible(true);
+            createdAtField.set(reservation, now);
+        });
+
+        Pageable pageable = PageRequest.of(0, 10);
+        Page<Reservation> page = new PageImpl<>(List.of(reservation), pageable, 1);
+
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.of(guide));
+        when(reservationRepository.findByGuide(guide, pageable)).thenReturn(page);
+
+        // When
+        Page<GuidePendingReservationResponseDTO> result = guideMeService.getAllReservations(loginMemberId, pageable);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(1, result.getTotalElements());
+        assertEquals(1, result.getContent().size());
+        GuidePendingReservationResponseDTO dto = result.getContent().get(0);
+        assertEquals(10L, dto.getReservationId());
+        assertEquals(Status.PENDING, dto.getStatus());
+        assertNotNull(dto.getMember());
+        assertEquals(member.getNickname(), dto.getMember().getNickname());
+
+        verify(guideRepository).findByMember_Id(loginMemberId);
+        verify(reservationRepository).findByGuide(guide, pageable);
+    }
+
+    @Test
+    @DisplayName("getAllReservations 실패 - 가이드 없음")
+    void getAllReservations_GuideNotFound() {
+        // Given
+        String loginMemberId = "missing";
+        Pageable pageable = PageRequest.of(0, 10);
+        when(guideRepository.findByMember_Id(loginMemberId)).thenReturn(Optional.empty());
+
+        // When & Then
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.getAllReservations(loginMemberId, pageable));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+
         verify(guideRepository).findByMember_Id(loginMemberId);
         verifyNoInteractions(reservationRepository);
     }

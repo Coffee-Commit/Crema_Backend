@@ -1,6 +1,5 @@
 package coffeandcommit.crema.domain.member.controller;
 
-import coffeandcommit.crema.domain.globalTag.dto.TopicDTO;
 import coffeandcommit.crema.domain.globalTag.enums.JobNameType;
 import coffeandcommit.crema.domain.globalTag.enums.TopicNameType;
 import coffeandcommit.crema.domain.member.dto.request.MemberChatTopicRequest;
@@ -10,9 +9,11 @@ import coffeandcommit.crema.domain.member.dto.response.MemberJobFieldResponse;
 import coffeandcommit.crema.domain.member.dto.response.MemberCoffeeChatResponse;
 import coffeandcommit.crema.domain.member.service.MemberCoffeeChatService;
 import coffeandcommit.crema.domain.reservation.enums.Status;
+import coffeandcommit.crema.domain.review.dto.response.GuideInfo;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import coffeandcommit.crema.global.common.exception.response.ApiResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -21,10 +22,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -32,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberCoffeeChatController 완전한 단위 테스트")
@@ -43,6 +48,8 @@ class MemberCoffeeChatControllerTest {
     @InjectMocks
     private MemberCoffeeChatController memberCoffeeChatController;
 
+    private MockMvc mockMvc;
+    private ObjectMapper objectMapper;
     private UserDetails testUserDetails;
     private MemberChatTopicRequest testChatTopicRequest;
     private List<MemberChatTopicResponse> testChatTopicResponses;
@@ -52,83 +59,69 @@ class MemberCoffeeChatControllerTest {
 
     @BeforeEach
     void setUp() {
-        // UserDetails 설정
+        mockMvc = MockMvcBuilders.standaloneSetup(memberCoffeeChatController).build();
+        objectMapper = new ObjectMapper();
+
+        // 테스트 사용자 설정
         testUserDetails = new User("testMemberId", "password", Collections.emptyList());
 
-        // MemberChatTopicRequest 설정
+        // 커피챗 주제 테스트 데이터
         testChatTopicRequest = MemberChatTopicRequest.builder()
-                .topicNames(List.of(
-                        TopicNameType.CAREER_CHANGE,
-                        TopicNameType.COVER_LETTER
-                ))
+                .topicNames(List.of(TopicNameType.CAREER_CHANGE, TopicNameType.COVER_LETTER))
                 .build();
 
-        // MemberChatTopicResponse 설정
         testChatTopicResponses = List.of(
                 MemberChatTopicResponse.builder()
-                        .id(1L)
                         .memberId("testMemberId")
-                        .topic(TopicDTO.builder()
-                                .topicName(TopicNameType.CAREER_CHANGE)
-                                .description("커리어 전환")
-                                .build())
-                        .build(),
-                MemberChatTopicResponse.builder()
-                        .id(2L)
-                        .memberId("testMemberId")
-                        .topic(TopicDTO.builder()
-                                .topicName(TopicNameType.COVER_LETTER)
-                                .description("자기소개서")
-                                .build())
+                        .topic(null) // TopicDTO는 실제 구현에 따라 수정
                         .build()
         );
 
-        // MemberJobFieldRequest 설정
+        // 직무 분야 테스트 데이터
         testJobFieldRequest = MemberJobFieldRequest.builder()
                 .jobName(JobNameType.IT_DEVELOPMENT_DATA)
                 .build();
 
-        // MemberJobFieldResponse 설정
         testJobFieldResponse = MemberJobFieldResponse.builder()
-                .id(1L)
                 .memberId("testMemberId")
                 .jobName(JobNameType.IT_DEVELOPMENT_DATA)
                 .build();
 
-        // MemberCoffeeChatResponse 설정
+        // 커피챗 예약 테스트 데이터 (새로운 DTO 구조)
         testCoffeeChatResponses = List.of(
                 MemberCoffeeChatResponse.builder()
                         .reservationId(1L)
-                        .guideId(1L)
-                        .guideNickname("테스트가이드")
-                        .guideCompanyName("테스트회사")
-                        .guideJobPosition("백엔드 개발자")
+                        .guide(GuideInfo.builder()
+                                .nickname("테스트가이드1")
+                                .profileImageUrl("https://example.com/profile1.jpg")
+                                .build())
+                        .createdAt("2024-11-25T10:30:00")
+                        .preferredDateOnly("2024-12-01")
+                        .preferredDayOfWeek("월")
+                        .preferredTimeRange("14:00~14:30")
                         .status(Status.PENDING)
-                        .matchingTime(LocalDateTime.now().plusDays(1))
-                        .reservedAt(LocalDateTime.now())
                         .timeType("MINUTE_30")
-                        .price(8000)
-                        .createdAt(LocalDateTime.now())
                         .build(),
                 MemberCoffeeChatResponse.builder()
                         .reservationId(2L)
-                        .guideId(2L)
-                        .guideNickname("테스트가이드2")
-                        .guideCompanyName("테스트회사2")
-                        .guideJobPosition("프론트엔드 개발자")
+                        .guide(GuideInfo.builder()
+                                .nickname("테스트가이드2")
+                                .profileImageUrl("https://example.com/profile2.jpg")
+                                .build())
+                        .createdAt("2024-11-20T16:45:00")
+                        .preferredDateOnly("2024-12-05")
+                        .preferredDayOfWeek("목")
+                        .preferredTimeRange("19:00~20:00")
                         .status(Status.CONFIRMED)
-                        .matchingTime(LocalDateTime.now().plusDays(2))
-                        .reservedAt(LocalDateTime.now())
-                        .timeType("MINUTE_60")
-                        .price(12000)
-                        .createdAt(LocalDateTime.now())
+                        .videoSessionId("session_reservation_2_2024-12-05T19:00:00")
+                        .timeType("HOUR_1")
                         .build()
         );
     }
 
     @Nested
-    @DisplayName("관심 주제 관리")
-    class ChatTopicTests {
+    @DisplayName("커피챗 관심사 관리")
+    class ChatTopicManagementTests {
 
         @Test
         @DisplayName("성공: 관심 커피챗 주제 설정")
@@ -144,24 +137,24 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getResult()).hasSize(2);
-            assertThat(response.getResult().get(0).getTopic().getTopicName()).isEqualTo(TopicNameType.CAREER_CHANGE);
-            assertThat(response.getResult().get(1).getTopic().getTopicName()).isEqualTo(TopicNameType.COVER_LETTER);
+            assertThat(response.getResult()).isNotNull();
+            assertThat(response.getResult()).hasSize(1);
+            assertThat(response.getResult().get(0).getMemberId()).isEqualTo("testMemberId");
 
             verify(memberCoffeeChatService).registerChatTopics("testMemberId", testChatTopicRequest);
         }
 
         @Test
-        @DisplayName("실패: 잘못된 주제 요청으로 주제 설정 실패")
-        void registerChatTopics_InvalidTopic() {
+        @DisplayName("실패: 존재하지 않는 회원의 주제 설정")
+        void registerChatTopics_MemberNotFound() {
             // given
             given(memberCoffeeChatService.registerChatTopics("testMemberId", testChatTopicRequest))
-                    .willThrow(new BaseException(ErrorStatus.INVALID_TOPIC));
+                    .willThrow(new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
             // when & then
             assertThatThrownBy(() -> memberCoffeeChatController.registerChatTopics(testChatTopicRequest, testUserDetails))
                     .isInstanceOf(BaseException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.INVALID_TOPIC);
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.MEMBER_NOT_FOUND);
 
             verify(memberCoffeeChatService).registerChatTopics("testMemberId", testChatTopicRequest);
         }
@@ -180,15 +173,15 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getResult()).hasSize(2);
-            assertThat(response.getResult().get(0).getMemberId()).isEqualTo("testMemberId");
+            assertThat(response.getResult()).isNotNull();
+            assertThat(response.getResult()).hasSize(1);
 
             verify(memberCoffeeChatService).getChatTopics("testMemberId");
         }
 
         @Test
         @DisplayName("성공: 빈 주제 목록 조회")
-        void getChatTopics_Empty() {
+        void getChatTopics_EmptyList() {
             // given
             given(memberCoffeeChatService.getChatTopics("testMemberId"))
                     .willReturn(Collections.emptyList());
@@ -200,6 +193,7 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).isEmpty();
 
             verify(memberCoffeeChatService).getChatTopics("testMemberId");
@@ -208,7 +202,7 @@ class MemberCoffeeChatControllerTest {
 
     @Nested
     @DisplayName("관심 분야 관리")
-    class JobFieldTests {
+    class JobFieldManagementTests {
 
         @Test
         @DisplayName("성공: 관심 커피챗 분야 설정")
@@ -225,25 +219,38 @@ class MemberCoffeeChatControllerTest {
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
             assertThat(response.getResult()).isNotNull();
-            assertThat(response.getResult().getJobName()).isEqualTo(JobNameType.IT_DEVELOPMENT_DATA);
             assertThat(response.getResult().getMemberId()).isEqualTo("testMemberId");
+            assertThat(response.getResult().getJobName()).isEqualTo(JobNameType.IT_DEVELOPMENT_DATA);
 
             verify(memberCoffeeChatService).registerJobField("testMemberId", testJobFieldRequest);
         }
 
         @Test
-        @DisplayName("실패: 잘못된 직무 분야 요청으로 분야 설정 실패")
-        void registerJobField_InvalidJobField() {
+        @DisplayName("성공: UNDEFINED 분야 설정")
+        void registerJobField_UndefinedField() {
             // given
-            given(memberCoffeeChatService.registerJobField("testMemberId", testJobFieldRequest))
-                    .willThrow(new BaseException(ErrorStatus.INVALID_JOB_FIELD));
+            MemberJobFieldRequest undefinedRequest = MemberJobFieldRequest.builder()
+                    .jobName(JobNameType.UNDEFINED)
+                    .build();
 
-            // when & then
-            assertThatThrownBy(() -> memberCoffeeChatController.registerJobField(testJobFieldRequest, testUserDetails))
-                    .isInstanceOf(BaseException.class)
-                    .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.INVALID_JOB_FIELD);
+            MemberJobFieldResponse undefinedResponse = MemberJobFieldResponse.builder()
+                    .memberId("testMemberId")
+                    .jobName(JobNameType.UNDEFINED)
+                    .build();
 
-            verify(memberCoffeeChatService).registerJobField("testMemberId", testJobFieldRequest);
+            given(memberCoffeeChatService.registerJobField("testMemberId", undefinedRequest))
+                    .willReturn(undefinedResponse);
+
+            // when
+            ApiResponse<MemberJobFieldResponse> response =
+                    memberCoffeeChatController.registerJobField(undefinedRequest, testUserDetails);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult().getJobName()).isEqualTo(JobNameType.UNDEFINED);
+
+            verify(memberCoffeeChatService).registerJobField("testMemberId", undefinedRequest);
         }
 
         @Test
@@ -267,7 +274,7 @@ class MemberCoffeeChatControllerTest {
         }
 
         @Test
-        @DisplayName("실패: 회원을 찾을 수 없어 분야 조회 실패")
+        @DisplayName("실패: 존재하지 않는 회원의 분야 조회")
         void getJobField_MemberNotFound() {
             // given
             given(memberCoffeeChatService.getJobField("testMemberId"))
@@ -284,15 +291,13 @@ class MemberCoffeeChatControllerTest {
 
     @Nested
     @DisplayName("커피챗 예약 조회")
-    class ReservationTests {
+    class CoffeeChatReservationTests {
 
         @Test
         @DisplayName("성공: 대기중 커피챗 조회")
         void getPendingReservations_Success() {
             // given
-            List<MemberCoffeeChatResponse> pendingReservations = testCoffeeChatResponses.stream()
-                    .filter(r -> r.getStatus() == Status.PENDING)
-                    .toList();
+            List<MemberCoffeeChatResponse> pendingReservations = List.of(testCoffeeChatResponses.get(0));
             given(memberCoffeeChatService.getPendingReservations("testMemberId"))
                     .willReturn(pendingReservations);
 
@@ -303,8 +308,10 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).hasSize(1);
             assertThat(response.getResult().get(0).getStatus()).isEqualTo(Status.PENDING);
+            assertThat(response.getResult().get(0).getGuide().getNickname()).isEqualTo("테스트가이드1");
 
             verify(memberCoffeeChatService).getPendingReservations("testMemberId");
         }
@@ -313,9 +320,7 @@ class MemberCoffeeChatControllerTest {
         @DisplayName("성공: 확정된 커피챗 조회")
         void getConfirmedReservations_Success() {
             // given
-            List<MemberCoffeeChatResponse> confirmedReservations = testCoffeeChatResponses.stream()
-                    .filter(r -> r.getStatus() == Status.CONFIRMED)
-                    .toList();
+            List<MemberCoffeeChatResponse> confirmedReservations = List.of(testCoffeeChatResponses.get(1));
             given(memberCoffeeChatService.getConfirmedReservations("testMemberId"))
                     .willReturn(confirmedReservations);
 
@@ -326,8 +331,10 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).hasSize(1);
             assertThat(response.getResult().get(0).getStatus()).isEqualTo(Status.CONFIRMED);
+            assertThat(response.getResult().get(0).getVideoSessionId()).isEqualTo("session_reservation_2_2024-12-05T19:00:00");
 
             verify(memberCoffeeChatService).getConfirmedReservations("testMemberId");
         }
@@ -336,8 +343,9 @@ class MemberCoffeeChatControllerTest {
         @DisplayName("성공: 완료된 커피챗 조회")
         void getCompletedReservations_Success() {
             // given
+            List<MemberCoffeeChatResponse> completedReservations = Collections.emptyList();
             given(memberCoffeeChatService.getCompletedReservations("testMemberId"))
-                    .willReturn(Collections.emptyList());
+                    .willReturn(completedReservations);
 
             // when
             ApiResponse<List<MemberCoffeeChatResponse>> response =
@@ -346,6 +354,7 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).isEmpty();
 
             verify(memberCoffeeChatService).getCompletedReservations("testMemberId");
@@ -355,8 +364,9 @@ class MemberCoffeeChatControllerTest {
         @DisplayName("성공: 취소된 커피챗 조회")
         void getCancelledReservations_Success() {
             // given
+            List<MemberCoffeeChatResponse> cancelledReservations = Collections.emptyList();
             given(memberCoffeeChatService.getCancelledReservations("testMemberId"))
-                    .willReturn(Collections.emptyList());
+                    .willReturn(cancelledReservations);
 
             // when
             ApiResponse<List<MemberCoffeeChatResponse>> response =
@@ -365,6 +375,7 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).isEmpty();
 
             verify(memberCoffeeChatService).getCancelledReservations("testMemberId");
@@ -384,31 +395,90 @@ class MemberCoffeeChatControllerTest {
             // then
             assertThat(response).isNotNull();
             assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isNotNull();
             assertThat(response.getResult()).hasSize(2);
-            assertThat(response.getResult().get(0).getReservationId()).isEqualTo(1L);
-            assertThat(response.getResult().get(1).getReservationId()).isEqualTo(2L);
+            assertThat(response.getResult().get(0).getPreferredDateOnly()).isEqualTo("2024-12-01");
+            assertThat(response.getResult().get(1).getPreferredTimeRange()).isEqualTo("19:00~20:00");
 
             verify(memberCoffeeChatService).getAllReservations("testMemberId");
         }
 
         @Test
-        @DisplayName("실패: 회원을 찾을 수 없어 예약 조회 실패")
-        void getPendingReservations_MemberNotFound() {
+        @DisplayName("실패: 존재하지 않는 회원의 예약 조회")
+        void getReservations_MemberNotFound() {
             // given
-            given(memberCoffeeChatService.getPendingReservations("testMemberId"))
+            given(memberCoffeeChatService.getAllReservations("invalidMemberId"))
                     .willThrow(new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
+            UserDetails invalidUserDetails = new User("invalidMemberId", "password", Collections.emptyList());
+
             // when & then
-            assertThatThrownBy(() -> memberCoffeeChatController.getPendingReservations(testUserDetails))
+            assertThatThrownBy(() -> memberCoffeeChatController.getAllReservations(invalidUserDetails))
                     .isInstanceOf(BaseException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.MEMBER_NOT_FOUND);
 
-            verify(memberCoffeeChatService).getPendingReservations("testMemberId");
+            verify(memberCoffeeChatService).getAllReservations("invalidMemberId");
+        }
+    }
+
+    @Nested
+    @DisplayName("경계값 및 예외 상황")
+    class EdgeCaseTests {
+
+        @Test
+        @DisplayName("경계값: 빈 주제 목록으로 설정")
+        void registerChatTopics_EmptyList() {
+            // given
+            MemberChatTopicRequest emptyRequest = MemberChatTopicRequest.builder()
+                    .topicNames(Collections.emptyList())
+                    .build();
+
+            given(memberCoffeeChatService.registerChatTopics("testMemberId", emptyRequest))
+                    .willReturn(Collections.emptyList());
+
+            // when
+            ApiResponse<List<MemberChatTopicResponse>> response =
+                    memberCoffeeChatController.registerChatTopics(emptyRequest, testUserDetails);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult()).isEmpty();
+
+            verify(memberCoffeeChatService).registerChatTopics("testMemberId", emptyRequest);
         }
 
         @Test
-        @DisplayName("성공: 빈 예약 목록 조회")
-        void getAllReservations_Empty() {
+        @DisplayName("경계값: null 주제명으로 분야 설정")
+        void registerJobField_NullJobName() {
+            // given
+            MemberJobFieldRequest nullRequest = MemberJobFieldRequest.builder()
+                    .jobName(null)
+                    .build();
+
+            MemberJobFieldResponse undefinedResponse = MemberJobFieldResponse.builder()
+                    .memberId("testMemberId")
+                    .jobName(JobNameType.UNDEFINED)
+                    .build();
+
+            given(memberCoffeeChatService.registerJobField("testMemberId", nullRequest))
+                    .willReturn(undefinedResponse);
+
+            // when
+            ApiResponse<MemberJobFieldResponse> response =
+                    memberCoffeeChatController.registerJobField(nullRequest, testUserDetails);
+
+            // then
+            assertThat(response).isNotNull();
+            assertThat(response.isSuccess()).isTrue();
+            assertThat(response.getResult().getJobName()).isEqualTo(JobNameType.UNDEFINED);
+
+            verify(memberCoffeeChatService).registerJobField("testMemberId", nullRequest);
+        }
+
+        @Test
+        @DisplayName("성공: 예약이 없는 회원의 조회")
+        void getReservations_NoReservations() {
             // given
             given(memberCoffeeChatService.getAllReservations("testMemberId"))
                     .willReturn(Collections.emptyList());

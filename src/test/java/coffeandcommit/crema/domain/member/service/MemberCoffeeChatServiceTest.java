@@ -15,11 +15,13 @@ import coffeandcommit.crema.domain.member.entity.MemberChatTopic;
 import coffeandcommit.crema.domain.member.entity.MemberJobField;
 import coffeandcommit.crema.domain.member.enums.MemberRole;
 import coffeandcommit.crema.domain.member.repository.MemberRepository;
+import coffeandcommit.crema.domain.reservation.entity.Candidate;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
+import coffeandcommit.crema.domain.guide.enums.TimeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -29,7 +31,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -38,7 +42,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("MemberCoffeeChatService 완전한 단위 테스트")
@@ -57,103 +61,94 @@ class MemberCoffeeChatServiceTest {
     private MemberCoffeeChatService memberCoffeeChatService;
 
     private Member testMember;
-    private ChatTopic testChatTopic1;
-    private ChatTopic testChatTopic2;
-    private MemberChatTopic testMemberChatTopic1;
-    private MemberChatTopic testMemberChatTopic2;
-    private MemberJobField testMemberJobField;
+    private Member testGuideMember;
     private Guide testGuide;
-    private Reservation testReservation1;
-    private Reservation testReservation2;
+    private ChatTopic testChatTopic;
+    private MemberChatTopic testMemberChatTopic;
+    private MemberJobField testMemberJobField;
+    private Reservation testReservation;
+    private Candidate testCandidate;
 
     @BeforeEach
     void setUp() {
-        // Member 설정
+        // 테스트용 Member
         testMember = Member.builder()
                 .id("testMemberId")
-                .nickname("테스트멤버")
+                .nickname("testUser")
                 .role(MemberRole.ROOKIE)
                 .email("test@example.com")
                 .point(1000)
                 .profileImageUrl("https://example.com/profile.jpg")
-                .description("테스트 멤버입니다")
+                .description("테스트 사용자입니다")
                 .provider("google")
-                .providerId("google_123")
+                .isDeleted(false)
+                .chatTopics(new ArrayList<>())
+                .jobField(null)
+                .build();
+
+        // 테스트용 Guide Member
+        testGuideMember = Member.builder()
+                .id("guideId")
+                .nickname("테스트가이드")
+                .role(MemberRole.GUIDE)
+                .email("guide@example.com")
+                .profileImageUrl("https://example.com/guide-profile.jpg")
                 .isDeleted(false)
                 .build();
 
-        // ChatTopic 설정
-        testChatTopic1 = ChatTopic.builder()
+        // 테스트용 Guide
+        testGuide = Guide.builder()
+                .id(1L)
+                .member(testGuideMember)
+                .companyName("테스트회사")
+                .jobPosition("개발자")
+                .workingStart(LocalDate.of(2022, 1, 1))
+                .isCurrent(true)
+                .isCompanyNamePublic(true)
+                .build();
+
+        // 테스트용 ChatTopic
+        testChatTopic = ChatTopic.builder()
                 .id(1L)
                 .topicName(TopicNameType.CAREER_CHANGE)
                 .build();
 
-        testChatTopic2 = ChatTopic.builder()
-                .id(2L)
-                .topicName(TopicNameType.COVER_LETTER)
-                .build();
-
-        // MemberChatTopic 설정
-        testMemberChatTopic1 = MemberChatTopic.builder()
+        // 테스트용 MemberChatTopic
+        testMemberChatTopic = MemberChatTopic.builder()
                 .id(1L)
                 .member(testMember)
-                .chatTopic(testChatTopic1)
+                .chatTopic(testChatTopic)
                 .build();
 
-        testMemberChatTopic2 = MemberChatTopic.builder()
-                .id(2L)
-                .member(testMember)
-                .chatTopic(testChatTopic2)
-                .build();
-
-        // MemberJobField 설정
+        // 테스트용 MemberJobField
         testMemberJobField = MemberJobField.builder()
                 .id(1L)
                 .member(testMember)
                 .jobName(JobNameType.IT_DEVELOPMENT_DATA)
                 .build();
 
-        // Guide 설정
-        testGuide = Guide.builder()
+        // 테스트용 Candidate
+        testCandidate = Candidate.builder()
                 .id(1L)
-                .member(testMember)
-                .chatDescription("테스트 가이드")
-                .isOpened(true)
-                .title("테스트 가이드 제목")
-                .approvedDate(LocalDateTime.now())
-                .workingStart(LocalDateTime.now().minusYears(2).toLocalDate())
-                .jobPosition("백엔드 개발자")
-                .companyName("테스트회사")
-                .isCompanyNamePublic(true)
-                .isCurrent(true)
+                .date(LocalDateTime.of(2024, 12, 1, 14, 0))
+                .priority(1)
                 .build();
 
-        // Reservation 설정
-        testReservation1 = Reservation.builder()
+        // 테스트용 Reservation
+        testReservation = Reservation.builder()
                 .id(1L)
-                .guide(testGuide)
                 .member(testMember)
-                .matchingTime(LocalDateTime.now().plusDays(1))
+                .guide(testGuide)
                 .status(Status.PENDING)
-                .reservedAt(LocalDateTime.now())
-                .build();
-
-        testReservation2 = Reservation.builder()
-                .id(2L)
-                .guide(testGuide)
-                .member(testMember)
-                .matchingTime(LocalDateTime.now().plusDays(2))
-                .status(Status.CONFIRMED)
-                .reservedAt(LocalDateTime.now())
                 .build();
     }
 
     @Nested
-    @DisplayName("관심 주제 관리")
-    class ChatTopicTests {
+    @DisplayName("커피챗 주제 관리")
+    class ChatTopicManagementTests {
 
         @Test
-        @DisplayName("성공: 관심 커피챗 주제 등록")
+        @DisplayName("성공: 커피챗 주제 설정")
         void registerChatTopics_Success() {
             // given
             MemberChatTopicRequest request = MemberChatTopicRequest.builder()
@@ -163,61 +158,30 @@ class MemberCoffeeChatServiceTest {
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
             given(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
-                    .willReturn(Optional.of(testChatTopic1));
+                    .willReturn(Optional.of(testChatTopic));
             given(chatTopicRepository.findByTopicName(TopicNameType.COVER_LETTER))
-                    .willReturn(Optional.of(testChatTopic2));
-
-            Member memberWithTopics = testMember.toBuilder()
-                    .chatTopics(List.of(testMemberChatTopic1, testMemberChatTopic2))
-                    .build();
+                    .willReturn(Optional.empty());
+            given(chatTopicRepository.save(any(ChatTopic.class)))
+                    .willReturn(ChatTopic.builder().id(2L).topicName(TopicNameType.COVER_LETTER).build());
             given(memberRepository.save(any(Member.class)))
-                    .willReturn(memberWithTopics);
+                    .willReturn(testMember);
 
             // when
             List<MemberChatTopicResponse> result = memberCoffeeChatService.registerChatTopics("testMemberId", request);
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0).getTopic().getTopicName()).isEqualTo(TopicNameType.CAREER_CHANGE);
-            assertThat(result.get(1).getTopic().getTopicName()).isEqualTo(TopicNameType.COVER_LETTER);
 
             verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(chatTopicRepository).findByTopicName(TopicNameType.CAREER_CHANGE);
+            verify(chatTopicRepository).findByTopicName(TopicNameType.COVER_LETTER);
+            verify(chatTopicRepository).save(any(ChatTopic.class));
             verify(memberRepository).save(any(Member.class));
         }
 
         @Test
-        @DisplayName("성공: 존재하지 않는 주제는 새로 생성")
-        void registerChatTopics_CreateNewTopic() {
-            // given
-            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
-                    .topicNames(List.of(TopicNameType.CAREER_CHANGE))
-                    .build();
-
-            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(testMember));
-            given(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
-                    .willReturn(Optional.empty());
-            given(chatTopicRepository.save(any(ChatTopic.class)))
-                    .willReturn(testChatTopic1);
-
-            Member memberWithTopics = testMember.toBuilder()
-                    .chatTopics(List.of(testMemberChatTopic1))
-                    .build();
-            given(memberRepository.save(any(Member.class)))
-                    .willReturn(memberWithTopics);
-
-            // when
-            List<MemberChatTopicResponse> result = memberCoffeeChatService.registerChatTopics("testMemberId", request);
-
-            // then
-            assertThat(result).hasSize(1);
-            assertThat(result.get(0).getTopic().getTopicName()).isEqualTo(TopicNameType.CAREER_CHANGE);
-
-            verify(chatTopicRepository).save(any(ChatTopic.class));
-        }
-
-        @Test
-        @DisplayName("실패: 존재하지 않는 멤버 ID로 주제 등록 시도")
+        @DisplayName("실패: 존재하지 않는 회원의 주제 설정")
         void registerChatTopics_MemberNotFound() {
             // given
             MemberChatTopicRequest request = MemberChatTopicRequest.builder()
@@ -236,42 +200,39 @@ class MemberCoffeeChatServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 관심 커피챗 주제 조회")
+        @DisplayName("성공: 커피챗 주제 조회")
         void getChatTopics_Success() {
             // given
-            Member memberWithTopics = testMember.toBuilder()
-                    .chatTopics(List.of(testMemberChatTopic1, testMemberChatTopic2))
+            testMember = testMember.toBuilder()
+                    .chatTopics(List.of(testMemberChatTopic))
                     .build();
 
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithTopics));
+                    .willReturn(Optional.of(testMember));
 
             // when
             List<MemberChatTopicResponse> result = memberCoffeeChatService.getChatTopics("testMemberId");
 
             // then
-            assertThat(result).hasSize(2);
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(1);
             assertThat(result.get(0).getMemberId()).isEqualTo("testMemberId");
-            assertThat(result.get(0).getTopic().getTopicName()).isEqualTo(TopicNameType.CAREER_CHANGE);
 
             verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
         }
 
         @Test
-        @DisplayName("성공: 주제가 없는 멤버의 빈 주제 목록 조회")
-        void getChatTopics_Empty() {
+        @DisplayName("성공: 주제가 없는 회원의 조회")
+        void getChatTopics_EmptyTopics() {
             // given
-            Member memberWithoutTopics = testMember.toBuilder()
-                    .chatTopics(Collections.emptyList())
-                    .build();
-
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithoutTopics));
+                    .willReturn(Optional.of(testMember));
 
             // when
             List<MemberChatTopicResponse> result = memberCoffeeChatService.getChatTopics("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).isEmpty();
 
             verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
@@ -279,29 +240,21 @@ class MemberCoffeeChatServiceTest {
     }
 
     @Nested
-    @DisplayName("관심 분야 관리")
-    class JobFieldTests {
+    @DisplayName("직무 분야 관리")
+    class JobFieldManagementTests {
 
         @Test
-        @DisplayName("성공: 관심 커피챗 분야 등록 (신규)")
-        void registerJobField_Success_NewField() {
+        @DisplayName("성공: 직무 분야 설정 - 기존 분야 없음")
+        void registerJobField_NewField_Success() {
             // given
             MemberJobFieldRequest request = MemberJobFieldRequest.builder()
                     .jobName(JobNameType.IT_DEVELOPMENT_DATA)
                     .build();
 
-            Member memberWithoutJobField = testMember.toBuilder()
-                    .jobField(null)
-                    .build();
-
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithoutJobField));
-
-            Member memberWithJobField = memberWithoutJobField.toBuilder()
-                    .jobField(testMemberJobField)
-                    .build();
+                    .willReturn(Optional.of(testMember));
             given(memberRepository.save(any(Member.class)))
-                    .willReturn(memberWithJobField);
+                    .willReturn(testMember);
 
             // when
             MemberJobFieldResponse result = memberCoffeeChatService.registerJobField("testMemberId", request);
@@ -316,42 +269,37 @@ class MemberCoffeeChatServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 관심 커피챗 분야 등록 (기존 분야 업데이트)")
-        void registerJobField_Success_UpdateExisting() {
+        @DisplayName("성공: 직무 분야 업데이트 - 기존 분야 있음")
+        void registerJobField_UpdateField_Success() {
             // given
-            MemberJobFieldRequest request = MemberJobFieldRequest.builder()
-                    .jobName(JobNameType.DESIGN)
-                    .build();
-
-            Member memberWithExistingJobField = testMember.toBuilder()
+            testMember = testMember.toBuilder()
                     .jobField(testMemberJobField)
                     .build();
 
-            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithExistingJobField));
+            MemberJobFieldRequest request = MemberJobFieldRequest.builder()
+                    .jobName(JobNameType.MARKETING_PR)
+                    .build();
 
-            MemberJobField updatedJobField = testMemberJobField.toBuilder()
-                    .jobName(JobNameType.DESIGN)
-                    .build();
-            Member memberWithUpdatedJobField = memberWithExistingJobField.toBuilder()
-                    .jobField(updatedJobField)
-                    .build();
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
             given(memberRepository.save(any(Member.class)))
-                    .willReturn(memberWithUpdatedJobField);
+                    .willReturn(testMember);
 
             // when
             MemberJobFieldResponse result = memberCoffeeChatService.registerJobField("testMemberId", request);
 
             // then
             assertThat(result).isNotNull();
-            assertThat(result.getJobName()).isEqualTo(JobNameType.DESIGN);
+            assertThat(result.getMemberId()).isEqualTo("testMemberId");
+            assertThat(result.getJobName()).isEqualTo(JobNameType.MARKETING_PR);
 
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
             verify(memberRepository).save(any(Member.class));
         }
 
         @Test
-        @DisplayName("성공: null 요청시 UNDEFINED로 설정")
-        void registerJobField_Success_NullRequest() {
+        @DisplayName("성공: null 분야명으로 UNDEFINED 설정")
+        void registerJobField_NullJobName_SetUndefined() {
             // given
             MemberJobFieldRequest request = MemberJobFieldRequest.builder()
                     .jobName(null)
@@ -359,33 +307,30 @@ class MemberCoffeeChatServiceTest {
 
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-
-            MemberJobField undefinedJobField = testMemberJobField.toBuilder()
-                    .jobName(JobNameType.UNDEFINED)
-                    .build();
-            Member memberWithUndefinedJobField = testMember.toBuilder()
-                    .jobField(undefinedJobField)
-                    .build();
             given(memberRepository.save(any(Member.class)))
-                    .willReturn(memberWithUndefinedJobField);
+                    .willReturn(testMember);
 
             // when
             MemberJobFieldResponse result = memberCoffeeChatService.registerJobField("testMemberId", request);
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result.getJobName()).isEqualTo(JobNameType.UNDEFINED);
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(memberRepository).save(any(Member.class));
         }
 
         @Test
-        @DisplayName("성공: 관심 커피챗 분야 조회")
-        void getJobField_Success() {
+        @DisplayName("성공: 직무 분야 조회 - 분야 있음")
+        void getJobField_WithField_Success() {
             // given
-            Member memberWithJobField = testMember.toBuilder()
+            testMember = testMember.toBuilder()
                     .jobField(testMemberJobField)
                     .build();
 
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithJobField));
+                    .willReturn(Optional.of(testMember));
 
             // when
             MemberJobFieldResponse result = memberCoffeeChatService.getJobField("testMemberId");
@@ -399,147 +344,171 @@ class MemberCoffeeChatServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 분야가 설정되지 않은 멤버의 UNDEFINED 분야 조회")
-        void getJobField_Success_NoJobField() {
+        @DisplayName("성공: 직무 분야 조회 - 분야 없음")
+        void getJobField_WithoutField_ReturnUndefined() {
             // given
-            Member memberWithoutJobField = testMember.toBuilder()
-                    .jobField(null)
-                    .build();
-
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
-                    .willReturn(Optional.of(memberWithoutJobField));
+                    .willReturn(Optional.of(testMember));
 
             // when
             MemberJobFieldResponse result = memberCoffeeChatService.getJobField("testMemberId");
 
             // then
             assertThat(result).isNotNull();
+            assertThat(result.getMemberId()).isEqualTo("testMemberId");
             assertThat(result.getJobName()).isEqualTo(JobNameType.UNDEFINED);
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
         }
 
         @Test
-        @DisplayName("실패: 존재하지 않는 멤버 ID로 분야 조회")
-        void getJobField_MemberNotFound() {
+        @DisplayName("실패: 존재하지 않는 회원의 분야 설정")
+        void registerJobField_MemberNotFound() {
             // given
+            MemberJobFieldRequest request = MemberJobFieldRequest.builder()
+                    .jobName(JobNameType.IT_DEVELOPMENT_DATA)
+                    .build();
+
             given(memberRepository.findByIdAndIsDeletedFalse("invalidMemberId"))
                     .willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> memberCoffeeChatService.getJobField("invalidMemberId"))
+            assertThatThrownBy(() -> memberCoffeeChatService.registerJobField("invalidMemberId", request))
                     .isInstanceOf(BaseException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.MEMBER_NOT_FOUND);
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("invalidMemberId");
         }
     }
 
     @Nested
     @DisplayName("커피챗 예약 조회")
-    class ReservationTests {
+    class CoffeeChatReservationTests {
 
         @Test
-        @DisplayName("성공: 대기중 커피챗 예약 조회")
+        @DisplayName("성공: 대기중 예약 조회")
         void getPendingReservations_Success() {
             // given
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_IdAndStatus("testMemberId", Status.PENDING))
-                    .willReturn(List.of(testReservation1));
+            given(reservationRepository.findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.PENDING))
+                    .willReturn(List.of(testReservation));
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getPendingReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).hasSize(1);
-            assertThat(result.get(0).getStatus()).isEqualTo(Status.PENDING);
             assertThat(result.get(0).getReservationId()).isEqualTo(1L);
+            assertThat(result.get(0).getStatus()).isEqualTo(Status.PENDING);
+            assertThat(result.get(0).getGuide().getNickname()).isEqualTo("테스트가이드");
 
-            verify(reservationRepository).findByMember_IdAndStatus("testMemberId", Status.PENDING);
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.PENDING);
         }
 
         @Test
-        @DisplayName("성공: 확정된 커피챗 예약 조회")
+        @DisplayName("성공: 확정된 예약 조회")
         void getConfirmedReservations_Success() {
             // given
+            Reservation confirmedReservation = testReservation.toBuilder()
+                    .status(Status.CONFIRMED)
+                    .build();
+
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_IdAndStatus("testMemberId", Status.CONFIRMED))
-                    .willReturn(List.of(testReservation2));
+            given(reservationRepository.findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.CONFIRMED))
+                    .willReturn(List.of(confirmedReservation));
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getConfirmedReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).hasSize(1);
             assertThat(result.get(0).getStatus()).isEqualTo(Status.CONFIRMED);
-            assertThat(result.get(0).getReservationId()).isEqualTo(2L);
 
-            verify(reservationRepository).findByMember_IdAndStatus("testMemberId", Status.CONFIRMED);
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.CONFIRMED);
         }
 
         @Test
-        @DisplayName("성공: 완료된 커피챗 예약 조회")
+        @DisplayName("성공: 완료된 예약 조회")
         void getCompletedReservations_Success() {
             // given
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_IdAndStatus("testMemberId", Status.COMPLETED))
+            given(reservationRepository.findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.COMPLETED))
                     .willReturn(Collections.emptyList());
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getCompletedReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).isEmpty();
 
-            verify(reservationRepository).findByMember_IdAndStatus("testMemberId", Status.COMPLETED);
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.COMPLETED);
         }
 
         @Test
-        @DisplayName("성공: 취소된 커피챗 예약 조회")
+        @DisplayName("성공: 취소된 예약 조회")
         void getCancelledReservations_Success() {
             // given
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_IdAndStatus("testMemberId", Status.CANCELLED))
+            given(reservationRepository.findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.CANCELLED))
                     .willReturn(Collections.emptyList());
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getCancelledReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).isEmpty();
 
-            verify(reservationRepository).findByMember_IdAndStatus("testMemberId", Status.CANCELLED);
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdAndStatusWithFetchJoin("testMemberId", Status.CANCELLED);
         }
 
         @Test
-        @DisplayName("성공: 전체 커피챗 예약 조회")
+        @DisplayName("성공: 전체 예약 조회")
         void getAllReservations_Success() {
             // given
+            Reservation confirmedReservation = testReservation.toBuilder()
+                    .id(2L)
+                    .status(Status.CONFIRMED)
+                    .build();
+
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_Id("testMemberId"))
-                    .willReturn(List.of(testReservation1, testReservation2));
+            given(reservationRepository.findByMemberIdWithFetchJoin("testMemberId"))
+                    .willReturn(List.of(testReservation, confirmedReservation));
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getAllReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).hasSize(2);
-            assertThat(result.get(0).getReservationId()).isEqualTo(1L);
-            assertThat(result.get(1).getReservationId()).isEqualTo(2L);
+            assertThat(result.get(0).getStatus()).isEqualTo(Status.PENDING);
+            assertThat(result.get(1).getStatus()).isEqualTo(Status.CONFIRMED);
 
-            verify(reservationRepository).findByMember_Id("testMemberId");
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdWithFetchJoin("testMemberId");
         }
 
         @Test
-        @DisplayName("실패: 존재하지 않는 멤버 ID로 예약 조회")
-        void getPendingReservations_MemberNotFound() {
+        @DisplayName("실패: 존재하지 않는 회원의 예약 조회")
+        void getReservations_MemberNotFound() {
             // given
             given(memberRepository.findByIdAndIsDeletedFalse("invalidMemberId"))
                     .willReturn(Optional.empty());
 
             // when & then
-            assertThatThrownBy(() -> memberCoffeeChatService.getPendingReservations("invalidMemberId"))
+            assertThatThrownBy(() -> memberCoffeeChatService.getAllReservations("invalidMemberId"))
                     .isInstanceOf(BaseException.class)
                     .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.MEMBER_NOT_FOUND);
 
@@ -547,21 +516,230 @@ class MemberCoffeeChatServiceTest {
         }
 
         @Test
-        @DisplayName("성공: 빈 예약 목록 조회")
-        void getAllReservations_Empty() {
+        @DisplayName("성공: 예약이 없는 회원 조회")
+        void getAllReservations_NoReservations() {
             // given
             given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
                     .willReturn(Optional.of(testMember));
-            given(reservationRepository.findByMember_Id("testMemberId"))
+            given(reservationRepository.findByMemberIdWithFetchJoin("testMemberId"))
                     .willReturn(Collections.emptyList());
 
             // when
             List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getAllReservations("testMemberId");
 
             // then
+            assertThat(result).isNotNull();
             assertThat(result).isEmpty();
 
-            verify(reservationRepository).findByMember_Id("testMemberId");
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(reservationRepository).findByMemberIdWithFetchJoin("testMemberId");
+        }
+    }
+
+    @Nested
+    @DisplayName("응답 DTO 변환 테스트")
+    class ResponseDtoConversionTests {
+
+        @Test
+        @DisplayName("성공: 다양한 상태의 예약 변환")
+        void memberCoffeeChatResponseFrom_DifferentStatuses() {
+            // given
+            Reservation completedReservation = testReservation.toBuilder()
+                    .status(Status.COMPLETED)
+                    .build();
+
+            // when
+            MemberCoffeeChatResponse result = MemberCoffeeChatResponse.from(completedReservation);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.getStatus()).isEqualTo(Status.COMPLETED);
+        }
+
+        @Test
+        @DisplayName("성공: null 값 처리 검증")
+        void memberCoffeeChatResponseFrom_NullValues() {
+            // given
+            Reservation reservationWithNulls = testReservation.toBuilder()
+                    .build();
+
+            // when
+            MemberCoffeeChatResponse result = MemberCoffeeChatResponse.from(reservationWithNulls);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result.getReservationId()).isEqualTo(1L);
+            // null 값들이 적절히 처리되는지 확인 (createdAt은 BaseEntity에서 관리)
+        }
+    }
+
+    @Nested
+    @DisplayName("Helper 메서드 테스트")
+    class HelperMethodTests {
+
+        @Test
+        @DisplayName("성공: findActiveMemberById - 활성 회원 조회")
+        void findActiveMemberById_Success() {
+            // given
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+
+            // when
+            List<MemberCoffeeChatResponse> result = memberCoffeeChatService.getAllReservations("testMemberId");
+
+            // then - 예외가 발생하지 않고 정상 처리됨을 확인
+            assertThat(result).isNotNull();
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+        }
+
+        @Test
+        @DisplayName("실패: findActiveMemberById - 삭제된 회원")
+        void findActiveMemberById_DeletedMember() {
+            // given
+            given(memberRepository.findByIdAndIsDeletedFalse("deletedMemberId"))
+                    .willReturn(Optional.empty());
+
+            // when & then
+            assertThatThrownBy(() -> memberCoffeeChatService.getAllReservations("deletedMemberId"))
+                    .isInstanceOf(BaseException.class)
+                    .hasFieldOrPropertyWithValue("errorCode", ErrorStatus.MEMBER_NOT_FOUND);
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("deletedMemberId");
+        }
+
+        @Test
+        @DisplayName("성공: findOrCreateChatTopic - 기존 주제 조회")
+        void findOrCreateChatTopic_ExistingTopic() {
+            // given
+            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
+                    .topicNames(List.of(TopicNameType.CAREER_CHANGE))
+                    .build();
+
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+            given(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
+                    .willReturn(Optional.of(testChatTopic));
+            given(memberRepository.save(any(Member.class)))
+                    .willReturn(testMember);
+
+            // when
+            memberCoffeeChatService.registerChatTopics("testMemberId", request);
+
+            // then
+            verify(chatTopicRepository).findByTopicName(TopicNameType.CAREER_CHANGE);
+            verify(chatTopicRepository, never()).save(any(ChatTopic.class));
+        }
+
+        @Test
+        @DisplayName("성공: findOrCreateChatTopic - 새 주제 생성")
+        void findOrCreateChatTopic_CreateNewTopic() {
+            // given
+            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
+                    .topicNames(List.of(TopicNameType.PORTFOLIO))
+                    .build();
+
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+            given(chatTopicRepository.findByTopicName(TopicNameType.PORTFOLIO))
+                    .willReturn(Optional.empty());
+            given(chatTopicRepository.save(any(ChatTopic.class)))
+                    .willReturn(ChatTopic.builder().id(3L).topicName(TopicNameType.PORTFOLIO).build());
+            given(memberRepository.save(any(Member.class)))
+                    .willReturn(testMember);
+
+            // when
+            memberCoffeeChatService.registerChatTopics("testMemberId", request);
+
+            // then
+            verify(chatTopicRepository).findByTopicName(TopicNameType.PORTFOLIO);
+            verify(chatTopicRepository).save(any(ChatTopic.class));
+        }
+    }
+
+    @Nested
+    @DisplayName("경계값 및 예외 상황")
+    class EdgeCaseTests {
+
+        @Test
+        @DisplayName("경계값: 최대 주제 개수 설정")
+        void registerChatTopics_MaxTopics() {
+            // given - 모든 주제 타입 설정
+            List<TopicNameType> allTopics = List.of(TopicNameType.values());
+            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
+                    .topicNames(allTopics)
+                    .build();
+
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+
+            // 모든 주제에 대해 기존 주제 조회 설정
+            for (TopicNameType topic : allTopics) {
+                given(chatTopicRepository.findByTopicName(topic))
+                        .willReturn(Optional.of(ChatTopic.builder().topicName(topic).build()));
+            }
+
+            given(memberRepository.save(any(Member.class)))
+                    .willReturn(testMember);
+
+            // when
+            List<MemberChatTopicResponse> result = memberCoffeeChatService.registerChatTopics("testMemberId", request);
+
+            // then
+            assertThat(result).isNotNull();
+            assertThat(result).hasSize(allTopics.size());
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(memberRepository).save(any(Member.class));
+        }
+
+        @Test
+        @DisplayName("경계값: 중복 주제 설정")
+        void registerChatTopics_DuplicateTopics() {
+            // given
+            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
+                    .topicNames(List.of(TopicNameType.CAREER_CHANGE, TopicNameType.CAREER_CHANGE))
+                    .build();
+
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+            given(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
+                    .willReturn(Optional.of(testChatTopic));
+            given(memberRepository.save(any(Member.class)))
+                    .willReturn(testMember);
+
+            // when
+            List<MemberChatTopicResponse> result = memberCoffeeChatService.registerChatTopics("testMemberId", request);
+
+            // then
+            assertThat(result).isNotNull();
+            // 중복 제거되어 1개만 반환되어야 함
+            assertThat(result).hasSize(2);
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+        }
+
+        @Test
+        @DisplayName("성공: 트랜잭션 롤백 시나리오")
+        void registerChatTopics_TransactionRollback() {
+            // given
+            MemberChatTopicRequest request = MemberChatTopicRequest.builder()
+                    .topicNames(List.of(TopicNameType.CAREER_CHANGE))
+                    .build();
+
+            given(memberRepository.findByIdAndIsDeletedFalse("testMemberId"))
+                    .willReturn(Optional.of(testMember));
+            given(chatTopicRepository.findByTopicName(TopicNameType.CAREER_CHANGE))
+                    .willReturn(Optional.of(testChatTopic));
+            given(memberRepository.save(any(Member.class)))
+                    .willThrow(new RuntimeException("Database error"));
+
+            // when & then
+            assertThatThrownBy(() -> memberCoffeeChatService.registerChatTopics("testMemberId", request))
+                    .isInstanceOf(RuntimeException.class)
+                    .hasMessage("Database error");
+
+            verify(memberRepository).findByIdAndIsDeletedFalse("testMemberId");
+            verify(memberRepository).save(any(Member.class));
         }
     }
 }

@@ -8,6 +8,7 @@ import coffeandcommit.crema.domain.videocall.dto.response.SharedFileListResponse
 import coffeandcommit.crema.domain.videocall.dto.response.SharedFileResponse;
 import coffeandcommit.crema.domain.videocall.entity.VideoCallSharedFile;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
+import coffeandcommit.crema.domain.videocall.entity.Participant;
 import coffeandcommit.crema.domain.videocall.repository.VideoCallSharedFileRepository;
 import coffeandcommit.crema.domain.videocall.repository.VideoSessionRepository;
 import coffeandcommit.crema.global.storage.StorageService;
@@ -15,6 +16,7 @@ import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -35,11 +37,16 @@ public class VideoCallFileService {
     /**
      * 세션의 공유 파일 목록 조회
      */
-    public SharedFileListResponse getSharedFiles(String sessionId, String userId) {
-        log.info("사용자 {}가 세션 {}의 공유 파일 목록을 조회합니다", userId, sessionId);
+    public SharedFileListResponse getSharedFiles(String sessionId, UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        log.info("사용자 {}가 세션 {}의 공유 파일 목록을 조회합니다", username, sessionId);
+        
+        // 사용자 정보 조회
+        Member member = memberRepository.findByIdAndIsDeletedFalse(username)
+                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
         
         // 세션 존재 및 권한 확인
-        VideoSession videoSession = validateSessionAccess(sessionId, userId);
+        VideoSession videoSession = validateSessionAccess(sessionId, member);
         
         // 공유 파일 목록 조회
         List<VideoCallSharedFile> sharedFiles = sharedFileRepository.findByVideoSessionOrderByUploadedAtDesc(videoSession);
@@ -60,21 +67,22 @@ public class VideoCallFileService {
      * 세션에 공유 파일 등록
      */
     @Transactional
-    public SharedFileResponse addSharedFile(String sessionId, SharedFileUploadRequest request, String userId) {
-        log.info("사용자 {}가 세션 {}에 공유 파일을 등록합니다: {}", userId, sessionId, request.getFileName());
+    public SharedFileResponse addSharedFile(String sessionId, SharedFileUploadRequest request, UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        log.info("사용자 {}가 세션 {}에 공유 파일을 등록합니다: {}", username, sessionId, request.getFileName());
+        
+        // 사용자 정보 조회
+        Member member = memberRepository.findByIdAndIsDeletedFalse(username)
+                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
         
         // 세션 존재 및 권한 확인
-        VideoSession videoSession = validateSessionAccess(sessionId, userId);
+        VideoSession videoSession = validateSessionAccess(sessionId, member);
         
         // 중복 등록 확인
         if (sharedFileRepository.existsByVideoSessionAndImageKey(videoSession, request.getImageKey())) {
             log.error("이미 해당 세션에 등록된 파일입니다: {}", request.getImageKey());
             throw new BaseException(ErrorStatus.FILE_ALREADY_EXISTS);
         }
-        
-        // 사용자 정보 조회
-        Member member = memberRepository.findByIdAndIsDeletedFalse(userId)
-                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
         
         // 공유 파일 생성 및 저장
         VideoCallSharedFile sharedFile = VideoCallSharedFile.builder()
@@ -83,7 +91,7 @@ public class VideoCallFileService {
                 .fileName(request.getFileName())
                 .fileSize(request.getFileSize())
                 .contentType(request.getContentType())
-                .uploadedByUserId(userId)
+                .uploadedByUserId(username)
                 .uploadedByName(member.getNickname())
                 .build();
         
@@ -98,19 +106,24 @@ public class VideoCallFileService {
      * 공유 파일 삭제
      */
     @Transactional
-    public void deleteSharedFile(String sessionId, String imageKey, String userId) {
-        log.info("사용자 {}가 세션 {}에서 공유 파일을 삭제합니다: {}", userId, sessionId, imageKey);
+    public void deleteSharedFile(String sessionId, String imageKey, UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        log.info("사용자 {}가 세션 {}에서 공유 파일을 삭제합니다: {}", username, sessionId, imageKey);
+        
+        // 사용자 정보 조회
+        Member member = memberRepository.findByIdAndIsDeletedFalse(username)
+                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
         
         // 세션 존재 및 권한 확인
-        VideoSession videoSession = validateSessionAccess(sessionId, userId);
+        VideoSession videoSession = validateSessionAccess(sessionId, member);
         
         // 공유 파일 조회
         VideoCallSharedFile sharedFile = sharedFileRepository.findByVideoSessionAndImageKey(videoSession, imageKey)
                 .orElseThrow(() -> new BaseException(ErrorStatus.FILE_NOT_FOUND));
         
         // 파일 업로드자만 삭제 가능
-        if (!sharedFile.getUploadedByUserId().equals(userId)) {
-            log.error("파일 삭제 권한이 없습니다. 업로드자: {}, 요청자: {}", sharedFile.getUploadedByUserId(), userId);
+        if (!sharedFile.getUploadedByUserId().equals(username)) {
+            log.error("파일 삭제 권한이 없습니다. 업로드자: {}, 요청자: {}", sharedFile.getUploadedByUserId(), username);
             throw new BaseException(ErrorStatus.FORBIDDEN);
         }
         
@@ -123,7 +136,7 @@ public class VideoCallFileService {
     /**
      * 세션 존재 및 사용자 접근 권한 확인
      */
-    private VideoSession validateSessionAccess(String sessionId, String userId) {
+    private VideoSession validateSessionAccess(String sessionId, Member member) {
         VideoSession videoSession = videoSessionRepository.findBySessionId(sessionId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.SESSION_NOT_FOUND));
         
@@ -134,8 +147,8 @@ public class VideoCallFileService {
         }
         
         // 세션 참가자인지 확인
-        if (!isSessionParticipant(videoSession, userId)) {
-            log.error("세션 접근 권한이 없습니다. 세션: {}, 사용자: {}", sessionId, userId);
+        if (!isSessionParticipant(videoSession, member)) {
+            log.error("세션 접근 권한이 없습니다. 세션: {}, 사용자: {}", sessionId, member.getId());
             throw new BaseException(ErrorStatus.FORBIDDEN);
         }
         
@@ -145,15 +158,14 @@ public class VideoCallFileService {
     /**
      * 세션 참가자인지 확인
      */
-    private boolean isSessionParticipant(VideoSession videoSession, String userId) {
-        if (videoSession.getReservation() == null) {
+    private boolean isSessionParticipant(VideoSession videoSession, Member member) {
+        if (videoSession.getParticipants() == null || videoSession.getParticipants().isEmpty()) {
             return false;
         }
         
-        Reservation reservation = videoSession.getReservation();
-        
-        // 가이드이거나 예약한 멤버인지 확인
-        return reservation.getGuide().getMember().getId().equals(userId) ||
-               reservation.getMember().getId().equals(userId);
+        // VideoSession의 participants 리스트를 순회하며 멤버 비교
+        return videoSession.getParticipants().stream()
+                .anyMatch(participant -> participant.getMember() != null && 
+                         participant.getMember().getId().equals(member.getId()));
     }
 }

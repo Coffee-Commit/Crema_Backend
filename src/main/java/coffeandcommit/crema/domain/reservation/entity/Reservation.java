@@ -4,7 +4,6 @@ import coffeandcommit.crema.domain.guide.entity.Guide;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.enums.Status;
-import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.global.common.entity.BaseEntity;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -35,7 +34,7 @@ public class Reservation extends BaseEntity{
     @JoinColumn(name = "member_id", nullable = false)
     private Member member; // FK, 멤버 ID는 String (UUID)
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OneToOne(fetch = FetchType.LAZY, optional = false, cascade = CascadeType.ALL)
     @JoinColumn(name = "survey_id", nullable = false, unique = true)
     private Survey survey; // FK, 설문 ID
 
