@@ -68,7 +68,7 @@ public class VideoCallService {
                     throw new SessionNotFoundException("예약 ID " + reservation.getId() + "에 연결된 VideoSession이 없습니다");
 
                 session = videoSessionRepository
-                        .findBySessionNameAndIsActiveTrue(reservation.getVideoSession().getSessionName())
+                        .findBySessionName(reservation.getVideoSession().getSessionName())
                         .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + reservation.getVideoSession().getSessionName() + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
                 String sessionName = "reservation_" + reservation.getId() + "_" + reservation.getReservedAt();
@@ -101,7 +101,7 @@ public class VideoCallService {
             VideoSession session;
             try {   //세션이 없으면 새로 만듦
                 session = videoSessionRepository
-                        .findBySessionNameAndIsActiveTrue(inputSessionName)
+                        .findBySessionName(inputSessionName)
                         .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + inputSessionName + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
                 String sessionName = inputSessionName;
