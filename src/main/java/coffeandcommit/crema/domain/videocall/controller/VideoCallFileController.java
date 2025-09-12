@@ -41,10 +41,9 @@ public class VideoCallFileController {
             @PathVariable String sessionId,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails.getUsername();
-        log.info("공유 자료 목록 조회 요청 - 세션: {}, 사용자: {}", sessionId, userId);
+        log.info("공유 자료 목록 조회 요청 - 세션: {}, 사용자: {}", sessionId, userDetails.getUsername());
 
-        SharedFileListResponse response = videoCallFileService.getSharedFiles(sessionId, userId);
+        SharedFileListResponse response = videoCallFileService.getSharedFiles(sessionId, userDetails);
 
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
@@ -69,10 +68,9 @@ public class VideoCallFileController {
             @Valid @RequestBody SharedFileUploadRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails.getUsername();
-        log.info("공유 자료 등록 요청 - 세션: {}, 파일: {}, 사용자: {}", sessionId, request.getFileName(), userId);
+        log.info("공유 자료 등록 요청 - 세션: {}, 파일: {}, 사용자: {}", sessionId, request.getFileName(), userDetails.getUsername());
 
-        SharedFileResponse response = videoCallFileService.addSharedFile(sessionId, request, userId);
+        SharedFileResponse response = videoCallFileService.addSharedFile(sessionId, request, userDetails);
 
         return ApiResponse.onSuccess(SuccessStatus.CREATED, response);
     }
@@ -94,10 +92,9 @@ public class VideoCallFileController {
             @RequestParam("imageKey") String imageKey,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        String userId = userDetails.getUsername();
-        log.info("공유 자료 삭제 요청 - 세션: {}, 이미지키: {}, 사용자: {}", sessionId, imageKey, userId);
+        log.info("공유 자료 삭제 요청 - 세션: {}, 이미지키: {}, 사용자: {}", sessionId, imageKey, userDetails.getUsername());
 
-        videoCallFileService.deleteSharedFile(sessionId, imageKey, userId);
+        videoCallFileService.deleteSharedFile(sessionId, imageKey, userDetails);
 
         return ApiResponse.onSuccess(SuccessStatus.OK, null);
     }
