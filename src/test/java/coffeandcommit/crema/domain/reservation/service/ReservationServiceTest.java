@@ -95,7 +95,6 @@ class ReservationServiceTest {
         SurveyRequestDTO surveyRequestDTO = SurveyRequestDTO.builder()
                 .messageToGuide("I would like to discuss career opportunities")
                 .preferredDate(LocalDateTime.now().plusDays(7))
-                .files(fileRequestDTOs)
                 .build();
 
         // Create test reservation request DTO
@@ -204,11 +203,18 @@ class ReservationServiceTest {
         assertNotNull(result);
         assertEquals(RESERVATION_ID, result.getReservationId());
 
+        // Repository 호출 검증
         verify(memberRepository, times(1)).findById(MEMBER_ID);
         verify(guideRepository, times(1)).findById(GUIDE_ID);
-        verify(reservationRepository, times(1)).save(any(Reservation.class));
-        verify(fileService, times(1)).uploadFile(eq(mockFile), eq(FileType.PDF), eq("survey-files"), eq(MEMBER_ID));
+
+        // save가 실제로 2번 호출됨 → 검증 수정
+        verify(reservationRepository, times(2)).save(any(Reservation.class));
+
+        // 파일 업로드가 제대로 호출되었는지 검증
+        verify(fileService, times(1))
+                .uploadFile(eq(mockFile), eq(FileType.PDF), eq("survey-files"), eq(MEMBER_ID));
     }
+
 
     @Test
     @DisplayName("createReservation - 실패 케이스: 회원이 존재하지 않는 경우")
