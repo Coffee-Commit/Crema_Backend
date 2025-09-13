@@ -11,7 +11,9 @@ import coffeandcommit.crema.domain.videocall.entity.VideoSession;
 import coffeandcommit.crema.domain.videocall.entity.Participant;
 import coffeandcommit.crema.domain.videocall.repository.VideoCallSharedFileRepository;
 import coffeandcommit.crema.domain.videocall.repository.VideoSessionRepository;
-import coffeandcommit.crema.global.storage.StorageService;
+import coffeandcommit.crema.global.file.FileService;
+import coffeandcommit.crema.global.validation.FileType;
+import coffeandcommit.crema.global.storage.dto.FileUploadResponse;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -32,7 +35,7 @@ public class VideoCallFileService {
     private final VideoCallSharedFileRepository sharedFileRepository;
     private final VideoSessionRepository videoSessionRepository;
     private final MemberRepository memberRepository;
-    private final StorageService storageService;
+    private final FileService fileService;
     
     /**
      * 세션의 공유 파일 목록 조회
@@ -132,7 +135,98 @@ public class VideoCallFileService {
         
         log.info("공유 파일이 성공적으로 삭제되었습니다: {}", imageKey);
     }
-    
+
+    /**
+     * 파일 업로드 및 세션에 공유 파일 등록
+     */
+    @Transactional
+    public SharedFileResponse uploadAndAddSharedFile(String sessionId, MultipartFile file, UserDetails userDetails) {
+        String username = userDetails.getUsername();
+        String originalFilename = file.getOriginalFilename();
+        log.info("사용자 {}가 세션 {}에 파일을 업로드하고 공유 파일로 등록합니다: {}", username, sessionId, originalFilename);
+
+        // 파일이 비어있는지 확인
+        if (file.isEmpty()) {
+            log.error("업로드된 파일이 비어있습니다");
+            throw new BaseException(ErrorStatus.FILE_REQUIRED);
+        }
+
+        // 사용자 정보 조회
+        Member member = memberRepository.findByIdAndIsDeletedFalse(username)
+                .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
+
+        // 세션 존재 및 권한 확인
+        VideoSession videoSession = validateSessionAccess(sessionId, member);
+
+        try {
+            // 파일 타입 결정
+            FileType fileType = determineFileType(file);
+
+            // 파일 업로드
+            FileUploadResponse uploadResponse = fileService.uploadFile(file, fileType, "shared-materials", username);
+
+            // 중복 등록 확인
+            String imageKey = uploadResponse.getFileKey();
+            if (sharedFileRepository.existsByVideoSessionAndImageKey(videoSession, imageKey)) {
+                log.error("이미 해당 세션에 등록된 파일입니다: {}", imageKey);
+                throw new BaseException(ErrorStatus.FILE_ALREADY_EXISTS);
+            }
+
+            // 공유 파일 생성 및 저장
+            VideoCallSharedFile sharedFile = VideoCallSharedFile.builder()
+                    .videoSession(videoSession)
+                    .imageKey(imageKey)
+                    .fileName(originalFilename != null ? originalFilename : "unknown")
+                    .fileSize(file.getSize())
+                    .contentType(file.getContentType())
+                    .uploadedByUserId(username)
+                    .uploadedByName(member.getNickname())
+                    .build();
+
+            VideoCallSharedFile savedFile = sharedFileRepository.save(sharedFile);
+
+            log.info("파일 업로드 및 공유 파일 등록이 성공했습니다: {} (ID: {}, imageKey: {})",
+                    originalFilename, savedFile.getId(), imageKey);
+
+            return SharedFileResponse.from(savedFile);
+
+        } catch (Exception e) {
+            log.error("파일 업로드 중 오류 발생: {}", e.getMessage(), e);
+            throw new BaseException(ErrorStatus.FILE_UPLOAD_FAILED);
+        }
+    }
+
+    /**
+     * 파일 타입 결정
+     */
+    private FileType determineFileType(MultipartFile file) {
+        String contentType = file.getContentType();
+        String fileName = file.getOriginalFilename();
+
+        if (contentType != null) {
+            if (contentType.startsWith("image/")) {
+                return FileType.IMAGE;
+            } else if (contentType.equals("application/pdf")) {
+                return FileType.PDF;
+            }
+        }
+
+        // Content-Type으로 판단되지 않으면 파일 확장자로 판단
+        if (fileName != null) {
+            String lowerFileName = fileName.toLowerCase();
+            if (lowerFileName.endsWith(".pdf")) {
+                return FileType.PDF;
+            } else if (lowerFileName.endsWith(".jpg") || lowerFileName.endsWith(".jpeg") ||
+                      lowerFileName.endsWith(".png") || lowerFileName.endsWith(".gif") ||
+                      lowerFileName.endsWith(".webp")) {
+                return FileType.IMAGE;
+            }
+        }
+
+        // 기본값은 IMAGE로 설정 (가장 관대한 검증)
+        return FileType.IMAGE;
+    }
+
     /**
      * 세션 존재 및 사용자 접근 권한 확인
      */
