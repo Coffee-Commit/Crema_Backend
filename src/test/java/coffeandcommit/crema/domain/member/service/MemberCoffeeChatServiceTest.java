@@ -21,7 +21,6 @@ import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
-import coffeandcommit.crema.domain.guide.enums.TimeType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;

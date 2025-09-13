@@ -230,35 +230,34 @@ public class MemberService {
         // 유효성 검사
         validateWorkingPeriod(request);
 
-        String certificationPdfUrl = guide.getCertificationImageUrl(); // 기존 URL 유지
+        String certificationPdfFileKey = guide.getCertificationImageUrl(); // 기존 fileKey 유지
 
         // 새로운 PDF가 제공된 경우 업로드
         if (certificationPdf != null && !certificationPdf.isEmpty()) {
             validateCertificationPdf(certificationPdf, false); // 선택사항
 
-            // 기존 파일 삭제
-            if (certificationPdfUrl != null) {
+            // 기존 파일 삭제 (fileKey 기반)
+            if (certificationPdfFileKey != null) {
                 try {
-                    storageService.deleteFile(certificationPdfUrl);
+                    storageService.deleteFile(certificationPdfFileKey);
                 } catch (Exception e) {
-                    log.warn("Failed to delete existing certification PDF for member: {} - Error: {}",
-                            memberId, e.getMessage());
+                    log.warn("Failed to delete existing certification PDF for member: {} - Error: {}", memberId, e.getMessage());
                 }
             }
 
-            // 새 파일 업로드
-            certificationPdfUrl = uploadCertificationPdf(memberId, certificationPdf);
+            // 새 파일 업로드 (fileKey 반환)
+            certificationPdfFileKey = uploadCertificationPdf(memberId, certificationPdf);
         }
 
-        // Guide 정보 업데이트
+        // Guide 엔티티 업데이트
         guide = guide.toBuilder()
                 .companyName(request.getCompanyName())
+                .isCompanyNamePublic(request.getIsCompanyNamePublic())
                 .jobPosition(request.getJobPosition())
+                .isCurrent(request.getIsCurrent())
                 .workingStart(request.getWorkingStart())
                 .workingEnd(request.getWorkingEnd())
-                .isCurrent(request.getIsCurrent())
-                .isCompanyNamePublic(request.getIsCompanyNamePublic())
-                .certificationImageUrl(certificationPdfUrl)
+                .certificationImageUrl(certificationPdfFileKey) // fileKey 저장
                 .build();
 
         guide = guideRepository.save(guide);
@@ -377,7 +376,7 @@ public class MemberService {
     /**
      * Guide 엔티티 생성
      */
-    private Guide createGuideEntity(Member member, MemberUpgradeRequest request, String certificationPdfUrl) {
+    private Guide createGuideEntity(Member member, MemberUpgradeRequest request, String certificationPdfFileKey) {
         // 근무 기간 계산
         String workingPeriod = calculateWorkingPeriodDisplay(
                 request.getWorkingStart(),
@@ -398,7 +397,7 @@ public class MemberService {
                 .workingPeriod(workingPeriod)
                 .isCurrent(request.getIsCurrent())
                 .isCompanyNamePublic(request.getIsCompanyNamePublic())
-                .certificationImageUrl(certificationPdfUrl) // PDF URL 설정
+                .certificationImageUrl(certificationPdfFileKey)
                 .build();
     }
 
@@ -406,7 +405,12 @@ public class MemberService {
      * MemberUpgradeResponse 생성
      */
     private MemberUpgradeResponse createUpgradeResponse(Guide guide) {
-        String workingPeriod = calculateWorkingPeriodDisplay(guide.getWorkingStart(), guide.getWorkingEnd(), guide.isCurrent());
+        String certificationPdfUrl = null;
+
+        // fileKey가 있으면 presigned URL 생성
+        if (guide.getCertificationImageUrl() != null) {
+            certificationPdfUrl = storageService.generateViewUrl(guide.getCertificationImageUrl());
+        }
 
         return MemberUpgradeResponse.builder()
                 .companyName(guide.getCompanyName())
@@ -415,8 +419,7 @@ public class MemberService {
                 .isCurrent(guide.isCurrent())
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
-                .workingPeriod(workingPeriod)
-                .certificationPdfUrl(guide.getCertificationImageUrl())
+                .certificationPdfUrl(certificationPdfUrl) // presigned URL 반환
                 .build();
     }
 
@@ -523,23 +526,19 @@ public class MemberService {
     }
 
     /**
-     * 재직증명서 PDF 업로드
+     * 재직 증명서 PDF 업로드
      */
-    private String uploadCertificationPdf(String memberId, MultipartFile pdfFile) {
-        try {
-            // FileService를 사용해서 PDF 업로드 (내부적으로 ValidatedFile로 변환됨)
-            FileUploadResponse uploadResponse = fileService.uploadFile(
-                    pdfFile,
-                    FileType.PDF,
-                    "certifications",
-                    memberId
-            );
-            return uploadResponse.getFileUrl();
+    private String uploadCertificationPdf(String memberId, MultipartFile certificationPdf) {
+        validateCertificationPdf(certificationPdf, true);
 
-        } catch (Exception e) {
-            log.error("Failed to upload certification PDF for member: {} - Error: {}",
-                    memberId, e.getMessage(), e);
-            throw new BaseException(ErrorStatus.FILE_UPLOAD_FAILED);
-        }
+        FileUploadResponse uploadResponse = fileService.uploadFile(
+                certificationPdf,
+                FileType.PDF,
+                "certification-pdfs",
+                memberId
+        );
+
+        // fileUrl이 아닌 fileKey를 반환 (DB에 fileKey 저장)
+        return uploadResponse.getFileKey();
     }
 }
