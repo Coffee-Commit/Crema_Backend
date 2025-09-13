@@ -111,10 +111,11 @@ public class ReviewService {
     /* 내 리뷰 조회 */
     @Transactional(readOnly = true)
     public Page<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
+        var effectiveFilter = coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.from(filter);
         Page<MyReviewResponseDTO> page = reservationRepository.findMyReviews(
                 loginMemberId,
                 Status.COMPLETED,
-                filter,
+                effectiveFilter,
                 pageable
         );
 

@@ -11,6 +11,7 @@ import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReservationInfo;
 import coffeandcommit.crema.domain.review.dto.response.ReviewInfo;
 import coffeandcommit.crema.domain.review.entity.Review;
+import coffeandcommit.crema.domain.review.enums.ReviewWriteFilter;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
 import com.querydsl.core.types.Order;
@@ -46,14 +47,14 @@ public class ReservationRepositoryImpl implements ReservationRepositoryCustom {
     }
 
     @Override
-    public Page<MyReviewResponseDTO> findMyReviews(String memberId, Status status, String filter, Pageable pageable) {
+    public Page<MyReviewResponseDTO> findMyReviews(String memberId, Status status, ReviewWriteFilter filter, Pageable pageable) {
         BooleanBuilder where = new BooleanBuilder()
                 .and(reservation.member.id.eq(memberId))
                 .and(reservation.status.eq(status));
 
-        if ("WRITTEN".equalsIgnoreCase(filter)) {
+        if (filter == ReviewWriteFilter.WRITTEN) {
             where.and(review.id.isNotNull());
-        } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
+        } else if (filter == ReviewWriteFilter.NOT_WRITTEN) {
             where.and(review.id.isNull());
         }
 

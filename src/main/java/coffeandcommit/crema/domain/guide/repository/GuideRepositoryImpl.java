@@ -68,15 +68,21 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
 
         // 키워드: 접두어 + EXISTS (태그)
         // 주의: MySQL 인덱스 활용을 위해 컬럼에 lower() 미사용 (DB 콜레이션으로 대/소문자 처리)
+        // 안전성: LIKE 메타문자(% _ \)는 이스케이프하여 와일드카드 인젝션 방지
         if (keyword != null && !keyword.isBlank()) {
-            String likePrefix = keyword.trim() + "%";
+            String input = keyword.trim();
+            String escaped = input
+                    .replace("\\", "\\\\")
+                    .replace("%", "\\%")
+                    .replace("_", "\\_");
+            String likePrefix = escaped + "%";
             where.and(
-                    g.title.like(likePrefix)
+                    g.title.like(likePrefix, '\\')
                             .or(
                                     JPAExpressions.selectOne()
                                             .from(ht)
                                             .where(ht.guide.eq(g)
-                                                    .and(ht.hashTagName.like(likePrefix)))
+                                                    .and(ht.hashTagName.like(likePrefix, '\\')))
                                             .exists()
                             )
             );
@@ -87,9 +93,14 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
                 .from(g)
                 .where(where);
 
-        // 정렬 적용 (허용 필드만)
-        for (OrderSpecifier<?> os : toOrderSpecifiers(pageable.getSort(), g)) {
-            contentQuery.orderBy(os);
+        // 정렬 적용 (허용 필드만) + 기본정렬(단일 키)
+        List<OrderSpecifier<?>> orderSpecifiers = toOrderSpecifiers(pageable.getSort(), g);
+        if (orderSpecifiers.isEmpty()) {
+            contentQuery.orderBy(g.modifiedAt.desc());
+        } else {
+            for (OrderSpecifier<?> os : orderSpecifiers) {
+                contentQuery.orderBy(os);
+            }
         }
 
         List<Guide> content = pageable.isUnpaged()
