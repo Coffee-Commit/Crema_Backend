@@ -43,9 +43,15 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
         BooleanBuilder where = new BooleanBuilder();
         where.and(g.isOpened.isTrue());
 
-        // 직무 필터: 조인 후 enum 비교
+        // 직무 필터: EXISTS 사용으로 메인 쿼리 조인 최소화
         if (jobNames != null && !jobNames.isEmpty()) {
-            where.and(g.guideJobField.jobName.in(jobNames));
+            where.and(
+                    JPAExpressions.selectOne()
+                            .from(gjf)
+                            .where(gjf.guide.eq(g)
+                                    .and(gjf.jobName.in(jobNames)))
+                            .exists()
+            );
         }
 
         // 주제 필터: EXISTS로 행 증식 방지
@@ -61,15 +67,16 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
         }
 
         // 키워드: 접두어 + EXISTS (태그)
+        // 주의: MySQL 인덱스 활용을 위해 컬럼에 lower() 미사용 (DB 콜레이션으로 대/소문자 처리)
         if (keyword != null && !keyword.isBlank()) {
-            String likePrefix = keyword.trim().toLowerCase() + "%";
+            String likePrefix = keyword.trim() + "%";
             where.and(
-                    g.title.lower().like(likePrefix)
+                    g.title.like(likePrefix)
                             .or(
                                     JPAExpressions.selectOne()
                                             .from(ht)
                                             .where(ht.guide.eq(g)
-                                                    .and(ht.hashTagName.lower().like(likePrefix)))
+                                                    .and(ht.hashTagName.like(likePrefix)))
                                             .exists()
                             )
             );
@@ -78,7 +85,6 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
         var contentQuery = queryFactory
                 .select(g)
                 .from(g)
-                .leftJoin(g.guideJobField, gjf)
                 .where(where);
 
         // 정렬 적용 (허용 필드만)
@@ -91,11 +97,10 @@ public class GuideRepositoryImpl implements GuideRepositoryCustom {
                 : contentQuery.offset(pageable.getOffset()).limit(pageable.getPageSize()).fetch();
 
         Long total = queryFactory
-                .select(g.id.countDistinct())
+                .select(g.id.count())
                 .from(g)
-                .leftJoin(g.guideJobField, gjf)
                 .where(where)
-                .fetchFirst();
+                .fetchOne();
 
         return new PageImpl<>(content, pageable, total == null ? 0L : total);
     }
