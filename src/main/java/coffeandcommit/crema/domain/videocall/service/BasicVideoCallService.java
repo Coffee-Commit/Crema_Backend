@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import io.openvidu.java.client.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -456,7 +457,7 @@ public class BasicVideoCallService {
             log.info("[SESSION-JOIN] DB에서 회원 정보 조회 시작: '{}'", userName);
             
             long memberStartTime = System.currentTimeMillis();
-            Optional<Member> byNicknameAndIsDeletedFalse = memberRepository.findByNicknameAndIsDeletedFalse(userName);
+            Optional<Member> byNicknameAndIsDeletedFalse = memberRepository.findByIdAndIsDeletedFalse(userName);
             long memberElapsedTime = System.currentTimeMillis() - memberStartTime;
             
             if(byNicknameAndIsDeletedFalse.isEmpty()){
@@ -590,9 +591,11 @@ public class BasicVideoCallService {
             Participant participant = Participant.builder()
                     .connectionId(connection.getConnectionId())
                     .token(token)
-                    .username(userName)
+                    .username(member.getNickname())
                     .videoSession(videoSession)
                     .member(member)
+                    .joinedAt(LocalDateTime.now())  // 필수 필드 추가
+                    .isConnected(true)               // 필수 필드 추가
                     .build();
             
             log.info("[SESSION-JOIN] Participant 엔티티 구성 완료:");

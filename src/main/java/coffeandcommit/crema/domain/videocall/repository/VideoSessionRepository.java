@@ -28,4 +28,6 @@ public interface VideoSessionRepository extends JpaRepository<VideoSession, Long
     @QueryHints(@QueryHint(name = "javax.persistence.lock.timeout", value = "3000")) // 3초 타임아웃
     @Query("select vs from VideoSession vs where vs.sessionId = :sessionId")
     Optional<VideoSession> findBySessionIdForUpdate(@Param("sessionId") String sessionId);
+
+    Optional<VideoSession> findBySessionName(String sessionName);
 }
