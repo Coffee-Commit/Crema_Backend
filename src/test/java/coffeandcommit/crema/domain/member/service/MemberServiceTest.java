@@ -109,7 +109,7 @@ class MemberServiceTest {
                 .workingStart(LocalDate.of(2022, 1, 1))
                 .isCurrent(true)
                 .isCompanyNamePublic(true)
-                .certificationImageUrl("https://example.com/cert.pdf")
+                .certificationImageUrl("certification-pdfs/guideId_cert.pdf")
                 .build();
 
         // 테스트용 응답 DTO
@@ -139,8 +139,8 @@ class MemberServiceTest {
                 .jobPosition("개발자")
                 .isCurrent(true)
                 .workingStart(LocalDate.of(2022, 1, 1))
-                .workingPeriod("2년 3개월")
-                .certificationPdfUrl("https://example.com/cert.pdf")
+                .workingPeriod("2022.01 ~ 재직중")
+                .certificationPdfUrl("https://storage.googleapis.com/bucket/file?X-Goog-Signature=...")
                 .build();
 
         // 테스트용 업그레이드 요청
@@ -328,34 +328,27 @@ class MemberServiceTest {
     class GuideUpgradeTests {
 
         @Test
-        @DisplayName("성공: 가이드 업그레이드")
+        @DisplayName("성공: 멤버를 가이드로 업그레이드")
         void upgradeToGuide_Success() {
             // given
-            given(memberRepository.findByIdAndIsDeletedFalse("testId"))
-                    .willReturn(Optional.of(testMember));
-            given(guideRepository.findByMember_Id("testId"))
-                    .willReturn(Optional.empty());
-            given(fileService.uploadFile(eq(testPdfFile), eq(FileType.PDF), anyString(), eq("testId")))
+            given(memberRepository.findByIdAndIsDeletedFalse("testId")).willReturn(Optional.of(testMember));
+            given(fileService.uploadFile(any(), eq(FileType.PDF), eq("certification-pdfs"), eq("testId")))
                     .willReturn(FileUploadResponse.builder()
-                            .fileKey("cert.pdf")
-                            .fileUrl("https://example.com/cert.pdf")
-                            .build()
-                    );
-            given(guideRepository.save(any(Guide.class)))
-                    .willReturn(testGuideEntity);
-            given(memberRepository.save(any(Member.class)))
-                    .willReturn(testGuide);
+                            .fileKey("certification-pdfs/testId_cert.pdf")
+                            .fileUrl("https://storage.googleapis.com/bucket/certification-pdfs/testId_cert.pdf")
+                            .build());
+            given(memberRepository.save(any(Member.class))).willReturn(testGuide);
+            given(guideRepository.save(any(Guide.class))).willReturn(testGuideEntity);
+            given(storageService.generateViewUrl("certification-pdfs/guideId_cert.pdf"))
+                    .willReturn("https://storage.googleapis.com/bucket/file?X-Goog-Signature=presigned");
 
             // when
             MemberUpgradeResponse result = memberService.upgradeToGuide("testId", testUpgradeRequest, testPdfFile);
 
             // then
             assertThat(result).isNotNull();
-            verify(memberRepository).findByIdAndIsDeletedFalse("testId");
-            verify(guideRepository).findByMember_Id("testId");
-            verify(fileService).uploadFile(eq(testPdfFile), eq(FileType.PDF), anyString(), eq("testId"));
-            verify(guideRepository).save(any(Guide.class));
-            verify(memberRepository).save(any(Member.class));
+            assertThat(result.getCertificationPdfUrl()).contains("X-Goog-Signature"); // presigned URL 확인
+            verify(storageService).generateViewUrl(any(String.class));
         }
 
         @Test
@@ -462,18 +455,18 @@ class MemberServiceTest {
         @DisplayName("성공: 가이드 업그레이드 정보 조회")
         void getUpgradeInfo_Success() {
             // given
-            given(memberRepository.findByIdAndIsDeletedFalse("testId"))
-                    .willReturn(Optional.of(testGuide));
-            given(guideRepository.findByMember_Id("testId"))
-                    .willReturn(Optional.of(testGuideEntity));
+            given(memberRepository.findByIdAndIsDeletedFalse("guideId")).willReturn(Optional.of(testGuide));
+            given(guideRepository.findByMember_Id("guideId")).willReturn(Optional.of(testGuideEntity));
+            given(storageService.generateViewUrl("certification-pdfs/guideId_cert.pdf"))
+                    .willReturn("https://storage.googleapis.com/bucket/file?X-Goog-Signature=presigned");
 
             // when
-            MemberUpgradeResponse result = memberService.getUpgradeInfo("testId");
+            MemberUpgradeResponse result = memberService.getUpgradeInfo("guideId");
 
             // then
             assertThat(result).isNotNull();
-            verify(memberRepository).findByIdAndIsDeletedFalse("testId");
-            verify(guideRepository).findByMember_Id("testId");
+            assertThat(result.getCertificationPdfUrl()).contains("X-Goog-Signature");
+            verify(storageService).generateViewUrl("certification-pdfs/guideId_cert.pdf");
         }
 
         @Test
