@@ -1,16 +1,12 @@
 package coffeandcommit.crema.domain.reservation.repository;
 
-import coffeandcommit.crema.domain.guide.entity.Guide;
-import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
-import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.review.dto.response.GuideInfo;
 import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReservationInfo;
 import coffeandcommit.crema.domain.review.dto.response.ReviewInfo;
-import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.enums.ReviewWriteFilter;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.Tuple;
