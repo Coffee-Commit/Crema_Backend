@@ -23,9 +23,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -111,27 +108,14 @@ public class ReviewService {
     /* 내 리뷰 조회 */
     @Transactional(readOnly = true)
     public Page<MyReviewResponseDTO> getMyReviews(String loginMemberId, String filter, Pageable pageable) {
+        var effectiveFilter = coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.from(filter);
+        Page<MyReviewResponseDTO> page = reservationRepository.findMyReviews(
+                loginMemberId,
+                Status.COMPLETED,
+                effectiveFilter,
+                pageable
+        );
 
-        Page<Reservation> reservations;
-
-        if ("WRITTEN".equalsIgnoreCase(filter)) {
-            reservations = reservationRepository.findWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
-        } else if ("NOT_WRITTEN".equalsIgnoreCase(filter)) {
-            reservations = reservationRepository.findNotWrittenByMember(loginMemberId, Status.COMPLETED, pageable);
-        } else { // 기본: ALL
-            reservations = reservationRepository.findByMember_IdAndStatus(loginMemberId, Status.COMPLETED, pageable);
-        }
-
-        if (reservations.isEmpty()) {
-            throw new BaseException(ErrorStatus.RESERVATION_NOT_FOUND);
-        }
-
-        // 리뷰 bulk 조회
-        List<Long> reservationIds = reservations.stream().map(Reservation::getId).toList();
-        Map<Long, Review> reviewMap = reviewRepository.findByReservationIdIn(reservationIds).stream()
-                .collect(Collectors.toMap(r -> r.getReservation().getId(), r -> r));
-
-        return reservations.map(reservation ->
-                MyReviewResponseDTO.from(reservation, reviewMap.get(reservation.getId())));
+        return page;
     }
 }

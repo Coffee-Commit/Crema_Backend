@@ -11,3 +11,11 @@ spring:
     gcp:
       credentials:
         location: "${GCP_CREDENTIALS_JSON_PATH}"
+  # init.sql 자동 실행 설정 (로컬 전용)
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:init.sql
+      continue-on-error: true
+  jpa:
+    defer-datasource-initialization: true

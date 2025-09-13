@@ -16,7 +16,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Repository
-public interface ReservationRepository extends JpaRepository<Reservation, Long> {
+public interface ReservationRepository extends JpaRepository<Reservation, Long>, ReservationRepositoryCustom {
     int countByMember_IdAndStatus(String memberId, Status status);
 
     @EntityGraph(attributePaths = {"guide", "guide.member", "timeUnit"})

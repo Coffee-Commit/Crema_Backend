@@ -71,7 +71,7 @@ public class ReviewController {
 
         Response<Page<MyReviewResponseDTO>> response = Response.<Page<MyReviewResponseDTO>>builder()
                 .message("내 리뷰 조회 성공")
-                .data(result)
+                .data(result.isEmpty() ? null : result)
                 .build();
 
         return ResponseEntity.ok(response);

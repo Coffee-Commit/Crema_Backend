@@ -1,0 +1,53 @@
+### 테스트 계정 생성 (선택)
+POST http://localhost:8080/api/test/auth/create-rookie
+Content-Type: application/json
+
+### 테스트 계정 로그인 (아래 nickname에 위에서 생성된 닉네임을 입력)
+POST http://localhost:8080/api/test/auth/login
+Content-Type: application/json
+
+{
+  "nickname": "guide_69c286fd"
+}
+
+### 아래 요청들에서 Authorization 헤더의 ~~~ 부분을 3번의 accessToken으로 교체해서 사용하세요.
+
+### Guides - 기본 목록 (latest, 무필터)
+GET http://localhost:8080/api/guides?page=0&size=10&sort=latest
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Guides - 키워드 접두어 검색 + 이스케이프 확인 (%, _, \ 포함)
+# 예: 키워드에 특수문자 포함 시 정상 동작/오버매칭 방지 확인
+GET http://localhost:8080/api/guides?keyword=Java%25_dev\_tips&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Guides - 직무 필터 (JobNameType)
+# 예시: IT_DEVELOPMENT_DATA, PLANNING_STRATEGY 등
+GET http://localhost:8080/api/guides?jobNames=IT_DEVELOPMENT_DATA&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Guides - 챗 토픽 필터 (TopicNameType)
+# 예시: INTERVIEW, PORTFOLIO, COVER_LETTER 등
+GET http://localhost:8080/api/guides?chatTopicNames=INTERVIEW&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Guides - popular 정렬 (메모리 정렬 후 재페이징)
+GET http://localhost:8080/api/guides?page=0&size=10&sort=popular
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Reviews - 내 리뷰 조회 ALL (기본)
+GET http://localhost:8080/api/reviews/me?filter=ALL&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Reviews - 내 리뷰 조회 WRITTEN (작성한 리뷰만)
+GET http://localhost:8080/api/reviews/me?filter=WRITTEN&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Reviews - 내 리뷰 조회 NOT_WRITTEN (미작성 리뷰만)
+GET http://localhost:8080/api/reviews/me?filter=NOT_WRITTEN&page=0&size=10
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
+
+### Reviews - 무효 필터 값 (lenient: ALL로 동작)
+GET http://localhost:8080/api/reviews/me?filter=INVALID&page=0&size=10
+Authorization: Bearer ~~~
+

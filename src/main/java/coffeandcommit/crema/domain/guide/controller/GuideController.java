@@ -277,6 +277,7 @@ public class GuideController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "가이드 목록 조회", description = "가이드 목록을 조회합니다. 필터링, 검색, 정렬, 페이지네이션 기능을 제공합니다.")
     @GetMapping
     public ResponseEntity<Response<Page<GuideListResponseDTO>>> getGuides(
             @RequestParam(required = false) List<JobNameType> jobNames,
