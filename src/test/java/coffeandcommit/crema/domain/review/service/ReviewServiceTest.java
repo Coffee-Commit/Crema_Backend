@@ -40,6 +40,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -334,6 +335,8 @@ class ReviewServiceTest {
         assertEquals(2, result.getContent().size());
         assertEquals(RESERVATION_ID, result.getContent().get(0).getReservationId());
         assertEquals(2L, result.getContent().get(1).getReservationId());
+        assertNotNull(result.getContent().get(0).getReview());
+        assertNull(result.getContent().get(1).getReview());
     }
 
     @Test
