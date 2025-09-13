@@ -139,7 +139,7 @@ class MemberServiceTest {
                 .jobPosition("개발자")
                 .isCurrent(true)
                 .workingStart(LocalDate.of(2022, 1, 1))
-                .workingPeriod("2년 3개월")
+                .workingPeriod("2022.01 ~ 재직중")
                 .certificationPdfUrl("https://storage.googleapis.com/bucket/file?X-Goog-Signature=...")
                 .build();
 

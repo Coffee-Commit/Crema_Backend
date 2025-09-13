@@ -80,7 +80,7 @@ class MemberControllerTest {
                 .jobPosition("개발자")
                 .isCurrent(true)
                 .workingStart(LocalDate.of(2022, 1, 1))
-                .workingPeriod("2년 3개월")
+                .workingPeriod("2022.01 ~ 재직중")
                 .certificationPdfUrl("https://example.com/cert.pdf")
                 .build();
 

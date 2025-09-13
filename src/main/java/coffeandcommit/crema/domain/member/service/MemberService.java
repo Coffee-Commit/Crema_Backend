@@ -412,6 +412,13 @@ public class MemberService {
             certificationPdfUrl = storageService.generateViewUrl(guide.getCertificationImageUrl());
         }
 
+        // workingPeriod 계산
+        String workingPeriod = calculateWorkingPeriodDisplay(
+                guide.getWorkingStart(),
+                guide.getWorkingEnd(),
+                guide.isCurrent()
+        );
+
         return MemberUpgradeResponse.builder()
                 .companyName(guide.getCompanyName())
                 .isCompanyNamePublic(guide.isCompanyNamePublic())
@@ -419,6 +426,7 @@ public class MemberService {
                 .isCurrent(guide.isCurrent())
                 .workingStart(guide.getWorkingStart())
                 .workingEnd(guide.getWorkingEnd())
+                .workingPeriod(workingPeriod)
                 .certificationPdfUrl(certificationPdfUrl) // presigned URL 반환
                 .build();
     }
