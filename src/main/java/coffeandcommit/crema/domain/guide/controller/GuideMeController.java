@@ -367,7 +367,7 @@ public class GuideMeController {
         String loginMemberId = userDetails.getMemberId();
         Pageable capped = PageRequest.of(
                 Math.max(pageable.getPageNumber(), 0),
-                Math.min(pageable.getPageSize(), 100),
+                Math.max(1, Math.min(pageable.getPageSize(), 100)),
                 Sort.by(Sort.Direction.DESC, "createdAt")
         );
         Page<GuideReviewResponseDTO> result = guideMeService.getMyGuideReviews(loginMemberId, capped);
