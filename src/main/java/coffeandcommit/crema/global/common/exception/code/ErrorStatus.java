@@ -27,9 +27,11 @@ public enum ErrorStatus implements BaseCode {
 
     // Member to Guide Upgrade
     ALREADY_GUIDE(HttpStatus.CONFLICT, "이미 가이드로 등록된 사용자입니다."),
-    INVALID_WORKING_PERIOD(HttpStatus.BAD_REQUEST, "근무 기간이 올바르지 않습니다."),
+    INVALID_WORKING_PERIOD(HttpStatus.BAD_REQUEST, "입사일은 퇴사일보다 이전이어야 합니다."),
     WORKING_END_REQUIRED_WHEN_NOT_CURRENT(HttpStatus.BAD_REQUEST, "재직중이 아닌 경우 근무 종료일이 필요합니다."),
     WORKING_END_NOT_ALLOWED_WHEN_CURRENT(HttpStatus.BAD_REQUEST, "재직중인 경우 근무 종료일을 입력할 수 없습니다."),
+    WORKING_START_CANNOT_BE_FUTURE(HttpStatus.BAD_REQUEST,"입사일은 현재 날짜보다 미래일 수 없습니다."),
+    WORKING_END_CANNOT_BE_FUTURE(HttpStatus.BAD_REQUEST,"퇴사일은 현재 날짜보다 미래일 수 없습니다."),
 
     // JWT & Auth
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다."),
@@ -105,8 +107,6 @@ public enum ErrorStatus implements BaseCode {
     INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "유효하지 않은 시간 단위입니다."),
     INVALID_SURVEY(HttpStatus.BAD_REQUEST, "유효하지 않은 사전 정보입니다."),
     SURVEY_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 사전 정보가 없습니다.");
-
-
 
     public static final String PREFIX = "[ERROR]";
 

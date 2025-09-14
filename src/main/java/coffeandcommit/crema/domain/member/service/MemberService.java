@@ -357,20 +357,38 @@ public class MemberService {
      * 근무 기간 유효성 검사
      */
     private void validateWorkingPeriod(MemberUpgradeRequest request) {
-        // 재직중인 경우 근무 끝 날짜는 null이어야 함
+        LocalDate now = LocalDate.now();
+
+        // 1. 입사일은 현재보다 과거여야 함
+        if (request.getWorkingStart().isAfter(now)) {
+            throw new BaseException(ErrorStatus.WORKING_START_CANNOT_BE_FUTURE);
+        }
+
+        // 2. 재직중인 경우 근무 끝날짜는 null이어야 함
         if (request.getIsCurrent() && request.getWorkingEnd() != null) {
             throw new BaseException(ErrorStatus.WORKING_END_NOT_ALLOWED_WHEN_CURRENT);
         }
 
-        // 재직중이 아닌 경우 근무 끝 날짜가 필요
+        // 3. 재직중이 아닌 경우 근무 끝날짜가 필요
         if (!request.getIsCurrent() && request.getWorkingEnd() == null) {
             throw new BaseException(ErrorStatus.WORKING_END_REQUIRED_WHEN_NOT_CURRENT);
         }
 
-        // 근무 시작일이 끝날보다 늦을 수 없음
-        if (request.getWorkingEnd() != null && request.getWorkingStart().isAfter(request.getWorkingEnd())) {
-            throw new BaseException(ErrorStatus.INVALID_WORKING_PERIOD);
+        // 4. 퇴사일이 있는 경우의 추가 검증
+        if (request.getWorkingEnd() != null) {
+            // 4-1. 퇴사일은 현재보다 과거여야 함
+            if (request.getWorkingEnd().isAfter(now)) {
+                throw new BaseException(ErrorStatus.WORKING_END_CANNOT_BE_FUTURE);
+            }
+
+            // 4-2. 입사일이 퇴사일보다 과거여야 함 (같은 날짜는 허용)
+            if (request.getWorkingStart().isAfter(request.getWorkingEnd())) {
+                throw new BaseException(ErrorStatus.INVALID_WORKING_PERIOD);
+            }
         }
+
+        log.debug("Working period validation passed for workingStart: {}, workingEnd: {}, isCurrent: {}",
+                request.getWorkingStart(), request.getWorkingEnd(), request.getIsCurrent());
     }
 
     /**

@@ -1,18 +1,38 @@
-// member-load-test.js - 커피챗 프로젝트 Member 도메인 K6 부하테스트 (최종 버전)
+// member-load-test.js - 커피챗 프로젝트 Member 도메인 K6 부하테스트 (개별 API 메트릭 추가 버전)
 
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 import { Rate, Trend, Counter } from 'k6/metrics';
 
 // =============================================================================
-// 커스텀 메트릭스 (Member API 관련만)
+// 커스텀 메트릭스 (Member API 관련 - 개별 API별 응답시간 추가)
 // =============================================================================
+
+// 성공률 메트릭
 const profileUpdateRate = new Rate('profile_update_success_rate');
 const nicknameCheckRate = new Rate('nickname_check_success_rate');
 const memberInfoQueryRate = new Rate('member_info_query_success_rate');
 const chatTopicsRate = new Rate('chat_topics_success_rate');
 const jobFieldsRate = new Rate('job_fields_success_rate');
 const coffeeChatReservationsRate = new Rate('coffee_chat_reservations_success_rate');
+
+// 개별 API 응답시간 메트릭
+const myProfileQueryDuration = new Trend('my_profile_query_duration');
+const memberByIdQueryDuration = new Trend('member_by_id_query_duration');
+const memberByNicknameQueryDuration = new Trend('member_by_nickname_query_duration');
+const nicknameCheckDuration = new Trend('nickname_check_duration');
+const profileUpdateDuration = new Trend('profile_update_duration');
+const chatTopicsUpdateDuration = new Trend('chat_topics_update_duration');
+const chatTopicsQueryDuration = new Trend('chat_topics_query_duration');
+const jobFieldsUpdateDuration = new Trend('job_fields_update_duration');
+const jobFieldsQueryDuration = new Trend('job_fields_query_duration');
+const coffeeChatReservationsPendingDuration = new Trend('coffee_chat_reservations_pending_duration');
+const coffeeChatReservationsConfirmedDuration = new Trend('coffee_chat_reservations_confirmed_duration');
+const coffeeChatReservationsCompletedDuration = new Trend('coffee_chat_reservations_completed_duration');
+const coffeeChatReservationsCancelledDuration = new Trend('coffee_chat_reservations_cancelled_duration');
+const coffeeChatReservationsAllDuration = new Trend('coffee_chat_reservations_all_duration');
+
+// 전체 메트릭
 const memberApiDuration = new Trend('member_api_duration');
 const memberApiErrors = new Counter('member_api_errors');
 const loginDuration = new Trend('login_duration');
@@ -28,17 +48,35 @@ export const options = {
     thresholds: {
         http_req_duration: ['p(95)<2000'],              // 95%의 요청이 2초 이내
         http_req_failed: ['rate<0.05'],                 // 전체 실패율 5% 미만
+
+        // 성공률 임계값
         profile_update_success_rate: ['rate>0.90'],     // 프로필 업데이트 성공률 90% 이상
         nickname_check_success_rate: ['rate>0.95'],     // 닉네임 확인 성공률 95% 이상
         member_info_query_success_rate: ['rate>0.95'],  // 회원 정보 조회 성공률 95% 이상
         chat_topics_success_rate: ['rate>0.90'],        // 채팅 주제 관리 성공률 90% 이상
         job_fields_success_rate: ['rate>0.90'],         // 직무 분야 관리 성공률 90% 이상
-        // coffee_chat_reservations_success_rate: ['rate>0.95'], // 커피챗 예약 조회는 일시 제외
+
+        // 개별 API 응답시간 임계값 (95% 요청이 지정된 시간 이내)
+        my_profile_query_duration: ['p(95)<1000'],           // 내 프로필 조회 1초 이내
+        member_by_id_query_duration: ['p(95)<1000'],         // ID로 회원 조회 1초 이내
+        member_by_nickname_query_duration: ['p(95)<1000'],   // 닉네임으로 회원 조회 1초 이내
+        nickname_check_duration: ['p(95)<500'],              // 닉네임 중복확인 0.5초 이내
+        profile_update_duration: ['p(95)<2000'],             // 프로필 업데이트 2초 이내
+        chat_topics_update_duration: ['p(95)<1500'],         // 채팅주제 업데이트 1.5초 이내
+        chat_topics_query_duration: ['p(95)<1000'],          // 채팅주제 조회 1초 이내
+        job_fields_update_duration: ['p(95)<1500'],          // 직무분야 업데이트 1.5초 이내
+        job_fields_query_duration: ['p(95)<1000'],           // 직무분야 조회 1초 이내
+        coffee_chat_reservations_pending_duration: ['p(95)<1000'],   // 대기중 예약 조회 1초 이내
+        coffee_chat_reservations_confirmed_duration: ['p(95)<1000'], // 확정 예약 조회 1초 이내
+        coffee_chat_reservations_completed_duration: ['p(95)<1000'], // 완료 예약 조회 1초 이내
+        coffee_chat_reservations_cancelled_duration: ['p(95)<1000'], // 취소 예약 조회 1초 이내
+        coffee_chat_reservations_all_duration: ['p(95)<1500'],       // 전체 예약 조회 1.5초 이내
+
         login_duration: ['p(95)<500'],                  // 로그인 95% 0.5초 이하
     },
 
     tags: {
-        test_type: 'member_api_comprehensive_test',
+        test_type: 'member_api_comprehensive_test_with_individual_metrics',
     }
 };
 
@@ -251,7 +289,11 @@ function testMyProfileQuery(headers) {
     console.log('Testing my profile query...');
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/me`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    myProfileQueryDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'My profile query', memberInfoQueryRate);
 
@@ -269,7 +311,11 @@ function testGetMemberById(headers, memberId) {
     console.log('Testing get member by ID...');
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/id/${memberId}`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    memberByIdQueryDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Get member by ID', memberInfoQueryRate);
 
@@ -287,7 +333,11 @@ function testGetMemberByNickname(headers, nickname) {
     console.log('Testing get member by nickname...');
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/nickname/${nickname}`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    memberByNicknameQueryDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Get member by nickname', memberInfoQueryRate);
 
@@ -306,7 +356,11 @@ function testNicknameCheck(headers) {
     let randomNickname = testData.generateUniqueNickname();
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/check/nickname/${randomNickname}`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    nicknameCheckDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Nickname check', nicknameCheckRate);
 
@@ -335,7 +389,11 @@ function testProfileUpdate(headers) {
         null,
         { headers }
     );
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    profileUpdateDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Profile update', profileUpdateRate);
 
@@ -359,7 +417,11 @@ function testChatTopicsUpdate(headers) {
         JSON.stringify(topicsData),
         { headers }
     );
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    chatTopicsUpdateDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Chat topics update', chatTopicsRate);
 
@@ -378,7 +440,11 @@ function testChatTopicsQuery(headers) {
 
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/coffee-chat/interests/topics`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    chatTopicsQueryDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Chat topics query', chatTopicsRate);
 
@@ -406,7 +472,11 @@ function testJobFieldsUpdate(headers) {
         JSON.stringify(jobFieldData),
         { headers }
     );
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    jobFieldsUpdateDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Job fields update', jobFieldsRate);
 
@@ -425,7 +495,11 @@ function testJobFieldsQuery(headers) {
 
     let start = Date.now();
     let response = http.get(`${BASE_URL}/api/member/coffee-chat/interests/fields`, { headers });
-    memberApiDuration.add(Date.now() - start);
+    let duration = Date.now() - start;
+
+    // 개별 메트릭과 전체 메트릭 모두 기록
+    jobFieldsQueryDuration.add(duration);
+    memberApiDuration.add(duration);
 
     const success = validateResponse(response, 200, 'Job fields query', jobFieldsRate);
 
@@ -443,12 +517,22 @@ function testCoffeeChatReservations(headers) {
     console.log('Testing coffee chat reservations...');
     let allSuccess = true;
 
-    const reservationTypes = ['pending', 'confirmed', 'completed', 'cancelled', 'all'];
+    const reservationTypes = [
+        { type: 'pending', metric: coffeeChatReservationsPendingDuration },
+        { type: 'confirmed', metric: coffeeChatReservationsConfirmedDuration },
+        { type: 'completed', metric: coffeeChatReservationsCompletedDuration },
+        { type: 'cancelled', metric: coffeeChatReservationsCancelledDuration },
+        { type: 'all', metric: coffeeChatReservationsAllDuration }
+    ];
 
-    for (const type of reservationTypes) {
+    for (const { type, metric } of reservationTypes) {
         let start = Date.now();
         let response = http.get(`${BASE_URL}/api/member/coffee-chat/reservations/${type}`, { headers });
-        memberApiDuration.add(Date.now() - start);
+        let duration = Date.now() - start;
+
+        // 개별 메트릭과 전체 메트릭 모두 기록
+        metric.add(duration);
+        memberApiDuration.add(duration);
 
         const success = validateResponse(response, 200, `Coffee chat reservations (${type})`, coffeeChatReservationsRate);
 
@@ -605,26 +689,28 @@ export default function() {
 // =============================================================================
 export function setup() {
     console.log('='.repeat(70));
-    console.log('커피챗 Member 도메인 API 종합 부하테스트 시작');
+    console.log('커피챗 Member 도메인 API 종합 부하테스트 시작 (개별 API 메트릭 포함)');
     console.log(`Base URL: ${BASE_URL}`);
     console.log(`Scenario: ${__ENV.SCENARIO || 'complete-flow'}`);
     console.log(`Environment: ${__ENV.ENVIRONMENT || 'local'}`);
-    console.log('테스트 대상: Member 도메인 전체 API (파일 업로드 제외)');
+    console.log('측정되는 개별 API 메트릭:');
+    console.log('- my_profile_query_duration (내 프로필 조회)');
+    console.log('- member_by_id_query_duration (ID로 회원 조회)');
+    console.log('- member_by_nickname_query_duration (닉네임으로 회원 조회)');
+    console.log('- nickname_check_duration (닉네임 중복 확인)');
+    console.log('- profile_update_duration (프로필 업데이트)');
+    console.log('- chat_topics_update_duration (채팅주제 업데이트)');
+    console.log('- chat_topics_query_duration (채팅주제 조회)');
+    console.log('- job_fields_update_duration (직무분야 업데이트)');
+    console.log('- job_fields_query_duration (직무분야 조회)');
+    console.log('- coffee_chat_reservations_*_duration (각 예약 상태별 조회)');
     console.log('='.repeat(70));
 }
 
 export function teardown() {
     console.log('='.repeat(70));
-    console.log('Member API 종합 기능 테스트 완료');
+    console.log('Member API 종합 기능 테스트 완료 (개별 메트릭 포함)');
     console.log(`총 Member API 에러: ${memberApiErrors ? memberApiErrors.count || 0 : 0}`);
-
-    // 테스트 계정 일괄 삭제
-    try {
-        let cleanupResponse = http.del(`${BASE_URL}/api/test/auth/cleanup`);
-        console.log(`정리 작업 완료: ${cleanupResponse.status}`);
-    } catch (e) {
-        console.log('정리 작업 중 오류:', e.message);
-    }
-
+    console.log('각 API별 상세 응답시간은 K6 결과 리포트에서 확인 가능합니다.');
     console.log('='.repeat(70));
 }
