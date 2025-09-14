@@ -65,6 +65,23 @@ public class ReservationService {
         Guide guide = guideRepository.findById(reservationRequestDTO.getGuideId())
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
+        // 2-0. 자기 자신에게 신청 방지
+        if (guide.getMember() != null && guide.getMember().getId().equals(member.getId())) {
+            throw new BaseException(ErrorStatus.FORBIDDEN);
+        }
+
+        // 2-1. 포인트 선검증: 신청하려는 시간 단위 가격보다 보유 포인트가 적으면 신청 불가
+        TimeType requestTimeType = reservationRequestDTO.getTimeUnit();
+        if (requestTimeType == null) {
+            throw new BaseException(ErrorStatus.INVALID_TIME_UNIT);
+        }
+        int price = requestTimeType.getPrice();
+        Integer currentPoint = member.getPoint() == null ? 0 : member.getPoint();
+        if (currentPoint < price) {
+            throw new BaseException(ErrorStatus.INSUFFICIENT_POINTS);
+        }
+        // 포인트 이체는 가이드가 수락(confirmed)할 때 수행
+
         // 3. Survey 엔티티 생성
         Survey survey = Survey.builder()
                 .fileUploadURL("")
@@ -105,7 +122,7 @@ public class ReservationService {
         // 5. TimeUnit 엔티티 생성 (예약 ↔ 시간 단위 연결)
         TimeUnit timeUnit = TimeUnit.builder()
                 .reservation(reservation)
-                .timeType(reservationRequestDTO.getTimeUnit()) // String -> Enum 변환
+                .timeType(requestTimeType)
                 .build();
 
         

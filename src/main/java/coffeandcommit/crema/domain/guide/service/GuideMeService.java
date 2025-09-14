@@ -589,6 +589,9 @@ public class GuideMeService {
 
         guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
 
+        // 명시적 저장으로 즉시 더티체킹 반영 보장
+        guideRepository.save(guide);
+
     }
 
     /* 가이드 전체 예약 조회 (페이징) */
