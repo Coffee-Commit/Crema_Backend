@@ -36,6 +36,7 @@ public class VideoCallController {
             @AuthenticationPrincipal UserDetails userDetails,
             @PathVariable Long reservationId
             ) {
+        log.info("[QUICKJOIN-REQUEST] quickjoin 요청 시작 - reservationId: {}",reservationId);
         if (userDetails == null) {
             log.error("[VIDEO-CALL] 인증되지 않은 요청 - quickJoin");
             throw new RuntimeException("인증이 필요합니다");

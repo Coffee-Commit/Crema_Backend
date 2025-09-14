@@ -71,7 +71,8 @@ public class VideoCallService {
                         .findBySessionName(reservation.getVideoSession().getSessionName())
                         .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + reservation.getVideoSession().getSessionName() + "를 찾을 수 없습니다"));
             }catch (SessionNotFoundException e) {
-                String sessionName = "reservation_" + reservation.getId() + "_" + reservation.getReservedAt();
+                log.info("[SESSION-QUICKJOIN] =======Exception======= \n{}", e.toString());
+                String sessionName = "reservation_" + reservation.getId();
                 session = basicVideoCallService.createVideoSession(sessionName);
             }
             
