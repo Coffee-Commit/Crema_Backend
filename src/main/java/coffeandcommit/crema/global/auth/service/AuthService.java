@@ -54,7 +54,7 @@ public class AuthService {
     }
 
     /**
-     * Refresh Token을 이용한 토큰 갱신
+     * Refresh Token을 이용한 토큰 갱신 (수동 재발급 - 컨트롤러용)
      */
     public void refreshToken(HttpServletRequest request, HttpServletResponse response) {
         String refreshTokenValue = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
@@ -92,6 +92,68 @@ public class AuthService {
         cookieUtil.addCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, refreshTokenMaxAge);
 
         log.info("Tokens refreshed for member: {}", memberId);
+    }
+
+    /**
+     * 자동 토큰 재발급 (필터에서 사용 - 예외 대신 boolean 반환)
+     */
+    public boolean attemptAutoRefresh(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            String refreshTokenValue = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
+
+            if (!StringUtils.hasText(refreshTokenValue)) {
+                log.debug("No refresh token found for auto-refresh");
+                return false;
+            }
+
+            if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
+                log.debug("Refresh token is invalid");
+                return false;
+            }
+
+            if (!jwtTokenProvider.isRefreshToken(refreshTokenValue)) {
+                log.debug("Token is not a refresh token");
+                return false;
+            }
+
+            if (tokenBlacklistService.isTokenBlacklisted(refreshTokenValue)) {
+                log.debug("Refresh token is blacklisted");
+                return false;
+            }
+
+            // 기존 토큰들을 블랙리스트에 추가
+            String oldAccessToken = extractAccessToken(request);
+            tokenBlacklistService.blacklistUserTokens(oldAccessToken, refreshTokenValue);
+
+            // 새로운 토큰 생성
+            String memberId = jwtTokenProvider.getMemberId(refreshTokenValue);
+            String newAccessToken = jwtTokenProvider.createAccessToken(memberId);
+            String newRefreshToken = jwtTokenProvider.createRefreshToken(memberId);
+
+            int accessTokenMaxAge = (int) (jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000);
+            int refreshTokenMaxAge = (int) (jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000);
+
+            // 새로운 토큰을 쿠키에 설정
+            cookieUtil.addCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, accessTokenMaxAge);
+            cookieUtil.addCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, refreshTokenMaxAge);
+
+            // 프론트엔드에게 토큰이 재발급되었음을 알리는 헤더 추가
+            response.setHeader("X-Token-Refreshed", "true");
+
+            log.info("Token auto-refresh successful for member: {}", memberId);
+            return true;
+
+        } catch (Exception e) {
+            log.error("Auto-refresh failed: {}", e.getMessage(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 토큰 재발급 후 새로운 Access Token으로 인증 컨텍스트 재설정을 위한 헬퍼 메서드
+     */
+    public String getRefreshedAccessToken(HttpServletRequest request) {
+        return extractAccessToken(request);
     }
 
     /**
