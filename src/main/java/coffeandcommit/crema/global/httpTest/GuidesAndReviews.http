@@ -7,7 +7,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "rookie_fe0e2657"
+  "nickname": "guide_1d902961"
 }
 
 ### 아래 요청들에서 Authorization 헤더의 ~~~ 부분을 3번의 accessToken으로 교체해서 사용하세요.
@@ -92,6 +92,10 @@ Content-Type: application/json
 GET http://localhost:8080/api/guides/me/reviews?page=0&size=10
 Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiIzZjNkYmZiMCIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2YTM1MTkyMC0yZjk2LTRjNTUtYTY1ZC1hMGEyMDJhMDk0MWMiLCJpYXQiOjE3NTc4Mzg1MjMsImV4cCI6MTc1Nzg0MDMyM30.XIbWXGB2jpjPywlSwY9AQlwMPohf008-RlJg9rCG6ib4RwUvP9MBqxsuzoIT78NUjjGU4B9b_soKbVBljZhhwg
 
+### Guides - 내(가이드) 커피챗 조회
+GET http://localhost:8080/api/guides/me/coffeechats
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI5OTMxZTliYiIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI1MmMzZWFmMC1jY2Q3LTQxMTItYTQ2Yi01NzQ5YzUzMWU1OGYiLCJpYXQiOjE3NTc4NTQ0MzMsImV4cCI6MTc1Nzg1NjIzM30.ppYa8D_YdiSCMawLFCAlUYKkqTrPBAj5BioqH_D_c2Pasad0aKqbslSNu2uXGo0d4F6ZpPKI7CMKCwVQaVSOtg
+
 ### Guides - 특정 가이드 리뷰 조회 (공개 가이드)
 # guideId 자리에 실제 가이드 ID 입력
 GET http://localhost:8080/api/guides/3/reviews?page=0&size=10
@@ -111,3 +115,7 @@ Content-Type: application/json
 # 2) 다른 사용자 토큰으로 접근 시 404/403 기대
 GET http://localhost:8080/api/guides/1/reviews?page=0&size=10
 Authorization: Bearer OTHER_USER_TOKEN
+
+### Guides - 내(가이드) 경험 평가 조회
+GET http://localhost:8080/api/guides/me/experience-evaluations
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJkMjczMGE2NyIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiIxMjVkZjBkMS1jODBlLTRiNWUtYjRjOC1mNmZjODk4N2Y0ZjciLCJpYXQiOjE3NTc4NTUwOTAsImV4cCI6MTc1Nzg1Njg5MH0.XH1g1pdcqWrYLmxH4qRAaSNFQW5UiVzUrbsIQayl06xvoDsWfNOLh3gXAIC2Xx0YIZKfJkMXGRqVTQadxhqhsA
