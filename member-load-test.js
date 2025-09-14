@@ -66,21 +66,43 @@ class TestDataGenerator {
     }
 
     generateUniqueNickname() {
-        let nickname;
+        // VU ID, 타임스탬프, 랜덤 문자열을 조합하여 고유성 극대화
+        const vuId = __VU || 1;
+        const timestamp = Date.now();
+
+        // 6자리 랜덤 영숫자 문자열 생성
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        let randomString = '';
+        for (let i = 0; i < 6; i++) {
+            randomString += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+
+        // 추가 랜덤성을 위한 카운터 (VU 내에서의 호출 순서)
+        if (!this.nicknameCounter) {
+            this.nicknameCounter = 0;
+        }
+        this.nicknameCounter++;
+
+        // 최종 닉네임 조합: vu{VU}_{timestamp}_{randomString}_{counter}
+        const nickname = `vu${vuId}_${timestamp}_${randomString}_${this.nicknameCounter}`;
+
+        // 만약을 위한 Set 체크 (실제로는 거의 사용되지 않을 것)
+        let finalNickname = nickname;
         let attempts = 0;
-        do {
-            const randomNum = Math.floor(Math.random() * 9999) + 1;
-            nickname = `test_user_${randomNum}`;
+        while (this.usedNicknames.has(finalNickname) && attempts < 10) {
             attempts++;
+            const extraRandom = Math.floor(Math.random() * 999999);
+            finalNickname = `${nickname}_${extraRandom}`;
+        }
 
-            if (attempts > 100) {
-                nickname = `TestUser${Date.now()}${Math.floor(Math.random() * 1000)}`;
-                break;
-            }
-        } while (this.usedNicknames.has(nickname));
+        this.usedNicknames.add(finalNickname);
 
-        this.usedNicknames.add(nickname);
-        return nickname;
+        // 닉네임이 너무 길어지지 않도록 최대 50자로 제한
+        if (finalNickname.length > 50) {
+            finalNickname = finalNickname.substring(0, 50);
+        }
+
+        return finalNickname;
     }
 
     generateProfileUpdateData() {
@@ -96,9 +118,11 @@ class TestDataGenerator {
         const count = Math.floor(Math.random() * 3) + 1;
         const shuffled = [...this.chatTopicIds].sort(() => 0.5 - Math.random());
         return {
-            topicNames: shuffled.slice(0, count).map(id => {
+            topics: shuffled.slice(0, count).map(id => {
                 const topics = ["RESUME", "COVER_LETTER", "PORTFOLIO", "INTERVIEW", "PRACTICAL_WORK", "ORGANIZATION_CULTURE"];
-                return topics[id - 1] || "RESUME";
+                return {
+                    topicName: topics[id - 1] || "RESUME"
+                };
             })
         };
     }
@@ -617,14 +641,6 @@ export function teardown() {
     console.log('='.repeat(70));
     console.log('Member API 종합 기능 테스트 완료');
     console.log(`총 Member API 에러: ${memberApiErrors ? memberApiErrors.count || 0 : 0}`);
-
-    // 테스트 계정 일괄 삭제
-    try {
-        let cleanupResponse = http.del(`${BASE_URL}/api/test/auth/cleanup`);
-        console.log(`정리 작업 완료: ${cleanupResponse.status}`);
-    } catch (e) {
-        console.log('정리 작업 중 오류:', e.message);
-    }
 
     console.log('='.repeat(70));
 }
