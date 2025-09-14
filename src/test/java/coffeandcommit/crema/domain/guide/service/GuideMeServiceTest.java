@@ -16,13 +16,7 @@ import coffeandcommit.crema.domain.guide.dto.request.GuideScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.GroupRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.ScheduleRequestDTO;
 import coffeandcommit.crema.domain.guide.dto.request.TimeSlotRequestDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideChatTopicResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideCoffeeChatResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceDetailResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideExperienceResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideHashTagResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuidePendingReservationResponseDTO;
-import coffeandcommit.crema.domain.guide.dto.response.GuideScheduleResponseDTO;
+import coffeandcommit.crema.domain.guide.dto.response.*;
 import coffeandcommit.crema.domain.guide.entity.TimeUnit;
 import coffeandcommit.crema.domain.guide.enums.TimeType;
 import coffeandcommit.crema.domain.guide.entity.ExperienceDetail;
@@ -47,6 +41,7 @@ import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
+import coffeandcommit.crema.domain.review.repository.ReviewExperienceRepository;
 import coffeandcommit.crema.domain.member.entity.Member;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -106,6 +101,9 @@ public class GuideMeServiceTest {
 
     @Mock
     private ReviewRepository reviewRepository;
+
+    @Mock
+    private ReviewExperienceRepository reviewExperienceRepository;
 
     @Mock
     private ReservationRepository reservationRepository;
@@ -2070,5 +2068,152 @@ public class GuideMeServiceTest {
 
         verify(guideRepository).findByMember_Id(loginMemberId);
         verifyNoInteractions(reservationRepository);
+    }
+
+    @Test
+    @DisplayName("getMyCoffeeChat - 성공: 가이드 본인 커피챗 상세 조회")
+    void getMyCoffeeChat_Success() {
+        // Given
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        // HashTags
+        List<HashTag> hashTags = List.of(
+                HashTag.builder().id(1L).guide(guide).hashTagName("Java").build(),
+                HashTag.builder().id(2L).guide(guide).hashTagName("Spring").build()
+        );
+        when(hashTagRepository.findByGuide(guide)).thenReturn(hashTags);
+
+        // Reviews
+        when(reviewRepository.getAverageScoreByGuideId(guide.getId())).thenReturn(4.56); // rounds to 4.6
+        when(reviewRepository.countByGuideId(guide.getId())).thenReturn(3L);
+
+        // Experiences (groups)
+        ExperienceGroup group1 = ExperienceGroup.builder()
+                .id(10L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("첫번째 경험")
+                .experienceContent("내용1")
+                .build();
+        ExperienceGroup group2 = ExperienceGroup.builder()
+                .id(11L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("두번째 경험")
+                .experienceContent("내용2")
+                .build();
+        when(experienceGroupRepository.findByGuide(guide)).thenReturn(List.of(group1, group2));
+
+        // Experience detail
+        when(experienceDetailRepository.findByGuide(guide)).thenReturn(Optional.of(experienceDetail));
+
+        // When
+        GuideCoffeeChatResponseDTO result = guideMeService.getMyCoffeeChat(memberId);
+
+        // Then
+        assertNotNull(result);
+        assertNotNull(result.getGuide());
+        assertEquals(guide.getId(), result.getGuide().getId());
+        assertEquals(guide.getTitle(), result.getTitle());
+        assertEquals(guide.getChatDescription(), result.getChatDescription());
+        assertEquals(2, result.getTags().size());
+        assertEquals(4.6, result.getReviewScore());
+        assertEquals(3L, result.getReviewCount());
+        assertNotNull(result.getExperiences());
+        assertEquals(2, result.getExperiences().getGroups().size());
+        assertNotNull(result.getExperienceDetail());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(hashTagRepository).findByGuide(guide);
+        verify(reviewRepository).getAverageScoreByGuideId(guide.getId());
+        verify(reviewRepository).countByGuideId(guide.getId());
+        verify(experienceGroupRepository).findByGuide(guide);
+        verify(experienceDetailRepository).findByGuide(guide);
+    }
+
+    @Test
+    @DisplayName("getMyCoffeeChat - 실패: 가이드 없음")
+    void getMyCoffeeChat_GuideNotFound() {
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.getMyCoffeeChat(memberId));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+
+        verify(guideRepository).findByMember_Id(memberId);
+        verifyNoMoreInteractions(guideRepository);
+        verifyNoInteractions(hashTagRepository, reviewRepository, experienceGroupRepository, experienceDetailRepository);
+    }
+
+    @Test
+    @DisplayName("getMyExperienceEvaluations - 성공: 각 경험의 추천 비율 계산")
+    void getMyExperienceEvaluations_Success() {
+        // Given
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+
+        ExperienceGroup groupA = ExperienceGroup.builder()
+                .id(100L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("A")
+                .experienceContent("A내용")
+                .build();
+        ExperienceGroup groupB = ExperienceGroup.builder()
+                .id(101L)
+                .guide(guide)
+                .guideChatTopic(guideChatTopic)
+                .experienceTitle("B")
+                .experienceContent("B내용")
+                .build();
+        when(experienceGroupRepository.findByGuide(guide)).thenReturn(List.of(groupA, groupB));
+
+        // For group A: 4 thumbs up out of 5 -> 80%
+        when(reviewExperienceRepository.countByExperienceGroup(groupA)).thenReturn(5L);
+        when(reviewExperienceRepository.countByExperienceGroupAndIsThumbsUpTrue(groupA)).thenReturn(4L);
+
+        // For group B: 0 total -> 0%
+        when(reviewExperienceRepository.countByExperienceGroup(groupB)).thenReturn(0L);
+        when(reviewExperienceRepository.countByExperienceGroupAndIsThumbsUpTrue(groupB)).thenReturn(0L);
+
+        // When
+        List<GuideExperienceEvaluationResponseDTO> result = guideMeService.getMyExperienceEvaluations(memberId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        GuideExperienceEvaluationResponseDTO dtoA = result.stream()
+                .filter(dto -> dto.getExperienceGroupId().equals(100L))
+                .findFirst().orElseThrow();
+        assertEquals("A", dtoA.getExperienceTitle());
+        assertEquals("80%", dtoA.getThumbsUpRate());
+
+        GuideExperienceEvaluationResponseDTO dtoB = result.stream()
+                .filter(dto -> dto.getExperienceGroupId().equals(101L))
+                .findFirst().orElseThrow();
+        assertEquals("B", dtoB.getExperienceTitle());
+        assertEquals("0%", dtoB.getThumbsUpRate());
+
+        // Verify
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(experienceGroupRepository).findByGuide(guide);
+        verify(reviewExperienceRepository).countByExperienceGroup(groupA);
+        verify(reviewExperienceRepository).countByExperienceGroupAndIsThumbsUpTrue(groupA);
+        verify(reviewExperienceRepository).countByExperienceGroup(groupB);
+        verify(reviewExperienceRepository).countByExperienceGroupAndIsThumbsUpTrue(groupB);
+    }
+
+    @Test
+    @DisplayName("getMyExperienceEvaluations - 실패: 가이드 없음")
+    void getMyExperienceEvaluations_GuideNotFound() {
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        BaseException ex = assertThrows(BaseException.class,
+                () -> guideMeService.getMyExperienceEvaluations(memberId));
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+
+        verify(guideRepository).findByMember_Id(memberId);
+        verifyNoInteractions(experienceGroupRepository, reviewExperienceRepository);
     }
 }

@@ -16,6 +16,7 @@ import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
+import coffeandcommit.crema.domain.review.repository.ReviewExperienceRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 import jakarta.validation.Valid;
@@ -51,6 +52,7 @@ public class GuideMeService {
     private final ExperienceDetailRepository experienceDetailRepository;
     private final ExperienceGroupRepository experienceGroupRepository;
     private final ReviewRepository reviewRepository;
+    private final ReviewExperienceRepository reviewExperienceRepository;
     private final ReservationRepository reservationRepository;
 
     /* 가이드 직무 분야 등록 */
@@ -85,6 +87,41 @@ public class GuideMeService {
 
         // 5. DTO 변환 및 반환
         return GuideJobFieldResponseDTO.from(savedGuideJobField);
+    }
+
+    /* 내(가이드 본인) 커피챗 조회 */
+    @Transactional(readOnly = true)
+    public GuideCoffeeChatResponseDTO getMyCoffeeChat(String loginMemberId) {
+        Guide guide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        List<GuideHashTagResponseDTO> tags = hashTagRepository.findByGuide(guide).stream()
+                .map(ht -> GuideHashTagResponseDTO.from(ht, guide.getId()))
+                .toList();
+
+        Double reviewScore = Optional.ofNullable(reviewRepository.getAverageScoreByGuideId(guide.getId()))
+                .map(score -> Math.round(score * 10.0) / 10.0)
+                .orElse(0.0);
+
+        Long reviewCount = reviewRepository.countByGuideId(guide.getId());
+
+        GuideExperienceResponseDTO experiences = GuideExperienceResponseDTO.from(
+                experienceGroupRepository.findByGuide(guide)
+        );
+
+        GuideExperienceDetailResponseDTO experienceDetail = experienceDetailRepository.findByGuide(guide)
+                .map(GuideExperienceDetailResponseDTO::from)
+                .orElse(null);
+
+        return GuideCoffeeChatResponseDTO.from(
+                guide,
+                tags,
+                reviewScore,
+                reviewCount,
+                experiences,
+                experienceDetail,
+                guide.isOpened()
+        );
     }
 
     /* 가이드 채팅 주제 등록 */
@@ -668,6 +705,28 @@ public class GuideMeService {
             Review fullReview = reviewMap.getOrDefault(review.getId(), review);
             return GuideReviewResponseDTO.from(fullReview, fullReview.getReservation().getMember());
         });
+    }
+
+    /* 내(가이드 본인) 경험 평가 비율 조회 */
+    @Transactional(readOnly = true)
+    public List<GuideExperienceEvaluationResponseDTO> getMyExperienceEvaluations(String loginMemberId) {
+        Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        List<ExperienceGroup> experienceGroups = experienceGroupRepository.findByGuide(myGuide);
+
+        return experienceGroups.stream()
+                .map(group -> {
+                    Long totalCount = reviewExperienceRepository.countByExperienceGroup(group);
+                    Long thumbsUpCount = reviewExperienceRepository.countByExperienceGroupAndIsThumbsUpTrue(group);
+                    double rate = (totalCount == 0) ? 0.0 : (double) thumbsUpCount / totalCount;
+                    return GuideExperienceEvaluationResponseDTO.of(
+                            group.getId(),
+                            group.getExperienceTitle(),
+                            rate
+                    );
+                })
+                .toList();
     }
 
 }

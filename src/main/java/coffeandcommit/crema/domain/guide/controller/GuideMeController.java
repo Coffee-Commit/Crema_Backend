@@ -380,6 +380,46 @@ public class GuideMeController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "내 커피챗 조회", description = "가이드 본인의 커피챗 정보를 조회합니다.")
+    @GetMapping("/coffeechats")
+    public ResponseEntity<Response<GuideCoffeeChatResponseDTO>> getMyCoffeeChat(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+        GuideCoffeeChatResponseDTO result = guideMeService.getMyCoffeeChat(loginMemberId);
+
+        Response<GuideCoffeeChatResponseDTO> response = Response.<GuideCoffeeChatResponseDTO>builder()
+                .message("가이드 본인 커피챗 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "내 경험 평가 조회", description = "가이드 본인의 경험 평가(따봉 비율)를 조회합니다.")
+    @GetMapping("/experience-evaluations")
+    public ResponseEntity<Response<List<GuideExperienceEvaluationResponseDTO>>> getMyExperienceEvaluations(
+            @AuthenticationPrincipal CustomUserDetails userDetails
+    ) {
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+        String loginMemberId = userDetails.getMemberId();
+
+        List<GuideExperienceEvaluationResponseDTO> result = guideMeService.getMyExperienceEvaluations(loginMemberId);
+
+        Response<List<GuideExperienceEvaluationResponseDTO>> response = Response.<List<GuideExperienceEvaluationResponseDTO>>builder()
+                .message("가이드 본인 경험 평가 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "가이드 전체 커피챗 조회", description = "가이드의 모든 상태 커피챗 예약을 조회합니다.")
     @GetMapping("/reservations/all")
     public ResponseEntity<Response<Page<GuidePendingReservationResponseDTO>>> getAllReservations(
