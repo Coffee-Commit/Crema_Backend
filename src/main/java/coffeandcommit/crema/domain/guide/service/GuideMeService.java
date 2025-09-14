@@ -53,7 +53,6 @@ public class GuideMeService {
     private final ExperienceGroupRepository experienceGroupRepository;
     private final ReviewRepository reviewRepository;
     private final ReservationRepository reservationRepository;
-    private final ReservationService reservationService;
 
     /* 가이드 직무 분야 등록 */
     @Transactional
