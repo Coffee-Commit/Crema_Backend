@@ -588,9 +588,8 @@ public class GuideMeService {
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
         guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
-
-        // 명시적 저장으로 즉시 더티체킹 반영 보장
-        guideRepository.save(guide);
+        // 즉시 DB 반영 필요시 명시적 flush
+        guideRepository.saveAndFlush(guide);
 
     }
 
