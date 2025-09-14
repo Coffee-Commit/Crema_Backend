@@ -22,6 +22,7 @@ public class VideoSession extends BaseEntity {
     @Column(name = "video_session_id")
     private Long id;
 
+    @Column(unique = true)
     private String sessionName;
 
     private String sessionId;

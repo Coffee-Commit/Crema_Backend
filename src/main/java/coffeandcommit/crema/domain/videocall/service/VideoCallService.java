@@ -59,21 +59,20 @@ public class VideoCallService {
 
     public QuickJoinResponse quickJoin(Long reservationId, UserDetails userDetails) {
         try {
-            Reservation reservation = reservationRepository.findById(reservationId)
+            // 1. 예약을 먼저 락으로 잡음 (동시 접근 차단)
+            Reservation reservation = reservationRepository.findByIdForUpdate(reservationId)
                     .orElseThrow(() -> new SessionNotFoundException("예약 ID: " + reservationId + "를 찾을 수 없습니다"));
 
-            VideoSession session;
-            try {   //세션이 없으면 새로 만듦
-                if(reservation.getVideoSession() == null)
-                    throw new SessionNotFoundException("예약 ID " + reservation.getId() + "에 연결된 VideoSession이 없습니다");
+            // 2. 세션명 고정 생성
+            String sessionName = "reservation_" + reservation.getId();
 
-                session = videoSessionRepository
-                        .findBySessionName(reservation.getVideoSession().getSessionName())
-                        .orElseThrow(() -> new SessionNotFoundException("세션 이름: " + reservation.getVideoSession().getSessionName() + "를 찾을 수 없습니다"));
-            }catch (SessionNotFoundException e) {
-                String sessionName = "reservation_" + reservation.getId() + "_" + reservation.getReservedAt();
-                session = basicVideoCallService.createVideoSession(sessionName);
-            }
+            // 3. 세션 조회 (락 사용) 및 없으면 생성
+            VideoSession session = videoSessionRepository
+                    .findBySessionNameForUpdate(sessionName)
+                    .orElseGet(() -> {
+                        log.info("[SESSION-QUICKJOIN] 세션이 없어 새로 생성: {}", sessionName);
+                        return basicVideoCallService.createVideoSession(sessionName);
+                    });
             
             String token = basicVideoCallService.joinSession(session.getSessionId(), userDetails.getUsername());
             Member member = memberRepository.findByIdAndIsDeletedFalse(userDetails.getUsername()).orElseThrow(ParticipantNotFound::new);
