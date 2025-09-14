@@ -14,7 +14,6 @@ import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
-import coffeandcommit.crema.domain.reservation.service.ReservationService;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
