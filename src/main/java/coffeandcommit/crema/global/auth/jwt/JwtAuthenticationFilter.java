@@ -85,13 +85,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 } else {
                     log.warn("Invalid JWT token for URI: {}, attempting auto refresh", requestURI);
                     // Access Token이 유효하지 않을 때 자동 재발급 시도
-                    if (authService.attemptAutoRefresh(request, response)) {
+                    String newToken = authService.attemptAutoRefresh(request, response);
+                    if (StringUtils.hasText(newToken)) {
                         log.info("Token auto-refresh successful for URI: {}", requestURI);
-                        // 재발급 성공 시 새로운 토큰으로 인증 설정
-                        String newToken = authService.getRefreshedAccessToken(request);
-                        if (StringUtils.hasText(newToken)) {
-                            setAuthentication(newToken, request);
-                        }
+                        // 재발급된 새 토큰으로 바로 인증 설정
+                        setAuthentication(newToken, request);
                     } else {
                         log.warn("Token auto-refresh failed for URI: {}", requestURI);
                         SecurityContextHolder.clearContext();

@@ -95,30 +95,30 @@ public class AuthService {
     }
 
     /**
-     * 자동 토큰 재발급 (필터에서 사용 - 예외 대신 boolean 반환)
+     * 자동 토큰 재발급
      */
-    public boolean attemptAutoRefresh(HttpServletRequest request, HttpServletResponse response) {
+    public String attemptAutoRefresh(HttpServletRequest request, HttpServletResponse response) {
         try {
             String refreshTokenValue = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
 
             if (!StringUtils.hasText(refreshTokenValue)) {
                 log.debug("No refresh token found for auto-refresh");
-                return false;
+                return null;
             }
 
             if (!jwtTokenProvider.validateToken(refreshTokenValue)) {
                 log.debug("Refresh token is invalid");
-                return false;
+                return null;
             }
 
             if (!jwtTokenProvider.isRefreshToken(refreshTokenValue)) {
                 log.debug("Token is not a refresh token");
-                return false;
+                return null;
             }
 
             if (tokenBlacklistService.isTokenBlacklisted(refreshTokenValue)) {
                 log.debug("Refresh token is blacklisted");
-                return false;
+                return null;
             }
 
             // 기존 토큰들을 블랙리스트에 추가
@@ -141,11 +141,11 @@ public class AuthService {
             response.setHeader("X-Token-Refreshed", "true");
 
             log.info("Token auto-refresh successful for member: {}", memberId);
-            return true;
+            return newAccessToken; // 새로운 Access Token 반환
 
         } catch (Exception e) {
             log.error("Auto-refresh failed: {}", e.getMessage(), e);
-            return false;
+            return null;
         }
     }
 
