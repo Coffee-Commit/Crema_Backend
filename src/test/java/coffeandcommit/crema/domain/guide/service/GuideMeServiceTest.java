@@ -69,6 +69,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.math.BigDecimal;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -977,6 +978,78 @@ public class GuideMeServiceTest {
         verify(guideScheduleRepository, never()).delete(any());
         verify(timeSlotRepository, never()).delete(any());
         verify(guideScheduleRepository, never()).findByGuide(any());
+    }
+
+    @Test
+    @DisplayName("getMyGuideReviews - 성공: 가이드 본인 리뷰 페이징 조회")
+    void getMyGuideReviews_Success() {
+        Pageable pageable = PageRequest.of(0, 10);
+
+        // 멘티들
+        Member mentee1 = Member.builder().id("mentee-1").nickname("mentee1").build();
+        Member mentee2 = Member.builder().id("mentee-2").nickname("mentee2").build();
+
+        // 예약들
+        Reservation res1 = Reservation.builder()
+                .id(101L)
+                .member(mentee1)
+                .guide(guide)
+                .status(Status.COMPLETED)
+                .matchingTime(LocalDateTime.now().minusDays(1))
+                .build();
+        Reservation res2 = Reservation.builder()
+                .id(102L)
+                .member(mentee2)
+                .guide(guide)
+                .status(Status.COMPLETED)
+                .matchingTime(LocalDateTime.now().minusDays(2))
+                .build();
+
+        // 리뷰들
+        var review1 = coffeandcommit.crema.domain.review.entity.Review.builder()
+                .id(1001L)
+                .reservation(res1)
+                .starReview(BigDecimal.valueOf(4.5))
+                .comment("good")
+                .build();
+        var review2 = coffeandcommit.crema.domain.review.entity.Review.builder()
+                .id(1002L)
+                .reservation(res2)
+                .starReview(BigDecimal.valueOf(5.0))
+                .comment("great")
+                .build();
+
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.of(guide));
+        when(reviewRepository.findByReservation_GuideOrderByCreatedAtDesc(guide, pageable))
+                .thenReturn(new PageImpl<>(List.of(review1, review2), pageable, 2));
+        when(reviewRepository.findAllWithExperiencesByIdIn(List.of(1001L, 1002L)))
+                .thenReturn(List.of(review1, review2));
+
+        Page<coffeandcommit.crema.domain.guide.dto.response.GuideReviewResponseDTO> page =
+                guideMeService.getMyGuideReviews(memberId, pageable);
+
+        assertNotNull(page);
+        assertEquals(2, page.getContent().size());
+        assertEquals("mentee1", page.getContent().get(0).getWriter().getNickname());
+        assertEquals("mentee2", page.getContent().get(1).getWriter().getNickname());
+
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(reviewRepository).findByReservation_GuideOrderByCreatedAtDesc(guide, pageable);
+        verify(reviewRepository).findAllWithExperiencesByIdIn(List.of(1001L, 1002L));
+    }
+
+    @Test
+    @DisplayName("getMyGuideReviews - 실패: 가이드 없음")
+    void getMyGuideReviews_GuideNotFound() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(guideRepository.findByMember_Id(memberId)).thenReturn(Optional.empty());
+
+        BaseException ex = assertThrows(BaseException.class, () ->
+                guideMeService.getMyGuideReviews(memberId, pageable)
+        );
+        assertEquals(ErrorStatus.GUIDE_NOT_FOUND, ex.getErrorCode());
+        verify(guideRepository).findByMember_Id(memberId);
+        verify(reviewRepository, never()).findByReservation_GuideOrderByCreatedAtDesc(any(), any());
     }
 
     @Test
