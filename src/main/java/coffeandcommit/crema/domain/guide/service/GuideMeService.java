@@ -666,7 +666,7 @@ public class GuideMeService {
 
         return reviewPage.map(review -> {
             Review fullReview = reviewMap.getOrDefault(review.getId(), review);
-            return GuideReviewResponseDTO.from(fullReview, review.getReservation().getMember());
+            return GuideReviewResponseDTO.from(fullReview, fullReview.getReservation().getMember());
         });
     }
 

@@ -365,10 +365,15 @@ public class GuideMeController {
         }
 
         String loginMemberId = userDetails.getMemberId();
-        Page<GuideReviewResponseDTO> result = guideMeService.getMyGuideReviews(loginMemberId, pageable);
+        Pageable capped = PageRequest.of(
+                Math.max(pageable.getPageNumber(), 0),
+                Math.min(pageable.getPageSize(), 100),
+                Sort.by(Sort.Direction.DESC, "createdAt")
+        );
+        Page<GuideReviewResponseDTO> result = guideMeService.getMyGuideReviews(loginMemberId, capped);
 
         Response<Page<GuideReviewResponseDTO>> response = Response.<Page<GuideReviewResponseDTO>>builder()
-                .message("가이드 본인 리뷰 조회 성공")
+                .message("가이드본인리뷰조회성공")
                 .data(result)
                 .build();
 
