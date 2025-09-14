@@ -53,6 +53,8 @@ public enum ErrorStatus implements BaseCode {
     GUIDE_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드를 찾을 수 없습니다."),
     NO_GUIDES_FOUND(HttpStatus.NOT_FOUND, "조건에 맞는 가이드를 찾을 수 없습니다."),
     GUIDE_JOB_FIELD_NOT_FOUND(HttpStatus.NOT_FOUND, "해당 가이드의 직무 분야를 찾을 수 없습니다."),
+    GUIDE_NOT_OPENED(HttpStatus.FORBIDDEN, "비공개 가이드입니다. 신청할 수 없습니다."),
+    SELF_RESERVATION_NOT_ALLOWED(HttpStatus.FORBIDDEN, "본인에게는 커피챗을 신청할 수 없습니다."),
     INVALID_JOB_FIELD(HttpStatus.BAD_REQUEST, "잘못된 직무 분야 요청입니다."),
     INVALID_TOPIC(HttpStatus.BAD_REQUEST, "잘못된 주제 요청입니다."),
     MAX_TOPIC_EXCEEDED(HttpStatus.BAD_REQUEST, "등록 가능한 주제 개수를 초과했습니다."),
@@ -101,6 +103,7 @@ public enum ErrorStatus implements BaseCode {
     INVALID_STATUS(HttpStatus.CONFLICT,"잘못된 예약 상태 요청입니다."),
     ALREADY_DECIDED(HttpStatus.CONFLICT,"이미 처리된 예약입니다."),
     INVALID_TIME_UNIT(HttpStatus.BAD_REQUEST, "유효하지 않은 시간 단위입니다."),
+    INVALID_SURVEY(HttpStatus.BAD_REQUEST, "유효하지 않은 사전 정보입니다."),
     SURVEY_NOT_FOUND(HttpStatus.NOT_FOUND, "등록된 사전 정보가 없습니다.");
 
 

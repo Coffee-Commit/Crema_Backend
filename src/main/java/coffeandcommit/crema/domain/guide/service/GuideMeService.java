@@ -14,6 +14,7 @@ import coffeandcommit.crema.domain.reservation.entity.Reservation;
 import coffeandcommit.crema.domain.reservation.entity.Survey;
 import coffeandcommit.crema.domain.reservation.enums.Status;
 import coffeandcommit.crema.domain.reservation.repository.ReservationRepository;
+import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
 import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
@@ -31,6 +32,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -588,6 +590,8 @@ public class GuideMeService {
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
         guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
+        // 즉시 DB 반영 필요시 명시적 flush
+        guideRepository.saveAndFlush(guide);
 
     }
 
@@ -638,6 +642,31 @@ public class GuideMeService {
                     .preferredTimeRange(preferredTimeRange)
                     .status(reservation.getStatus())
                     .build();
+        });
+    }
+
+    /* 내(가이드 본인) 리뷰 목록 조회 */
+    @Transactional(readOnly = true)
+    public Page<GuideReviewResponseDTO> getMyGuideReviews(String loginMemberId, Pageable pageable) {
+        Guide myGuide = guideRepository.findByMember_Id(loginMemberId)
+                .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
+
+        Page<Review> reviewPage = reviewRepository.findByReservation_GuideOrderByCreatedAtDesc(myGuide, pageable);
+
+        List<Long> reviewIds = reviewPage.getContent().stream()
+                .map(Review::getId)
+                .toList();
+
+        List<Review> reviewsWithExperiences = reviewIds.isEmpty()
+                ? List.of()
+                : reviewRepository.findAllWithExperiencesByIdIn(reviewIds);
+
+        Map<Long, Review> reviewMap = reviewsWithExperiences.stream()
+                .collect(Collectors.toMap(Review::getId, r -> r));
+
+        return reviewPage.map(review -> {
+            Review fullReview = reviewMap.getOrDefault(review.getId(), review);
+            return GuideReviewResponseDTO.from(fullReview, fullReview.getReservation().getMember());
         });
     }
 

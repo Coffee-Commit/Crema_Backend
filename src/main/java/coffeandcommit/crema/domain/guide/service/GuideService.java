@@ -345,7 +345,7 @@ public class GuideService {
         // Page → DTO 변환 시 경험평가 포함된 리뷰 사용
         return reviewPage.map(review -> {
             Review fullReview = reviewMap.getOrDefault(review.getId(), review);
-            return GuideReviewResponseDTO.from(fullReview, review.getReservation().getMember());
+            return GuideReviewResponseDTO.from(fullReview, fullReview.getReservation().getMember());
         });
 
     }

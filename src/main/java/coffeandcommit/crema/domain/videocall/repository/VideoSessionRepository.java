@@ -25,9 +25,14 @@ public interface VideoSessionRepository extends JpaRepository<VideoSession, Long
      * @return 잠긴 VideoSession 엔티티
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @QueryHints(@QueryHint(name = "javax.persistence.lock.timeout", value = "3000")) // 3초 타임아웃
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "5000"))
     @Query("select vs from VideoSession vs where vs.sessionId = :sessionId")
     Optional<VideoSession> findBySessionIdForUpdate(@Param("sessionId") String sessionId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @QueryHints(@QueryHint(name = "jakarta.persistence.lock.timeout", value = "5000"))
+    @Query("select vs from VideoSession vs where vs.sessionName = :sessionName")
+    Optional<VideoSession> findBySessionNameForUpdate(@Param("sessionName") String sessionName);
 
     Optional<VideoSession> findBySessionName(String sessionName);
 }
