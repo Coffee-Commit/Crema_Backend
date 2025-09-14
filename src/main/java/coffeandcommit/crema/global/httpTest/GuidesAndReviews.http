@@ -7,7 +7,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "guide_69c286fd"
+  "nickname": "guide_cdcc2689"
 }
 
 ### 아래 요청들에서 Authorization 헤더의 ~~~ 부분을 3번의 accessToken으로 교체해서 사용하세요.
@@ -35,6 +35,24 @@ Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY
 GET http://localhost:8080/api/guides?page=0&size=10&sort=popular
 Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
 
+### Guides - 내 가이드 공개 상태 OFF
+PATCH http://localhost:8080/api/guides/me/visibility
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJkMmViMzkyNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2NzJiYjZiMS0zY2M5LTQwNzMtODM5My1iNzNkMjNlNzVlM2EiLCJpYXQiOjE3NTc4MjA2NTksImV4cCI6MTc1NzgyMjQ1OX0.rYreo4iwUaHXSx1_6gSs_V9XFbJdQk8Lq27XlRx-_Je1yLvVwQBmsAvQlnnU41J2WHdGcaaoi7MeEhGeZHjsRA
+Content-Type: application/json
+
+{
+  "isOpened": false
+}
+
+### Guides - 내 가이드 공개 상태 ON
+PATCH http://localhost:8080/api/guides/me/visibility
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJkMmViMzkyNSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI2NzJiYjZiMS0zY2M5LTQwNzMtODM5My1iNzNkMjNlNzVlM2EiLCJpYXQiOjE3NTc4MjA2NTksImV4cCI6MTc1NzgyMjQ1OX0.rYreo4iwUaHXSx1_6gSs_V9XFbJdQk8Lq27XlRx-_Je1yLvVwQBmsAvQlnnU41J2WHdGcaaoi7MeEhGeZHjsRA
+Content-Type: application/json
+
+{
+  "isOpened": true
+}
+
 ### Reviews - 내 리뷰 조회 ALL (기본)
 GET http://localhost:8080/api/reviews/me?filter=ALL&page=0&size=10
 Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiJhMjQ2MGQ1Ny1jMWI3LTRmZDktODM3ZS1hMDMxMjdhYTRiZTciLCJpYXQiOjE3NTc4MDM0OTUsImV4cCI6MTc1NzgwNTI5NX0.RHceh_sGwsNTRTouoeZp_nzJPlHgqV42XYAN3OrDNW64rbeJpdH04ZUhRgHiPNsB9IwdcmfqDj2-p4b-CrRA3g
@@ -50,4 +68,23 @@ Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY
 ### Reviews - 무효 필터 값 (lenient: ALL로 동작)
 GET http://localhost:8080/api/reviews/me?filter=INVALID&page=0&size=10
 Authorization: Bearer ~~~
+
+### Reservations - 포인트 부족 시 신청 실패 확인 (rookie 기본 포인트 0 가정)
+POST http://localhost:8080/api/reservations
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJiYmI4NWRmMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI3YThmYjViOS05ZTA5LTQzMWMtYjQzOC0yMDU2OTA5NGY5MDQiLCJpYXQiOjE3NTc4MjAwMzUsImV4cCI6MTc1NzgyMTgzNX0.HH9wW3Qwk1fwbIs9SBL4Bh1svcUHkCZJ-6wisEGmmcJzht3kuvBtekKHJ6BOagfDGHYaLBkzDM37wBKwMTviJg
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="reservation"; filename="reservation.json"
+Content-Type: application/json
+
+{
+  "guideId": 3,
+  "timeUnit": "MINUTE_30",
+  "survey": {
+    "messageToGuide": "포인트 부족 테스트",
+    "preferredDate": "2030-01-01T10:00:00"
+  }
+}
+--WebAppBoundary--
 

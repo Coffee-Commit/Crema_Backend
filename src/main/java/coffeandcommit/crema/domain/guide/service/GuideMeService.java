@@ -588,6 +588,8 @@ public class GuideMeService {
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
         guide.updateVisibility(guideVisibilityRequestDTO.isOpened());
+        // 즉시 DB 반영 필요시 명시적 flush
+        guideRepository.saveAndFlush(guide);
 
     }
 

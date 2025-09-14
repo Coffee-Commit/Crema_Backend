@@ -61,15 +61,42 @@ public class ReservationService {
         Member member = memberRepository.findById(loginMemberId)
                 .orElseThrow(() -> new BaseException(ErrorStatus.MEMBER_NOT_FOUND));
 
-        // 2. 존재하는 가이드인지 확인
+        // 2. 존재하는가이드인지확인
         Guide guide = guideRepository.findById(reservationRequestDTO.getGuideId())
                 .orElseThrow(() -> new BaseException(ErrorStatus.GUIDE_NOT_FOUND));
 
-        // 3. Survey 엔티티 생성
+        // 2-00. 비공개가이드신청차단
+        if (!guide.isOpened()) {
+            throw new BaseException(ErrorStatus.GUIDE_NOT_OPENED);
+        }
+
+        // 2-0. 자기 자신에게 신청 방지
+        if (guide.getMember() != null && guide.getMember().getId().equals(member.getId())) {
+            throw new BaseException(ErrorStatus.SELF_RESERVATION_NOT_ALLOWED);
+        }
+
+        // 2-1. 포인트 선검증: 신청하려는 시간 단위 가격보다 보유 포인트가 적으면 신청 불가
+        TimeType requestTimeType = reservationRequestDTO.getTimeUnit();
+        if (requestTimeType == null) {
+            throw new BaseException(ErrorStatus.INVALID_TIME_UNIT);
+        }
+        int price = requestTimeType.getPrice();
+        Integer currentPoint = member.getPoint() == null ? 0 : member.getPoint();
+        if (currentPoint < price) {
+            throw new BaseException(ErrorStatus.INSUFFICIENT_POINTS);
+        }
+        // 포인트이체는가이드가수락(confirmed)할때수행
+
+        // 3. Survey 엔티티생성
+        var surveyReq = reservationRequestDTO.getSurvey();
+        if (surveyReq == null || surveyReq.getPreferredDate() == null) {
+            // 적절한에러코드로교체필요: 예) ErrorStatus.INVALID_SURVEY
+            throw new BaseException(ErrorStatus.INVALID_SURVEY);
+        }
         Survey survey = Survey.builder()
                 .fileUploadURL("")
-                .messageToGuide(reservationRequestDTO.getSurvey().getMessageToGuide())
-                .preferredDate(reservationRequestDTO.getSurvey().getPreferredDate())
+                .messageToGuide(surveyReq.getMessageToGuide())
+                .preferredDate(surveyReq.getPreferredDate())
                 .build();
 
         // 3-1. 파일 업로드 처리 (files가 존재하는 경우만)
@@ -102,10 +129,10 @@ public class ReservationService {
                 .survey(survey)
                 .build();
 
-        // 5. TimeUnit 엔티티 생성 (예약 ↔ 시간 단위 연결)
+        // 5. TimeUnit 엔티티생성 (예약↔시간단위연결)
         TimeUnit timeUnit = TimeUnit.builder()
                 .reservation(reservation)
-                .timeType(reservationRequestDTO.getTimeUnit()) // String -> Enum 변환
+                .timeType(requestTimeType)
                 .build();
 
         

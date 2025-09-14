@@ -79,10 +79,11 @@ class ReservationServiceTest {
                 .point(20000) // Enough points for a reservation
                 .build();
 
-        // Create test guide
+        // Create test guide (공개 상태)
         testGuide = Guide.builder()
                 .id(GUIDE_ID)
                 .member(Member.builder().id("guide-member-id").build())
+                .isOpened(true)
                 .build();
 
         // Create test survey request DTO
