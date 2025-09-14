@@ -354,6 +354,27 @@ public class GuideMeController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    @Operation(summary = "내 리뷰 조회", description = "가이드 본인의 리뷰 목록을 조회합니다.")
+    @GetMapping("/reviews")
+    public ResponseEntity<Response<Page<GuideReviewResponseDTO>>> getMyReviews(
+            @AuthenticationPrincipal CustomUserDetails userDetails,
+            Pageable pageable
+    ) {
+        if (userDetails == null) {
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        String loginMemberId = userDetails.getMemberId();
+        Page<GuideReviewResponseDTO> result = guideMeService.getMyGuideReviews(loginMemberId, pageable);
+
+        Response<Page<GuideReviewResponseDTO>> response = Response.<Page<GuideReviewResponseDTO>>builder()
+                .message("가이드 본인 리뷰 조회 성공")
+                .data(result)
+                .build();
+
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(summary = "가이드 전체 커피챗 조회", description = "가이드의 모든 상태 커피챗 예약을 조회합니다.")
     @GetMapping("/reservations/all")
     public ResponseEntity<Response<Page<GuidePendingReservationResponseDTO>>> getAllReservations(
