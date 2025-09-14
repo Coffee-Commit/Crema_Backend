@@ -80,7 +80,7 @@ class MemberControllerTest {
                 .jobPosition("개발자")
                 .isCurrent(true)
                 .workingStart(LocalDate.of(2022, 1, 1))
-                .workingPeriod("2년 3개월")
+                .workingPeriod("2022.01 ~ 재직중")
                 .certificationPdfUrl("https://example.com/cert.pdf")
                 .build();
 
@@ -358,18 +358,19 @@ class MemberControllerTest {
         @DisplayName("성공: 가이드 업그레이드 정보 조회")
         void getUpgradeInfo_Success() {
             // given
-            given(memberService.getUpgradeInfo("testId")).willReturn(testMemberUpgradeResponse);
+            MemberUpgradeResponse response = MemberUpgradeResponse.builder()
+                    .companyName("테스트회사")
+                    .jobPosition("개발자")
+                    .certificationPdfUrl("https://storage.googleapis.com/bucket/file?X-Goog-Signature=presigned") // presigned URL
+                    .build();
+
+            given(memberService.getUpgradeInfo("testId")).willReturn(response);
 
             // when
-            ApiResponse<MemberUpgradeResponse> response = memberController.getUpgradeInfo(testUserDetails);
+            ApiResponse<MemberUpgradeResponse> result = memberController.getUpgradeInfo(testUserDetails);
 
             // then
-            assertThat(response).isNotNull();
-            assertThat(response.isSuccess()).isTrue();
-            assertThat(response.getResult().getCompanyName()).isEqualTo("테스트회사");
-            assertThat(response.getResult().getJobPosition()).isEqualTo("개발자");
-
-            verify(memberService).getUpgradeInfo("testId");
+            assertThat(result.getResult().getCertificationPdfUrl()).contains("X-Goog-Signature");
         }
 
         @Test

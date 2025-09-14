@@ -11,7 +11,7 @@ POST http://localhost:8080/api/test/auth/login
 Content-Type: application/json
 
 {
-  "nickname": "guide_2b2a553d"
+  "nickname": "guide_69c286fd"
 }
 
 ### 7. 가이드 경험 등록 (enum 기반, 새로운 스펙)
@@ -44,7 +44,7 @@ DELETE http://localhost:8080/api/test/auth/cleanup
 
 ### 6. 가이드 본인 프로필 조회
 GET http://localhost:8080/api/guides
-Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiI0NTM2ZjBjYiIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI1YWU3OGUzNi0zN2ZjLTQ5ZjItYTZlYy0yOWRhNmIzOWZhNmIiLCJpYXQiOjE3NTc0Nzk5NjEsImV4cCI6MTc1NzQ4MTc2MX0.AmBGY6o2yWpgUBcwiqkDKkxoPbbNFRhdN086J_bpG93hMTrEP3Sxwk1g5DbuSYul50BNVIPYdNXiv64GmMuMmw
+Authorization: Bearer eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJlNjBkNTIxMSIsInR5cGUiOiJhY2Nlc3MiLCJqdGkiOiI5ZDkyNDRiNi1lYzk3LTQ0ZTUtYmMyMC0xZDcwZmI2MGE4NWQiLCJpYXQiOjE3NTc3OTk3MDQsImV4cCI6MTc1NzgwMTUwNH0.TR6oHbGiTxntnJ0mdTEH9eCSRUMmegfgS8pLb8q4wgwUG0kCt5bTPRvI0pHcNezbyw35-HoYyOpcioyEt4Hffg
 
 ### 가이드 조회 (jobFieldIds, keyword 쿼리 파라미터)
 GET http://localhost:8080/api/guides?jobFieldIds=PLANNING_STRATEGY

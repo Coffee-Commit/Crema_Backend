@@ -14,6 +14,7 @@ import coffeandcommit.crema.domain.review.dto.request.ExperienceEvaluationReques
 import coffeandcommit.crema.domain.review.dto.request.ReviewRequestDTO;
 import coffeandcommit.crema.domain.review.dto.response.MyReviewResponseDTO;
 import coffeandcommit.crema.domain.review.dto.response.ReviewResponseDTO;
+import coffeandcommit.crema.domain.review.dto.response.ReviewInfo;
 import coffeandcommit.crema.domain.review.entity.Review;
 import coffeandcommit.crema.domain.review.repository.ReviewRepository;
 import coffeandcommit.crema.global.common.exception.BaseException;
@@ -39,6 +40,7 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -312,54 +314,42 @@ class ReviewServiceTest {
     }
 
     @Test
-    @DisplayName("getMyReviews - 성공 케이스: 완료된 예약 목록 조회 (리뷰 있음/없음 혼합, filter=ALL)")
+    @DisplayName("getMyReviews - 성공: filter=ALL")
     void getMyReviews_Success_All() {
-        Reservation secondReservation = Reservation.builder()
-                .id(2L)
-                .member(testMember)
-                .guide(testGuide)
-                .status(Status.COMPLETED)
-                .matchingTime(LocalDateTime.now().minusHours(2))
+        MyReviewResponseDTO dto1 = MyReviewResponseDTO.builder()
+                .reservationId(RESERVATION_ID)
+                .review(ReviewInfo.builder().reviewId(1L).build())
+                .build();
+        MyReviewResponseDTO dto2 = MyReviewResponseDTO.builder()
+                .reservationId(2L)
+                .review(null)
                 .build();
 
-        TimeUnit timeUnit2 = TimeUnit.builder()
-                .timeType(TimeType.MINUTE_30)
-                .build();
-        timeUnit2.setReservation(secondReservation);
-        secondReservation.setTimeUnit(timeUnit2);
+        when(reservationRepository.findMyReviews(eq(LOGIN_MEMBER_ID), eq(Status.COMPLETED),
+                eq(coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.ALL), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(dto1, dto2), pageable, 2));
 
-        // Reservation 조회 mock
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(testReservation, secondReservation), pageable, 2));
-
-        // Review 조회 mock (첫 번째 예약만 리뷰 있음)
-        when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID, 2L)))
-                .thenReturn(List.of(testReview));
-
-        // When
         Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
 
-        // Then
         assertNotNull(result);
         assertEquals(2, result.getContent().size());
-
-        MyReviewResponseDTO first = result.getContent().get(0);
-        assertEquals(RESERVATION_ID, first.getReservationId());
-        assertNotNull(first.getReview());
-
-        MyReviewResponseDTO second = result.getContent().get(1);
-        assertEquals(2L, second.getReservationId());
-        assertNull(second.getReview());
+        assertEquals(RESERVATION_ID, result.getContent().get(0).getReservationId());
+        assertEquals(2L, result.getContent().get(1).getReservationId());
+        assertNotNull(result.getContent().get(0).getReview());
+        assertNull(result.getContent().get(1).getReview());
     }
 
     @Test
-    @DisplayName("getMyReviews - 성공 케이스: 작성된 리뷰만 조회 (filter=WRITTEN)")
+    @DisplayName("getMyReviews - 성공: filter=WRITTEN")
     void getMyReviews_Success_Written() {
-        when(reservationRepository.findWrittenByMember(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(testReservation), pageable, 1));
+        MyReviewResponseDTO dto = MyReviewResponseDTO.builder()
+                .reservationId(RESERVATION_ID)
+                .review(ReviewInfo.builder().reviewId(1L).build())
+                .build();
 
-        when(reviewRepository.findByReservationIdIn(List.of(RESERVATION_ID)))
-                .thenReturn(List.of(testReview));
+        when(reservationRepository.findMyReviews(eq(LOGIN_MEMBER_ID), eq(Status.COMPLETED),
+                eq(coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.WRITTEN), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(dto), pageable, 1));
 
         Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "WRITTEN", pageable);
 
@@ -369,27 +359,16 @@ class ReviewServiceTest {
     }
 
     @Test
-    @DisplayName("getMyReviews - 성공 케이스: 작성되지 않은 리뷰만 조회 (filter=NOT_WRITTEN)")
+    @DisplayName("getMyReviews - 성공: filter=NOT_WRITTEN")
     void getMyReviews_Success_NotWritten() {
-        Reservation secondReservation = Reservation.builder()
-                .id(2L)
-                .member(testMember)
-                .guide(testGuide)
-                .status(Status.COMPLETED)
-                .matchingTime(LocalDateTime.now().minusHours(2))
+        MyReviewResponseDTO dto = MyReviewResponseDTO.builder()
+                .reservationId(2L)
+                .review(null)
                 .build();
 
-        TimeUnit timeUnit2 = TimeUnit.builder()
-                .timeType(TimeType.MINUTE_30)
-                .build();
-        timeUnit2.setReservation(secondReservation);
-        secondReservation.setTimeUnit(timeUnit2);
-
-        when(reservationRepository.findNotWrittenByMember(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
-                .thenReturn(new PageImpl<>(List.of(secondReservation), pageable, 1));
-
-        when(reviewRepository.findByReservationIdIn(List.of(2L)))
-                .thenReturn(Collections.emptyList()); // 리뷰 없음
+        when(reservationRepository.findMyReviews(eq(LOGIN_MEMBER_ID), eq(Status.COMPLETED),
+                eq(coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.NOT_WRITTEN), eq(pageable)))
+                .thenReturn(new PageImpl<>(List.of(dto), pageable, 1));
 
         Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "NOT_WRITTEN", pageable);
 
@@ -399,16 +378,16 @@ class ReviewServiceTest {
     }
 
     @Test
-    @DisplayName("getMyReviews - 실패 케이스: 완료된 예약이 없는 경우")
+    @DisplayName("getMyReviews - 빈 결과: 완료된 예약이 없는 경우")
     void getMyReviews_NoReservationsFound() {
-        when(reservationRepository.findByMember_IdAndStatus(LOGIN_MEMBER_ID, Status.COMPLETED, pageable))
+        when(reservationRepository.findMyReviews(eq(LOGIN_MEMBER_ID), eq(Status.COMPLETED),
+                eq(coffeandcommit.crema.domain.review.enums.ReviewWriteFilter.ALL), eq(pageable)))
                 .thenReturn(Page.empty(pageable));
 
-        BaseException exception = assertThrows(BaseException.class, () -> {
-            reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
-        });
+        Page<MyReviewResponseDTO> result = reviewService.getMyReviews(LOGIN_MEMBER_ID, "ALL", pageable);
 
-        assertEquals(ErrorStatus.RESERVATION_NOT_FOUND, exception.getErrorCode());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 
 }

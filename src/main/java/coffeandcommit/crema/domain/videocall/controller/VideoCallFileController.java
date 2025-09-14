@@ -16,6 +16,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.http.MediaType;
+import coffeandcommit.crema.global.common.exception.BaseException;
+import coffeandcommit.crema.global.common.exception.code.ErrorStatus;
 
 @RestController
 @RequestMapping("/api/video-call")
@@ -48,30 +52,76 @@ public class VideoCallFileController {
         return ApiResponse.onSuccess(SuccessStatus.OK, response);
     }
 
-    @PostMapping("/sessions/{sessionId}/materials")
+    @PostMapping(value = "/sessions/{sessionId}/materials", consumes = MediaType.APPLICATION_JSON_VALUE)
     @Operation(
-        summary = "공유 자료 등록",
-        description = "이미 스토리지에 업로드된 파일을 특정 화상통화 세션과 연결합니다. " +
-                     "파일 업로드 자체는 기존 /api/images/upload API를 사용해주세요."
+        summary = "공유 자료 등록 (JSON)",
+        description = "이미 스토리지에 업로드된 파일을 특정 화상통화 세션과 연결합니다."
     )
     @ApiResponses(value = {
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "공유 자료가 성공적으로 등록됨"),
-        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 또는 파일이 존재하지 않음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "세션 접근 권한 없음"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션을 찾을 수 없음"),
         @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 등록된 파일")
     })
-    public ApiResponse<SharedFileResponse> addSharedFile(
+    public ApiResponse<SharedFileResponse> addSharedFileFromJson(
             @Parameter(description = "화상통화 세션 ID", required = true)
             @PathVariable String sessionId,
             @Parameter(description = "공유 파일 등록 정보", required = true)
             @Valid @RequestBody SharedFileUploadRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
 
-        log.info("공유 자료 등록 요청 - 세션: {}, 파일: {}, 사용자: {}", sessionId, request.getFileName(), userDetails.getUsername());
+        // 인증 정보 검증
+        if (userDetails == null) {
+            log.error("인증되지 않은 JSON 요청 - 세션: {}", sessionId);
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        log.info("공유 자료 등록 요청 (JSON) - 세션: {}, 파일: {}, 사용자: {}",
+                sessionId, request.getFileName(), userDetails.getUsername());
 
         SharedFileResponse response = videoCallFileService.addSharedFile(sessionId, request, userDetails);
+        return ApiResponse.onSuccess(SuccessStatus.CREATED, response);
+    }
 
+    @PostMapping(value = "/sessions/{sessionId}/materials", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Operation(
+        summary = "공유 자료 등록 (파일 업로드)",
+        description = "파일을 직접 업로드하고 특정 화상통화 세션과 연결합니다."
+    )
+    @ApiResponses(value = {
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "파일 업로드 및 공유 자료 등록 성공"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "잘못된 요청 또는 파일 업로드 실패"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "인증 필요"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "403", description = "세션 접근 권한 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "404", description = "세션을 찾을 수 없음"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "409", description = "이미 등록된 파일"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "413", description = "파일 크기 초과")
+    })
+    public ApiResponse<SharedFileResponse> addSharedFileFromUpload(
+            @Parameter(description = "화상통화 세션 ID", required = true)
+            @PathVariable String sessionId,
+            @Parameter(description = "업로드할 파일", required = true)
+            @RequestParam("file") MultipartFile file,
+            @AuthenticationPrincipal UserDetails userDetails) {
+
+        // 인증 정보 검증
+        if (userDetails == null) {
+            log.error("인증되지 않은 파일 업로드 요청 - 세션: {}", sessionId);
+            throw new BaseException(ErrorStatus.UNAUTHORIZED);
+        }
+
+        // 파일 검증
+        if (file.isEmpty()) {
+            log.error("업로드된 파일이 비어있습니다 - 세션: {}, 사용자: {}", sessionId, userDetails.getUsername());
+            throw new BaseException(ErrorStatus.FILE_REQUIRED);
+        }
+
+        log.info("파일 업로드 및 공유 자료 등록 요청 - 세션: {}, 파일: {}, 사용자: {}",
+                sessionId, file.getOriginalFilename(), userDetails.getUsername());
+
+        SharedFileResponse response = videoCallFileService.uploadAndAddSharedFile(sessionId, file, userDetails);
         return ApiResponse.onSuccess(SuccessStatus.CREATED, response);
     }
 

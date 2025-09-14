@@ -1,0 +1,153 @@
+{
+  "members": [
+    {
+      "id": "MBR00001",
+      "nickname": "홍길동",
+      "role": "ROOKIE",
+      "point": 100,
+      "profileImageUrl": "https://cdn.example.com/profile1.png",
+      "description": "백엔드 지망생입니다.",
+      "provider": "GOOGLE",
+      "providerId": "google_123",
+      "isDeleted": false
+    },
+    {
+      "id": "MBR00002",
+      "nickname": "김선배",
+      "role": "GUIDE",
+      "point": 200,
+      "profileImageUrl": "https://cdn.example.com/profile2.png",
+      "description": "현직 백엔드 개발자입니다.",
+      "provider": "KAKAO",
+      "providerId": "kakao_456",
+      "isDeleted": false
+    }
+  ],
+  "guides": [
+    {
+      "id": 1,
+      "memberId": "MBR00002",
+      "chatDescription": "커피챗으로 면접 준비 도와드립니다.",
+      "isOpened": true,
+      "title": "백엔드 면접/이직 상담",
+      "certificationImageUrl": "https://cdn.example.com/cert1.png",
+      "approvedDate": "2025-09-01T12:00:00",
+      "workingStart": "2020-01-01",
+      "workingEnd": null,
+      "workingPeriod": null,
+      "companyName": "네이버",
+      "isCompanyNamePublic": true,
+      "jobPosition": "Backend Engineer",
+      "isCurrent": true
+    }
+  ],
+  "guideJobField": {"guideId": 1, "jobName": "IT_DEVELOPMENT_DATA"},
+  "guideChatTopics": [
+    {"id": 1, "guideId": 1, "chatTopicId": 1, "topicName": "INTERVIEW"},
+    {"id": 2, "guideId": 1, "chatTopicId": 3, "topicName": "JOB_CHANGE"}
+  ],
+  "hashTags": [
+    {"id": 1, "guideId": 1, "hashTagName": "#백엔드"},
+    {"id": 2, "guideId": 1, "hashTagName": "#면접준비"}
+  ],
+  "guideSchedules": [
+    {
+      "id": 1,
+      "guideId": 1,
+      "dayOfWeek": "MONDAY",
+      "timeSlots": [
+        {"id": 1, "startTimeOption": "09:00:00", "endTimeOption": "12:00:00"}
+      ]
+    },
+    {
+      "id": 2,
+      "guideId": 1,
+      "dayOfWeek": "WEDNESDAY",
+      "timeSlots": [
+        {"id": 2, "startTimeOption": "14:00:00", "endTimeOption": "18:00:00"}
+      ]
+    }
+  ],
+  "surveys": [
+    {"id": 1, "fileUploadUrl": "https://cdn.example.com/survey1-root.pdf", "messageToGuide": "면접 준비 조언 부탁드립니다.", "preferredDate": "2025-09-15T15:00:00"},
+    {"id": 2, "fileUploadUrl": "https://cdn.example.com/survey2-root.pdf", "messageToGuide": "자소서 피드백 받고 싶습니다.", "preferredDate": "2025-09-20T19:00:00"},
+    {"id": 3, "fileUploadUrl": "https://cdn.example.com/survey3-root.pdf", "messageToGuide": "프로젝트 코드 리뷰 받고 싶어요.", "preferredDate": "2025-09-22T20:00:00"},
+    {"id": 4, "fileUploadUrl": "https://cdn.example.com/survey4-root.pdf", "messageToGuide": "커리어 전환 조언 부탁드립니다.", "preferredDate": "2025-09-25T21:00:00"},
+    {"id": 5, "fileUploadUrl": "https://cdn.example.com/survey5-root.pdf", "messageToGuide": "포트폴리오 피드백 부탁드립니다.", "preferredDate": "2025-09-28T10:00:00"}
+  ],
+  "surveyFiles": [
+    {"id": 1, "surveyId": 1, "fileKey": "survey/1/file1.pdf"},
+    {"id": 2, "surveyId": 2, "fileKey": "survey/2/file1.pdf"},
+    {"id": 3, "surveyId": 3, "fileKey": "survey/3/file1.pdf"},
+    {"id": 4, "surveyId": 4, "fileKey": "survey/4/file1.pdf"},
+    {"id": 5, "surveyId": 5, "fileKey": "survey/5/file1.pdf"}
+  ],
+  "reservations": [
+    {"id": 1, "guideId": 1, "memberId": "MBR00001", "surveyId": 1, "matchingTime": "2025-09-15T15:00:00", "status": "COMPLETED"},
+    {"id": 2, "guideId": 1, "memberId": "MBR00001", "surveyId": 2, "matchingTime": "2025-09-20T19:00:00", "status": "PENDING"},
+    {"id": 3, "guideId": 1, "memberId": "MBR00001", "surveyId": 3, "matchingTime": "2025-09-22T20:00:00", "status": "COMPLETED"},
+    {"id": 4, "guideId": 1, "memberId": "MBR00001", "surveyId": 4, "matchingTime": "2025-09-25T21:00:00", "status": "COMPLETED"},
+    {"id": 5, "guideId": 1, "memberId": "MBR00001", "surveyId": 5, "matchingTime": "2025-09-28T10:00:00", "status": "COMPLETED"}
+  ],
+  "timeUnits": [
+    {"id": 1, "reservationId": 1, "timeType": "MINUTE_30"},
+    {"id": 2, "reservationId": 2, "timeType": "MINUTE_60"},
+    {"id": 3, "reservationId": 3, "timeType": "MINUTE_30"},
+    {"id": 4, "reservationId": 4, "timeType": "MINUTE_60"},
+    {"id": 5, "reservationId": 5, "timeType": "MINUTE_30"}
+  ],
+  "reviews": [
+    {"id": 1, "reservationId": 1, "comment": "면접 팁이 정말 유익했습니다!", "starReview": 4.5},
+    {"id": 2, "reservationId": 3, "comment": "프로젝트 코드 리뷰가 큰 도움이 됐어요.", "starReview": 5.0},
+    {"id": 3, "reservationId": 4, "comment": "커리어 전환 방향성을 잡을 수 있었어요.", "starReview": 4.0},
+    {"id": 4, "reservationId": 5, "comment": "포트폴리오 개선 포인트를 알게 되었어요.", "starReview": 3.5}
+  ],
+  "experienceGroups": [
+    {"id": 1, "guideId": 1, "guideChatTopicId": 1, "experienceTitle": "면접 경험", "experienceContent": "삼성전자 면접 합격 경험"},
+    {"id": 2, "guideId": 1, "guideChatTopicId": 2, "experienceTitle": "이직 경험", "experienceContent": "스타트업 → 대기업 전환기 이야기"}
+  ],
+  "experienceDetail": {"id": 1, "guideId": 1, "who": "신입 지원자", "solution": "코딩테스트 대비", "how": "스터디 그룹 운영"},
+  "reviewExperiences": [
+    {"id": 1, "reviewId": 1, "experienceGroupId": 1, "isThumbsUp": true},
+    {"id": 2, "reviewId": 2, "experienceGroupId": 1, "isThumbsUp": true},
+    {"id": 3, "reviewId": 3, "experienceGroupId": 2, "isThumbsUp": true},
+    {"id": 4, "reviewId": 4, "experienceGroupId": 2, "isThumbsUp": false}
+  ],
+  "meetingRooms": [
+    {"id": 1, "reservationId": 1, "startTime": "2025-09-15T15:00:00", "endTime": "2025-09-15T15:30:00", "roomUrl": "https://meet.example.com/room1"}
+  ],
+  "candidates": [
+    {"id": 1, "reservationId": 1, "timeId": 1, "priority": 1, "candidateDate": "2025-09-14T10:00:00"},
+    {"id": 2, "reservationId": 2, "timeId": 2, "priority": 2, "candidateDate": "2025-09-19T15:00:00"}
+  ],
+  "notifications": [
+    {"id": 1, "memberId": "MBR00001", "reservationId": 1, "message": "예약이 확정되었습니다.", "isRead": false},
+    {"id": 2, "memberId": "MBR00002", "reservationId": 1, "message": "새로운 후기가 등록되었습니다.", "isRead": false}
+  ],
+  "guideListResponse": {
+    "page": 0,
+    "size": 20,
+    "totalElements": 1,
+    "content": [
+      {
+        "guideId": 1,
+        "nickname": "김선배",
+        "profileImageUrl": "https://cdn.example.com/profile2.png",
+        "title": "백엔드 면접/이직 상담",
+        "workingPeriod": null,
+        "jobField": {"guideId": 1, "jobName": "IT_DEVELOPMENT_DATA"},
+        "hashTags": [
+          {"id": 1, "guideId": 1, "hashTagName": "#백엔드"},
+          {"id": 2, "guideId": 1, "hashTagName": "#면접준비"}
+        ],
+        "stats": {
+          "totalCoffeeChats": 4,
+          "averageStar": 4.3,
+          "totalReviews": 4,
+          "thumbsUpCount": 3
+        }
+      }
+    ]
+  }
+}
+
