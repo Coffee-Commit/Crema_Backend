@@ -88,4 +88,21 @@ public class CookieUtil {
 
         return cookieBuilder.build();
     }
+
+    /**
+     * 필터에서 직접 사용할 수 있는 정적 메서드들
+     */
+    public static void addCookieStatic(HttpServletResponse response, String name, String value, int maxAge) {
+        Cookie cookie = new Cookie(name, value);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true); // HTTPS 환경에서만 전송
+        cookie.setMaxAge(maxAge);
+        cookie.setAttribute("SameSite", "Lax");
+        response.addCookie(cookie);
+    }
+
+    public static void deleteCookieStatic(HttpServletResponse response, String name) {
+        addCookieStatic(response, name, "", 0);
+    }
 }

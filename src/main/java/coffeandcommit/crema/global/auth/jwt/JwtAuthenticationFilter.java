@@ -4,7 +4,6 @@ import coffeandcommit.crema.domain.member.service.MemberService;
 import coffeandcommit.crema.global.auth.service.AuthService;
 import coffeandcommit.crema.global.auth.service.CustomUserDetails;
 import coffeandcommit.crema.global.auth.service.TokenBlacklistService;
-import coffeandcommit.crema.global.auth.util.CookieUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,7 +29,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AuthService authService;
     private final TokenBlacklistService tokenBlacklistService;
     private final MemberService memberService;
-    private final CookieUtil cookieUtil;
 
     // JWT 검증을 스킵할 경로들
     private static final List<String> SKIP_PATHS = List.of(
@@ -64,42 +62,41 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         try {
             // 쿠키 우선, 헤더 백업으로 토큰 추출
-            String accessToken = authService.extractAccessToken(request);
-            log.debug("Extracted access token: {}", accessToken != null ? "Present" : "Not found");
+            String token = authService.extractAccessToken(request);
+            log.debug("Extracted token: {}", token != null ? "Present" : "Not found");
 
-            if (StringUtils.hasText(accessToken)) {
-                // Access Token 검증
-                if (jwtTokenProvider.validateToken(accessToken) && jwtTokenProvider.isAccessToken(accessToken)) {
+            if (StringUtils.hasText(token)) {
+                log.debug("Token found, validating...");
+
+                // JWT 토큰 검증
+                if (jwtTokenProvider.validateToken(token) && jwtTokenProvider.isAccessToken(token)) {
+                    log.debug("Token is valid and is access token");
+
                     // 블랙리스트 확인
-                    if (!tokenBlacklistService.isTokenBlacklisted(accessToken)) {
-                        log.debug("Valid access token, setting authentication");
-                        setAuthentication(accessToken, request);
-                        log.debug("JWT authentication successful for URI: {} with member: {}",
-                                requestURI, jwtTokenProvider.getMemberId(accessToken));
+                    if (!tokenBlacklistService.isTokenBlacklisted(token)) {
+                        log.debug("Token is not blacklisted, setting authentication");
+                        setAuthentication(token, request);
+                        log.info("JWT authentication successful for URI: {} with member: {}",
+                                requestURI, jwtTokenProvider.getMemberId(token));
                     } else {
-                        log.warn("Blacklisted access token used for URI: {}", requestURI);
+                        log.warn("Blacklisted token used for URI: {}", requestURI);
                         SecurityContextHolder.clearContext();
                     }
                 } else {
-                    // Access Token이 만료되었거나 유효하지 않음 -> 자동 갱신 시도
-                    log.info("Access token invalid/expired for URI: {}, attempting auto-refresh", requestURI);
-
-                    if (attemptTokenRefresh(request, response)) {
-                        // 토큰 갱신 성공 -> 새 Access Token으로 인증 설정
-                        String newAccessToken = authService.extractAccessToken(request);
-                        if (StringUtils.hasText(newAccessToken)) {
-                            setAuthentication(newAccessToken, request);
-                            log.info("Token auto-refresh successful for URI: {} with member: {}",
-                                    requestURI, jwtTokenProvider.getMemberId(newAccessToken));
-                        }
+                    log.warn("Invalid JWT token for URI: {}, attempting auto refresh", requestURI);
+                    // Access Token이 유효하지 않을 때 자동 재발급 시도
+                    String newToken = authService.attemptAutoRefresh(request, response);
+                    if (StringUtils.hasText(newToken)) {
+                        log.info("Token auto-refresh successful for URI: {}", requestURI);
+                        // 재발급된 새 토큰으로 바로 인증 설정
+                        setAuthentication(newToken, request);
                     } else {
-                        // 토큰 갱신 실패 -> 인증 실패
                         log.warn("Token auto-refresh failed for URI: {}", requestURI);
                         SecurityContextHolder.clearContext();
                     }
                 }
             } else {
-                log.debug("No access token found in request for URI: {}", requestURI);
+                log.debug("No JWT token found in request for URI: {}", requestURI);
             }
         } catch (Exception e) {
             log.error("JWT authentication failed for URI: {} - {}", requestURI, e.getMessage(), e);
@@ -107,62 +104,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
-    }
-
-    /**
-     * Refresh Token을 이용한 자동 토큰 갱신 시도
-     */
-    private boolean attemptTokenRefresh(HttpServletRequest request, HttpServletResponse response) {
-        try {
-            // CookieUtil.getCookie()는 static 메서드이므로 직접 호출
-            String refreshToken = CookieUtil.getCookie(request, CookieUtil.REFRESH_TOKEN_COOKIE_NAME);
-
-            if (!StringUtils.hasText(refreshToken)) {
-                log.debug("No refresh token found in cookie");
-                return false;
-            }
-
-            // Refresh Token 검증
-            if (!jwtTokenProvider.validateToken(refreshToken)) {
-                log.debug("Refresh token is invalid or expired");
-                return false;
-            }
-
-            if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
-                log.debug("Token is not a refresh token");
-                return false;
-            }
-
-            // 블랙리스트 확인
-            if (tokenBlacklistService.isTokenBlacklisted(refreshToken)) {
-                log.debug("Refresh token is blacklisted");
-                return false;
-            }
-
-            // 기존 토큰들을 블랙리스트에 추가
-            String oldAccessToken = authService.extractAccessToken(request);
-            tokenBlacklistService.blacklistUserTokens(oldAccessToken, refreshToken);
-
-            // 새로운 토큰 생성
-            String memberId = jwtTokenProvider.getMemberId(refreshToken);
-            String newAccessToken = jwtTokenProvider.createAccessToken(memberId);
-            String newRefreshToken = jwtTokenProvider.createRefreshToken(memberId);
-
-            // 토큰 유효시간 계산
-            int accessTokenMaxAge = (int) (jwtTokenProvider.getAccessTokenValidityInMilliseconds() / 1000);
-            int refreshTokenMaxAge = (int) (jwtTokenProvider.getRefreshTokenValidityInMilliseconds() / 1000);
-
-            // 새로운 토큰을 쿠키에 설정
-            cookieUtil.addCookie(response, CookieUtil.ACCESS_TOKEN_COOKIE_NAME, newAccessToken, accessTokenMaxAge);
-            cookieUtil.addCookie(response, CookieUtil.REFRESH_TOKEN_COOKIE_NAME, newRefreshToken, refreshTokenMaxAge);
-
-            log.info("Token auto-refresh successful for member: {}", memberId);
-            return true;
-
-        } catch (Exception e) {
-            log.error("Failed to auto-refresh token: {}", e.getMessage(), e);
-            return false;
-        }
     }
 
     private boolean shouldSkip(String requestURI) {
@@ -176,7 +117,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String memberId = jwtTokenProvider.getMemberId(token);
 
             if (StringUtils.hasText(memberId)) {
-                // DB 조회 또는 토큰 클레임으로 사용자 상태 확인 (enabled) 조회
+                // MemberService의 createUserDetails 메서드 활용 (DB 조회 포함)
                 CustomUserDetails userDetails = memberService.createUserDetails(memberId);
 
                 // 사용자가 비활성 상태면 인증 실패
@@ -191,12 +132,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         null,
                         userDetails.getAuthorities()
                 );
-
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+
+                log.debug("Security context set for member: {}", memberId);
             }
         } catch (Exception e) {
-            log.error("Failed to set authentication: {}", e.getMessage());
+            log.error("Failed to set authentication: {}", e.getMessage(), e);
             SecurityContextHolder.clearContext();
         }
     }
