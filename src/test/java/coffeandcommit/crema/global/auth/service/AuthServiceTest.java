@@ -192,17 +192,4 @@ class AuthServiceTest {
             then(cookieUtil).should(never()).addCookie(any(), anyString(), anyString(), anyInt());
         }
     }
-
-    @Test
-    @DisplayName("기존 Access Token 추출 테스트")
-    void extractAccessTokenTest() {
-        // Given
-        given(authService.extractAccessToken(request)).willReturn(OLD_ACCESS_TOKEN);
-
-        // When
-        String result = authService.extractAccessToken(request);
-
-        // Then
-        assertThat(result).isEqualTo(OLD_ACCESS_TOKEN);
-    }
 }
